@@ -33,7 +33,7 @@ jobs:
           - platform: macos-latest
     runs-on: ${{ matrix.platform }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Install Linux system dependencies
         # Keep this package list in sync with ci.yml.
         if: runner.os == 'Linux'
