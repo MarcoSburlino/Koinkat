@@ -1,0 +1,474 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=DM+Serif+Display&family=JetBrains+Mono:wght@400;500;600&display=swap');
+@import "tailwindcss";
+
+/* ============================================================
+   KOINKAT DESIGN SYSTEM - tokens
+   Source of truth: .claude/skills/design-system/DESIGN_TOKENS.md
+   All visual decisions live here. Components reference these
+   variables - never hard-code colors, sizes, or timing.
+   ============================================================ */
+
+:root {
+  /* ── Typography ──────────────────────────────────────────── */
+  --font-display: 'DM Serif Display', Georgia, 'Times New Roman', serif;
+  --font-sans:    'DM Sans', system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
+  --font-mono:    'JetBrains Mono', 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  /* Legacy alias - existing code uses --font-head for headings (h1/h2/h3).
+     Keeping it as a sans (DM Sans) so every existing page keeps reading the
+     same way; opt in to --font-display explicitly for serif page titles. */
+  --font-head:    var(--font-sans);
+
+  /* Type scale */
+  --fs-display:   clamp(1.75rem, 2.2vw, 2.25rem);
+  --fs-h1:        var(--fs-display);   /* legacy alias */
+  --fs-h2:        clamp(1.25rem, 1.6vw, 1.5rem);
+  --fs-h3:        1.125rem;
+  --fs-body:      0.9375rem;
+  --fs-body-sm:   0.8125rem;
+  --fs-caption:   var(--fs-body-sm);   /* legacy alias */
+  --fs-button:    0.875rem;
+  --fs-amount-lg: 1.5rem;
+  --fs-amount-md: 1.125rem;
+  --fs-amount-sm: 0.875rem;
+  --fs-rate:      0.75rem;
+
+  /* Line heights */
+  --lh-display:   1.15;
+  --lh-heading:   1.25;
+  --lh-body:      1.5;
+  --lh-tight:     1.2;
+  --lh-normal:    var(--lh-body);      /* legacy alias */
+  --lh-mono:      1.3;
+
+  /* Letter spacing */
+  --ls-display:   0.01em;
+  --ls-normal:    0;
+  --ls-uppercase: 0.06em;
+  --ls-mono:      -0.02em;
+  --ls-currency:  0.04em;
+
+  /* Font weights */
+  --fw-regular:   400;
+  --fw-medium:    500;
+  --fw-semibold:  600;
+  --fw-bold:      700;
+
+  /* ── Spacing (4px base grid) ─────────────────────────────── */
+  --space-0:   0;
+  --space-px:  1px;
+  --space-0_5: 2px;
+  --space-1:   4px;
+  --space-2:   8px;
+  --space-3:   12px;
+  --space-4:   16px;
+  --space-5:   20px;
+  --space-6:   24px;
+  --space-7:   32px;
+  --space-8:   40px;
+  --space-9:   48px;
+  --space-10:  64px;
+
+  /* ── Border radius ───────────────────────────────────────── */
+  --radius-0:    0;
+  --radius-1:    4px;
+  --radius-2:    8px;
+  --radius-3:    12px;
+  --radius-full: 9999px;
+
+  /* ── Elevation (shadows) ─────────────────────────────────── */
+  --elev-0: none;
+  --elev-1: 0 1px 2px rgba(15, 30, 20, 0.04), 0 1px 3px rgba(15, 30, 20, 0.05);
+  --elev-2: 0 4px 10px rgba(15, 30, 20, 0.07), 0 2px 4px rgba(15, 30, 20, 0.05);
+  --elev-3: 0 12px 28px rgba(15, 30, 20, 0.12), 0 4px 8px rgba(15, 30, 20, 0.06);
+
+  /* ── Motion ──────────────────────────────────────────────── */
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --ease-enter:    cubic-bezier(0, 0, 0.2, 1);
+  --ease-exit:     cubic-bezier(0.4, 0, 1, 1);
+  --dur-quick:     150ms;
+  --dur-std:       250ms;
+  --dur-slow:      350ms;
+
+  /* ── Layout ──────────────────────────────────────────────── */
+  --header-h:    56px;
+  --sidebar-w:   220px;
+  --content-max: 1200px;
+
+  /* ── Z-index scale ───────────────────────────────────────── */
+  --z-base:           1;
+  --z-dropdown:       1000;
+  --z-sticky:         1020;
+  --z-sidebar:        1040;
+  --z-modal-backdrop: 1045;
+  --z-modal:          1050;
+  --z-toast:          1100;
+  --z-tooltip:        1110;
+
+  /* ── Data visualization (light defaults, overridden in dark) ─ */
+  --viz-1: #1A5E35;
+  --viz-2: #3472CA;
+  --viz-3: #D4880F;
+  --viz-4: #C23B2A;
+  --viz-5: #7C3AED;
+  --viz-6: #0D9488;
+  --viz-7: #DB2777;
+  --viz-8: #64748B;
+
+  --chart-grid:       var(--border);
+  --chart-grid-width: 0.5px;
+  --chart-bar-radius: 3px;
+  --chart-bar-width:  60%;
+  --chart-tooltip-bg: var(--surface);
+
+  /* ── Account colors (9 options, equal optical weight) ────── */
+  --acct-blue:    #2563EB;
+  --acct-green:   #16A34A;
+  --acct-red:     #DC2626;
+  --acct-amber:   #D97706;
+  --acct-purple:  #7C3AED;
+  --acct-magenta: #DB2777;
+  --acct-teal:    #0D9488;
+  --acct-sky:     #0284C7;
+  --acct-slate:   #64748B;
+}
+
+/* ====== THEME: Light (default) =========================================== */
+:root,
+html[data-theme="light"] {
+  --bg:             #FAFAF8;
+  --surface:        #FFFFFF;
+  --surface-alt:    #F2F3F0;
+  --surface-2:      var(--surface-alt);  /* legacy alias */
+  --text:           #171818;
+  --text-secondary: #5A5C5A;
+  --text-muted:     #9B9D9A;
+  --border:         #E2E3DF;
+  --border-strong:  #C4C5C0;
+  --input-bg:       #FFFFFF;
+
+  /* Brand */
+  --primary:        #1A5E35;
+  --primary-hover:  #145029;
+  --primary-fg:     #FFFFFF;
+  --on-primary:     var(--primary-fg);   /* legacy alias */
+  --accent:         #C8982C;
+  --accent-fg:      #1A1A1A;
+  --on-accent:      var(--accent-fg);    /* legacy alias */
+
+  /* Semantic money colors */
+  --income:         #1A7D43;
+  --expense:        #C23B2A;
+  --transfer:       #3472CA;
+  --income-color:   var(--income);       /* legacy alias */
+
+  /* Status */
+  --success:        #157A3A;
+  --success-fg:     #FFFFFF;
+  --on-success:     var(--success-fg);   /* legacy alias */
+  --warning:        #D4880F;
+  --warning-fg:     #1A1A1A;
+  --on-warning:     var(--warning-fg);   /* legacy alias */
+  --danger:         #B91C1C;
+  --danger-fg:      #FFFFFF;
+  --on-danger:      var(--danger-fg);    /* legacy alias */
+
+  /* Nav */
+  --nav-active-bg:  rgba(26, 94, 53, 0.08);
+  --nav-active-fg:  #1A5E35;
+  --nav-hover-bg:   var(--surface-alt);
+
+  /* Focus */
+  --focus-ring:     rgba(26, 94, 53, 0.22);
+  --focus:          var(--primary);      /* legacy alias */
+  --kbd-outline:    2px solid var(--primary);
+
+  /* Legacy button tokens (some components read these directly) */
+  --btn-primary-bg:       var(--primary);
+  --btn-primary-fg:       var(--primary-fg);
+  --btn-secondary-bg:     transparent;
+  --btn-secondary-fg:     var(--primary);
+  --btn-secondary-border: var(--primary);
+  --btn-ghost-hover-bg:   var(--surface-alt);
+
+  /* Legacy input tokens */
+  --input-fg:     var(--text);
+  --input-border: var(--border);
+
+  /* Misc legacy */
+  --overlay-scrim: rgba(13, 18, 16, 0.45);
+
+  color-scheme: light;
+}
+
+/* ====== THEME: Dark ======================================================= */
+html[data-theme="dark"],
+html.dark {
+  --bg:             #0D1210;
+  --surface:        #151A18;
+  --surface-alt:    #1E2422;
+  --surface-2:      var(--surface-alt);
+  --text:           #E8EAE7;
+  --text-secondary: #9FA39F;
+  --text-muted:     #676A66;
+  --border:         #262C29;
+  --border-strong:  #3A413D;
+  --input-bg:       #171D1B;
+
+  /* Brand */
+  --primary:        #2F9D5E;
+  --primary-hover:  #258550;
+  --primary-fg:     #FFFFFF;
+  --on-primary:     var(--primary-fg);
+  --accent:         #D4A940;
+  --accent-fg:      #1A1A1A;
+  --on-accent:      var(--accent-fg);
+
+  /* Semantic money colors */
+  --income:         #34D399;
+  --expense:        #F87171;
+  --transfer:       #60A5FA;
+  --income-color:   var(--income);
+
+  /* Status */
+  --success:        #22C55E;
+  --success-fg:     #052E16;
+  --on-success:     var(--success-fg);
+  --warning:        #FBBF24;
+  --warning-fg:     #1A1A1A;
+  --on-warning:     var(--warning-fg);
+  --danger:         #EF4444;
+  --danger-fg:      #FFFFFF;
+  --on-danger:      var(--danger-fg);
+
+  /* Nav */
+  --nav-active-bg:  rgba(47, 157, 94, 0.14);
+  --nav-active-fg:  #4BC47D;
+  --nav-hover-bg:   var(--surface-alt);
+
+  /* Focus */
+  --focus-ring:     rgba(75, 196, 125, 0.30);
+  --focus:          var(--primary);
+  --kbd-outline:    2px solid var(--primary);
+
+  /* Dark shadows are imperceptible - rely on borders instead. */
+  --elev-1: none;
+  --elev-2: none;
+  --elev-3: 0 10px 30px rgba(0, 0, 0, 0.5);
+
+  /* Viz palette brightened for dark backgrounds */
+  --viz-1: #4BC47D;
+  --viz-2: #60A5FA;
+  --viz-3: #FBBF24;
+  --viz-4: #F87171;
+  --viz-5: #A78BFA;
+  --viz-6: #2DD4BF;
+  --viz-7: #F472B6;
+  --viz-8: #94A3B8;
+
+  /* Legacy button tokens */
+  --btn-primary-bg:       var(--primary);
+  --btn-primary-fg:       var(--primary-fg);
+  --btn-secondary-bg:     color-mix(in srgb, var(--primary) 15%, transparent);
+  --btn-secondary-fg:     var(--text);
+  --btn-secondary-border: color-mix(in srgb, var(--primary) 40%, var(--border));
+  --btn-ghost-hover-bg:   color-mix(in srgb, #ffffff 12%, var(--surface-alt));
+
+  /* Legacy input tokens */
+  --input-fg:     var(--text);
+  --input-border: var(--border);
+
+  --overlay-scrim: rgba(0, 0, 0, 0.65);
+
+  color-scheme: dark;
+}
+
+
+/* ====== Component classes ================================================= */
+
+/* ── Buttons ──────────────────────────────────────────────────────── */
+.kk-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  height: 40px;
+  padding: 0 var(--space-4);
+  border-radius: var(--radius-1);
+  font-family: var(--font-sans);
+  font-size: var(--fs-button);
+  font-weight: var(--fw-semibold);
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+  white-space: nowrap;
+  text-decoration: none;
+  transition:
+    background var(--dur-quick) var(--ease-standard),
+    color var(--dur-quick) var(--ease-standard),
+    border-color var(--dur-quick) var(--ease-standard),
+    filter var(--dur-quick) var(--ease-standard),
+    transform 100ms var(--ease-standard);
+}
+.kk-btn:disabled,
+.kk-btn[aria-disabled="true"] { opacity: 0.45; cursor: not-allowed; pointer-events: none; }
+.kk-btn:active:not(:disabled) { transform: scale(0.97); }
+
+.kk-btn-primary { background: var(--primary); color: var(--primary-fg); }
+.kk-btn-primary:hover:not(:disabled) { background: var(--primary-hover); }
+
+.kk-btn-secondary { background: transparent; color: var(--text); border-color: var(--border-strong); }
+.kk-btn-secondary:hover:not(:disabled) { background: var(--surface-alt); }
+
+.kk-btn-ghost { background: transparent; color: var(--text-secondary); }
+.kk-btn-ghost:hover:not(:disabled) { background: var(--surface-alt); color: var(--text); }
+
+.kk-btn-danger { background: var(--danger); color: var(--danger-fg); }
+.kk-btn-danger:hover:not(:disabled) { filter: brightness(0.92); }
+
+.kk-btn-text { height: auto; padding: 0 4px; color: var(--primary); border: none; }
+.kk-btn-text:hover:not(:disabled) {
+  color: var(--primary-hover);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* ── Nav items (sidebar) ────────────────────────────────────────── */
+.kk-nav-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  border-radius: var(--radius-1);
+  color: var(--text-muted);
+  font-size: var(--fs-button);
+  font-weight: var(--fw-medium);
+  text-decoration: none;
+  transition:
+    background var(--dur-quick) var(--ease-standard),
+    color var(--dur-quick) var(--ease-standard);
+}
+.kk-nav-item:hover { background: var(--nav-hover-bg); color: var(--text); }
+.kk-nav-item.kk-nav-active {
+  background: var(--nav-active-bg);
+  color: var(--nav-active-fg);
+  font-weight: var(--fw-semibold);
+}
+.kk-nav-item.kk-nav-active::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 8px;
+  bottom: 8px;
+  width: 2px;
+  background: var(--primary);
+  border-radius: 2px;
+}
+
+/* ── Modal ──────────────────────────────────────────────────────────── */
+@keyframes kk-backdrop-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes kk-panel-in {
+  from { opacity: 0; transform: translateY(12px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0)    scale(1); }
+}
+.kk-modal-backdrop {
+  animation: kk-backdrop-in var(--dur-std) var(--ease-enter) both;
+}
+.kk-modal-panel {
+  animation: kk-panel-in var(--dur-std) var(--ease-enter) both;
+}
+
+/* ====== Global resets ===================================================== */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  font-family: var(--font-sans);
+  font-size: var(--fs-body);
+  line-height: var(--lh-body);
+  color: var(--text);
+  background-color: var(--bg);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-head);
+  line-height: var(--lh-heading);
+  margin: 0;
+}
+
+/* ====== Utility classes (design system) =================================== */
+
+/* Monetary amount classes - see DESIGN_SYSTEM.md "Monetary number formatting". */
+.amount {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: var(--ls-mono);
+}
+.amount-lg { font-size: var(--fs-amount-lg); font-weight: var(--fw-semibold); }
+.amount-md { font-size: var(--fs-amount-md); font-weight: var(--fw-medium); }
+.amount-sm { font-size: var(--fs-amount-sm); font-weight: var(--fw-regular); }
+
+.amount-income   { color: var(--income); }
+.amount-expense  { color: var(--expense); }
+.amount-transfer { color: var(--transfer); }
+.amount-zero     { color: var(--text-muted); }
+
+.currency-code {
+  font-family: var(--font-mono);
+  font-size: var(--fs-body-sm);
+  letter-spacing: var(--ls-currency);
+  color: var(--text-muted);
+  margin-left: 2px;
+}
+
+/* Privacy mode */
+.privacy-mode [data-privacy-field] {
+  filter: blur(8px);
+  user-select: none;
+  pointer-events: none;
+  transition: filter var(--dur-std) var(--ease-standard);
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Focus ring */
+:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+/* Scrollbar styling for dark mode */
+html.dark ::-webkit-scrollbar,
+html[data-theme="dark"] ::-webkit-scrollbar {
+  width: 8px;
+}
+html.dark ::-webkit-scrollbar-track,
+html[data-theme="dark"] ::-webkit-scrollbar-track {
+  background: var(--surface-alt);
+}
+html.dark ::-webkit-scrollbar-thumb,
+html[data-theme="dark"] ::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: var(--radius-1);
+}

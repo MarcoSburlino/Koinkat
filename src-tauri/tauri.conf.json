@@ -1,0 +1,54 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Koinkat",
+  "version": "0.1.0",
+  "identifier": "com.koinkat.app",
+  "build": {
+    "frontendDist": "../dist",
+    "devUrl": "http://localhost:1420",
+    "beforeDevCommand": "npm run dev",
+    "beforeBuildCommand": "npm run build"
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "Koinkat",
+        "width": 1280,
+        "height": 800,
+        "minWidth": 900,
+        "minHeight": 600,
+        "center": true
+      }
+    ],
+    "security": {
+      "csp": "default-src 'self' tauri:; script-src 'self' tauri:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob:; connect-src 'self' https://api.enablebanking.com https://cdn.jsdelivr.net https://latest.currency-api.pages.dev https://*.currency-api.pages.dev ipc: http://ipc.localhost; frame-ancestors 'none'; object-src 'none'; base-uri 'self'"
+    }
+  },
+  "plugins": {
+    "sql": {
+      "preload": ["sqlite:koinkat.db"]
+    },
+    "deep-link": {
+      "desktop": {
+        "schemes": ["koinkat"]
+      }
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
+    "category": "Finance",
+    "shortDescription": "Local-first multi-currency personal finance manager.",
+    "longDescription": "Koinkat is a local-first desktop app for tracking personal finances across multiple currencies and bank accounts. All data stays on your device. Connect European banks via PSD2 (Enable Banking), or use it manually. No cloud sync, no telemetry, no accounts.",
+    "copyright": "Copyright (c) 2026 Marco Sburlino",
+    "publisher": "Marco Sburlino",
+    "homepage": "https://github.com/MarcoSburlino/Koinkat"
+  }
+}

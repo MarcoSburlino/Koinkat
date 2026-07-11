@@ -1,0 +1,11 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Koinkat Demo",
+  "identifier": "com.koinkat.app.demo",
+  "build": {
+    "beforeBuildCommand": "npm run build:demo"
+  },
+  "bundle": {
+    "shortDescription": "Demo build of Koinkat for tutorials. Not for production use."
+  }
+}

@@ -1,0 +1,31 @@
+[package]
+name = "koinkat"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "koinkat_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+# No "devtools" feature: release binaries must not expose the web inspector.
+# Debug builds still get devtools automatically via debug_assertions.
+tauri = { version = "2", features = [] }
+tauri-plugin-deep-link = "2"
+tauri-plugin-sql = { version = "2", features = ["sqlite"] }
+tauri-plugin-http = "2"
+tauri-plugin-fs = "2"
+tauri-plugin-dialog = "2"
+tauri-plugin-shell = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+# OS credential store for the Enable Banking private key. Each feature
+# activates only on its own platform (Windows Credential Manager, macOS
+# Keychain, freedesktop Secret Service via D-Bus).
+keyring = { version = "3", features = ["windows-native", "apple-native", "sync-secret-service"] }
+
+[target."cfg(any(target_os = \"macos\", windows, target_os = \"linux\"))".dependencies]
+tauri-plugin-single-instance = { version = "2", features = ["deep-link"] }

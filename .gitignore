@@ -1,0 +1,103 @@
+node_modules/
+dist/
+dist-ssr/
+src-tauri/target/
+target/
+*.local
+
+# ── Databases ────────────────────────────────────────────────────────────
+*.db
+koinkat*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
+
+# ── OS / editor cruft ────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+*.bak
+*.old
+*.backup
+*.log
+npm-debug.log*
+*.swp
+*.swo
+*~
+.idea/
+.vscode/
+
+# ── Secrets & credentials ────────────────────────────────────────────────
+# Never commit private keys, certificates, keystores, or signing material.
+# Enable Banking requires a private .pem per application; Tauri updater
+# signing uses private keys; mobile builds need keystores and provisioning
+# profiles. All are end-user-specific and MUST stay out of git.
+
+# Private keys (PEM-encoded, Apple push keys, PKCS#12 bundles, etc.)
+*.pem
+*.key
+*.p8
+*.p12
+*.pfx
+
+# Public / private certificates
+*.crt
+*.cer
+*.cert
+*.der
+
+# PGP / GPG material
+*.asc
+*.gpg
+
+# Android / JVM keystores and Apple provisioning profiles
+*.jks
+*.keystore
+*.mobileprovision
+
+# SSH keys accidentally dropped into the repo
+id_rsa
+id_rsa.*
+id_ed25519
+id_ed25519.*
+id_ecdsa
+id_ecdsa.*
+id_dsa
+id_dsa.*
+*.ppk
+
+# Well-known credential / token files
+credentials.json
+secrets.json
+service-account*.json
+.npmrc
+.netrc
+auth.json
+
+# Generic secrets directories
+secrets/
+.secrets/
+.tauri/
+
+# All env files stay out of git. Build-mode flags are hardcoded per
+# Vite mode in vite.config.ts - no committed env files needed.
+.env
+.env.*
+
+# ── Junk / security quarantine / personal folders ────────────────────────
+junk/
+KoinkatDemo/
+.playwright-mcp/
+personal/
+scripts/
+
+# ── Internal planning + agent tooling (kept on disk, never committed) ────
+.agent/
+.agents/
+.claude/
+AGENTS.md
+CLAUDE.md
+
+# Local backup of the pre-publication git history (also on GitHub as Koinkat-priv)
+.git-old-history-backup/

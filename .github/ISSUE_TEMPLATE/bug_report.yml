@@ -1,0 +1,66 @@
+name: Bug report
+description: Something broke or behaved wrong
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the report. Please DON'T paste bank account numbers,
+        IBANs, real balances, or your Enable Banking credentials anywhere
+        in this issue. For security vulnerabilities use the private
+        reporting flow described in SECURITY.md instead of an issue.
+  - type: input
+    id: version
+    attributes:
+      label: Koinkat version
+      description: Shown in the error screen and in the JSON export metadata.
+      placeholder: "0.1.0"
+    validations:
+      required: true
+  - type: dropdown
+    id: build-mode
+    attributes:
+      label: Build mode
+      options:
+        - Production (installed release)
+        - Demo build
+        - Development (npm run tauri:dev)
+    validations:
+      required: true
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operating system
+      options:
+        - Windows
+        - macOS
+        - Linux
+    validations:
+      required: true
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: What did you do, what did you expect, what happened instead?
+    validations:
+      required: true
+  - type: textarea
+    id: error-text
+    attributes:
+      label: Error text (sanitized)
+      description: |
+        The exact text of any error banner or message, with amounts and
+        account identifiers removed or replaced with XXX.
+      render: text
+  - type: input
+    id: bank
+    attributes:
+      label: Bank and country (only for sync issues)
+      description: e.g. "FinecoBank, IT". Leave empty if not sync-related.
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. ...
+        2. ...

@@ -1,0 +1,57 @@
+{
+  "name": "koinkat",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Local-first multi-currency personal finance manager (Tauri 2 desktop app)",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/MarcoSburlino/Koinkat.git"
+  },
+  "license": "GPL-3.0-or-later",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build --mode production",
+    "build:demo": "tsc && vite build --mode demo",
+    "preview": "vite preview",
+    "tauri": "tauri",
+    "tauri:dev": "tauri dev",
+    "tauri:build": "tauri build",
+    "tauri:build:demo": "tauri build --config src-tauri/tauri.conf.demo.json",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:ui": "vitest --ui"
+  },
+  "dependencies": {
+    "@tauri-apps/api": "^2.11.1",
+    "@tauri-apps/plugin-deep-link": "^2.4.9",
+    "@tauri-apps/plugin-dialog": "^2.7.1",
+    "@tauri-apps/plugin-fs": "^2.5.1",
+    "@tauri-apps/plugin-http": "^2.5.9",
+    "@tauri-apps/plugin-shell": "^2.3.5",
+    "@tauri-apps/plugin-sql": "^2.4.0",
+    "big.js": "^6.2.2",
+    "date-fns": "^4",
+    "jose": "^6.2.2",
+    "lucide-react": "^0.468",
+    "react": "^19",
+    "react-dom": "^19",
+    "react-router-dom": "^7",
+    "recharts": "^2",
+    "zustand": "^5"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4",
+    "@tauri-apps/cli": "^2.11.4",
+    "@types/big.js": "^6",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "@vitejs/plugin-react": "^4",
+    "@vitest/ui": "^4.1.5",
+    "tailwindcss": "^4",
+    "typescript": "^5.7",
+    "vite": "^6",
+    "vitest": "^4.1.5"
+  }
+}

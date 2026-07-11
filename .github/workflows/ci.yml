@@ -1,0 +1,60 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  # Typecheck, unit tests, and the production bundle (which also runs the
+  # forbid-mocks-in-production scanner). Fast, runs once on Linux.
+  frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Version consistency (package.json / tauri.conf.json / Cargo.toml)
+        run: |
+          node -e "
+            const fs = require('fs');
+            const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8')).version;
+            const conf = JSON.parse(fs.readFileSync('src-tauri/tauri.conf.json', 'utf8')).version;
+            const cargo = /^version\s*=\s*\"([^\"]+)\"/m.exec(fs.readFileSync('src-tauri/Cargo.toml', 'utf8'))[1];
+            if (pkg !== conf || pkg !== cargo) {
+              console.error('Version mismatch: package.json=' + pkg + ' tauri.conf.json=' + conf + ' Cargo.toml=' + cargo);
+              process.exit(1);
+            }
+            console.log('Version OK: ' + pkg);
+          "
+      - run: npm run typecheck
+      - run: npm run test
+      - name: Production bundle (includes mock-leak scanner)
+        run: npm run build
+
+  # Compile-check the Rust shell on every OS we ship to. The app has
+  # platform-conditional code (keychain backends, single-instance,
+  # deep-link registration), so a Windows-only check is not enough.
+  rust:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Linux system dependencies
+        # Keep this package list in sync with release.yml.
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev \
+            librsvg2-dev patchelf xdg-utils libdbus-1-dev pkg-config
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+      - run: cargo check --manifest-path src-tauri/Cargo.toml
