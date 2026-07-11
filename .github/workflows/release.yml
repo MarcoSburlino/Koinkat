@@ -1,0 +1,61 @@
+name: Release
+
+# Builds installers for all three platforms and attaches them to a DRAFT
+# GitHub release when a version tag is pushed:
+#
+#   git tag v0.1.0 && git push origin v0.1.0
+#
+# The maintainer reviews the draft and publishes it manually.
+#
+# NOTE on signing: builds are currently UNSIGNED. Windows installers will
+# trigger SmartScreen and macOS builds will be blocked by Gatekeeper until
+# code-signing secrets are configured. When certificates exist, add the
+# signing env vars documented at
+# https://v2.tauri.app/distribute/sign/ (Windows) and
+# https://v2.tauri.app/distribute/sign/macos/ (Apple) to the tauri-action
+# step below.
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    permissions:
+      contents: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: ubuntu-latest
+          - platform: windows-latest
+          - platform: macos-latest
+    runs-on: ${{ matrix.platform }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Linux system dependencies
+        # Keep this package list in sync with ci.yml.
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev \
+            librsvg2-dev patchelf xdg-utils libdbus-1-dev pkg-config
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+      - run: npm ci
+      - uses: tauri-apps/tauri-action@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tagName: ${{ github.ref_name }}
+          releaseName: 'Koinkat ${{ github.ref_name }}'
+          releaseBody: 'See CHANGELOG.md for what changed.'
+          releaseDraft: true
+          prerelease: false

@@ -1,0 +1,3416 @@
+{
+  "_meta": {
+    "description": "Koinkat Enable Banking mock fixtures - 3 months, 3 accounts",
+    "date_from": "2026-01-01",
+    "date_to": "2026-03-31",
+    "generated_for": "Marco Rossi - freelance UX designer, Milan/Copenhagen",
+    "split_notes": {
+      "SPLIT_DINNER_1_PARENT": "Feb dinner €120, 3 friends owe €30 each. 2 repaid (REPAY_1, REPAY_2). Sofia owes €30 → split open.",
+      "SPLIT_AIRBNB_PARENT": "Mar Airbnb €210 for 3 people. Lorenzo repaid €70 (REPAY_1). Emma owes €70 → split open."
+    },
+    "recurring_notes": {
+      "clean_monthly": "SPOTIFY AB (€10.99), VODAFONE ITALIA (€29.99) and NETFLIX repeat on the same day each month. Flag one in Review (month 1) → the next month's charge is recognized SILENTLY and skips the Review queue.",
+      "amount_change": "NETFLIX INTERNATIONAL BV is €13.99 in Jan/Feb but €17.99 in Mar (a ~29% jump). After flagging it, the March charge attaches but surfaces a 'still the same plan?' confirmation in Review.",
+      "irregular_groceries": "COOP ITALIA SPA recurs at irregular gaps and amounts (groceries). It must NEVER be auto-flagged as recurring - no stable cadence, so the matcher leaves it alone unless the user explicitly flags it.",
+      "missed_charge": "The fixtures end in March; with a later 'today' any flagged active series whose next expected charge never arrived surfaces as a quiet 'usually hits around …' notice on Budgets/Dashboard - never a Review row."
+    },
+    "account_uids": {
+      "EUR": "uid-fineco-eur-001",
+      "DKK": "uid-nordea-dkk-001",
+      "GBP": "uid-barclays-gbp-001"
+    }
+  },
+  "sessions": {
+    "fineco_eur": {
+      "session_id": "session-5283aac7-bc0a-6a5d-6e99-6e3ee3b137fc",
+      "aspsp": {
+        "name": "FinecoBank",
+        "country": "IT"
+      },
+      "psu_type": "personal",
+      "access": {
+        "valid_until": "2026-10-08T14:15:22Z"
+      },
+      "accounts": [
+        {
+          "uid": "uid-fineco-eur-001",
+          "account_id": {
+            "iban": "IT60X0542811101000000111222"
+          },
+          "name": "Conto Corrente",
+          "currency": "EUR",
+          "cash_account_type": "CACC",
+          "usage": "PRIV",
+          "identification_hash": "176132ed069f14f140181c6e9a8cfa3c"
+        },
+        {
+          "uid": "uid-fineco-eur-lifecycle",
+          "account_id": {
+            "iban": "IT60X0542811101000000999888"
+          },
+          "name": "Pending Demo (lifecycle)",
+          "currency": "EUR",
+          "cash_account_type": "CACC",
+          "usage": "PRIV",
+          "identification_hash": "9f9f9f9f9f9f9f9f9f9f9f9f9f9f9f9f"
+        }
+      ]
+    },
+    "nordea_dkk": {
+      "session_id": "session-d6016237-ac9e-d156-f63f-ce413a9aca5e",
+      "aspsp": {
+        "name": "Nordea",
+        "country": "DK"
+      },
+      "psu_type": "personal",
+      "access": {
+        "valid_until": "2026-10-08T14:15:22Z"
+      },
+      "accounts": [
+        {
+          "uid": "uid-nordea-dkk-001",
+          "account_id": {
+            "iban": "DK5000400440116243"
+          },
+          "name": "Lønkonto",
+          "currency": "DKK",
+          "cash_account_type": "CACC",
+          "usage": "PRIV",
+          "identification_hash": "f366bad4964db03f93403faddc4ad56b"
+        }
+      ]
+    },
+    "barclays_gbp": {
+      "session_id": "session-ac1aa554-c3c7-5611-ffe3-fa49054f92ff",
+      "aspsp": {
+        "name": "Barclays",
+        "country": "GB"
+      },
+      "psu_type": "personal",
+      "access": {
+        "valid_until": "2026-10-08T14:15:22Z"
+      },
+      "accounts": [
+        {
+          "uid": "uid-barclays-gbp-001",
+          "account_id": {
+            "iban": "GB82BARC20000055779911",
+            "other_id": null
+          },
+          "name": "Barclays Current Account",
+          "currency": "GBP",
+          "cash_account_type": "CACC",
+          "usage": "PRIV",
+          "identification_hash": "0a4c9f7f9384ec2b44feacaed248a9a7"
+        }
+      ]
+    }
+  },
+  "balances": {
+    "uid-fineco-eur-001": {
+      "balances": [
+        {
+          "name": "Booked balance",
+          "balance_amount": {
+            "currency": "EUR",
+            "amount": "6672.23"
+          },
+          "balance_type": "CLBD",
+          "reference_date": "2026-03-31"
+        },
+        {
+          "name": "Available balance",
+          "balance_amount": {
+            "currency": "EUR",
+            "amount": "6672.23"
+          },
+          "balance_type": "XPCD",
+          "reference_date": "2026-03-31"
+        }
+      ]
+    },
+    "uid-fineco-eur-lifecycle": {
+      "balances": [
+        {
+          "name": "Booked balance",
+          "balance_amount": {
+            "currency": "EUR",
+            "amount": "1500.00"
+          },
+          "balance_type": "CLBD",
+          "reference_date": "2026-03-31"
+        },
+        {
+          "name": "Available balance",
+          "balance_amount": {
+            "currency": "EUR",
+            "amount": "1457.50"
+          },
+          "balance_type": "XPCD",
+          "reference_date": "2026-03-31"
+        }
+      ]
+    },
+    "uid-nordea-dkk-001": {
+      "balances": [
+        {
+          "name": "Booked balance",
+          "balance_amount": {
+            "currency": "DKK",
+            "amount": "19995.88"
+          },
+          "balance_type": "CLBD",
+          "reference_date": "2026-03-31"
+        },
+        {
+          "name": "Available balance",
+          "balance_amount": {
+            "currency": "DKK",
+            "amount": "19995.88"
+          },
+          "balance_type": "XPCD",
+          "reference_date": "2026-03-31"
+        }
+      ]
+    },
+    "uid-barclays-gbp-001": {
+      "balances": [
+        {
+          "name": "Booked balance",
+          "balance_amount": {
+            "currency": "GBP",
+            "amount": "15305.92"
+          },
+          "balance_type": "CLBD",
+          "reference_date": "2026-03-31"
+        },
+        {
+          "name": "Available balance",
+          "balance_amount": {
+            "currency": "GBP",
+            "amount": "15305.92"
+          },
+          "balance_type": "XPCD",
+          "reference_date": "2026-03-31"
+        }
+      ]
+    }
+  },
+  "transaction_lifecycle": {
+    "_doc": "Scripted pending->book->vanish demo for uid-fineco-eur-lifecycle. The mock advances `rounds` by one per sync (on the booked fetch). Linking the Fineco bank runs round 0 automatically; each subsequent manual Sync advances one round. Dates use *_day_offset (days before today) resolved against the real clock. Round 0: charge A appears pending. Round 1: A books (same row flips) + B and C appear pending. Round 2: B vanishes without booking (auto-removed) while C books.",
+    "uid-fineco-eur-lifecycle": {
+      "rounds": [
+        {
+          "pending": [
+            {
+              "status": "PDNG",
+              "credit_debit_indicator": "DBIT",
+              "transaction_amount": { "currency": "EUR", "amount": "42.50" },
+              "booking_day_offset": 1,
+              "transaction_day_offset": 2,
+              "creditor": { "name": "Trattoria Lifecycle" },
+              "remittance_information": ["LIFECYCLE A - PENDING DINNER"]
+            }
+          ],
+          "booked": []
+        },
+        {
+          "pending": [
+            {
+              "status": "PDNG",
+              "credit_debit_indicator": "DBIT",
+              "transaction_amount": { "currency": "EUR", "amount": "17.90" },
+              "booking_day_offset": 0,
+              "transaction_day_offset": 1,
+              "creditor": { "name": "Hold Release Co" },
+              "remittance_information": ["LIFECYCLE B - PENDING HOLD (will vanish)"]
+            },
+            {
+              "status": "PDNG",
+              "credit_debit_indicator": "DBIT",
+              "transaction_amount": { "currency": "EUR", "amount": "63.00" },
+              "booking_day_offset": 0,
+              "transaction_day_offset": 1,
+              "creditor": { "name": "Esso Station Lifecycle" },
+              "remittance_information": ["LIFECYCLE C - PENDING FUEL"]
+            }
+          ],
+          "booked": [
+            {
+              "status": "BOOK",
+              "entry_reference": "LC-A-BOOK-0001",
+              "transaction_id": "LC-A-BOOK-0001",
+              "credit_debit_indicator": "DBIT",
+              "transaction_amount": { "currency": "EUR", "amount": "42.50" },
+              "booking_day_offset": 0,
+              "transaction_day_offset": 2,
+              "creditor": { "name": "Trattoria Lifecycle" },
+              "remittance_information": ["LIFECYCLE A - SETTLED DINNER"]
+            }
+          ]
+        },
+        {
+          "pending": [],
+          "booked": [
+            {
+              "status": "BOOK",
+              "entry_reference": "LC-C-BOOK-0003",
+              "transaction_id": "LC-C-BOOK-0003",
+              "credit_debit_indicator": "DBIT",
+              "transaction_amount": { "currency": "EUR", "amount": "63.00" },
+              "booking_day_offset": 0,
+              "transaction_day_offset": 1,
+              "creditor": { "name": "Esso Station Lifecycle" },
+              "remittance_information": ["LIFECYCLE C - SETTLED FUEL"]
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "transactions": {
+    "uid-fineco-eur-001": {
+      "transactions": [
+        {
+          "entry_reference": "1958682846",
+          "transaction_id": "bd9c66b3-ad3c-2d6d-1a3d-1fa7bc8960a9",
+          "status": "BOOK",
+          "transaction_amount": {
+            "currency": "EUR",
+            "amount": "950.00"
+          },
+          "credit_debit_indicator": "DBIT",
+          "booking_date": "2026-01-01",
+          "transaction_date": "2025-12-31",
+          "creditor": {
+            "name": "IMMOBILIARE ROSSI SNC"
+          },
+          "remittance_information": [
+            "AFFITTO 01/2026",
+            "RIF. CONTRATTO 2024/118"
+          ],
+          "merchant_category_code": "6513",
+          "balance_after_transaction": {
+            "currency": "EUR",
+            "amount": "1450.00"
+          }
+        },
+        {
+          "entry_reference": "5231494220",
+          "transaction_id": "19db3ad0-ddd1-dfb2-3b98-2ef8daf61a26",
+          "status": "BOOK",
+          "transaction_amount": {
+            "currency": "EUR",
+            "amount": "96.85"
+          },
+          "credit_debit_indicator": "DBIT",
+          "booking_date": "2026-01-02",
+          "transaction_date": "2026-01-02",
+          "creditor": {
+            "name": "COOP ITALIA SPA"
+          },
+          "remittance_information": [
+            "PAGAMENTO POS",
+            "DATA 02/01/2026"
+          ],
+          "merchant_category_code": "5411",
+          "balance_after_transaction": {
+            "currency": "EUR",
+            "amount": "1353.15"
+          }
+        },
+        {
+          "entry_reference": "2948728483",
+          "transaction_id": "b83cfe0b-e037-e5ed-b8db-0672f42d47cc",
+          "status": "BOOK",
+          "transaction_amount": {
+            "currency": "EUR",
+            "amount": "49.00"
+          },
+          "credit_debit_indicator": "DBIT",
+          "booking_date": "2026-01-02",
+          "transaction_date": "2026-01-02",
+          "creditor": {
+            "name": "VIRGIN ACTIVE ITALIA SPA"
+          },
+          "remittance_information": [
+            "ABBONAMENTO MENSILE PALESTRA"
+          ],
+          "merchant_category_code": "7941",
+          "balance_after_transaction": {
+            "currency": "EUR",
+            "amount": "1304.15"
+          }
+        },
+        {
+          "entry_reference": "4733616459",
+          "transaction_id": "b2b9437a-28df-6ec4-ce4a-2bbdc241330b",
+          "status": "BOOK",
+          "transaction_amount": {
+            "currency": "EUR",
+            "amount": "13.99"
+          },
+          "credit_debit_indicator": "DBIT",
+          "booking_date": "2026-01-03",
+          "transaction_date": "2026-01-03",
+          "creditor": {
+            "name": "NETFLIX INTERNATIONAL BV"
+          },
+          "remittance_information": [
+            "NETFLIX.COM"
+          ],
+          "merchant_category_code": "7994",
+          "balance_after_transaction": {
+            "currency": "EUR",
+            "amount": "1290.16"
+          }
+        },
+        {
+          "entry_reference": "7110082321",
+          "transaction_id": "f50bea63-371e-cd7b-27cd-813047229389",
+          "status": "BOOK",
+          "transaction_amount": {
+            "currency": "EUR",
+            "amount": "10.99"
+          },
+          "credit_debit_indicator": "DBIT",
+          "booking_date": "2026-01-05",
+          "transaction_date": "2026-01-05",
+          "creditor": {
+            "name": "SPOTIFY AB"
+          },
+          "remittance_information": [
+            "SPOTIFY PREMIUM"
+          ],
+          "merchant_category_code": "7929",
+          "balance_after_transaction": {
+            "currency": "EUR",
+            "amount": "1279.17"
+          }
+        },
+        {
+          "entry_reference": "9776552803",
+          "transaction_id": "f91e1d4c-1ff4-9b78-8946-3e85759cde66",
+          "status": "BOOK",
+          "transaction_amount": {
+            "currency": "EUR",
+            "amount": "65.39"
+          },
+          "credit_debit_indicator": "DBIT",
+          "booking_date": "2026-01-06",
+          "transaction_date": "2026-01-06",
+          "creditor": {
+            "name": "ESSELUNGA SPA"
+          },
+          "remittance_information": [
+            "PAGAMENTO POS",
+            "DATA 06/01/2026"
+          ],
+          "merchant_category_code": "5411",
+          "balance_after_transaction": {
+            "currency": "EUR",
+            "amount": "1213.78"
+          }
+        },
+        {
+          "entry_reference": "7483366056",
+          "transaction_id": "dc713d96-0c0f-d195-c17a-f08a1745d6d8",
+          "status": "BOOK",
+          "transaction_amount": {
+            "currency": "EUR",
+            "amount": "29.24"
+          },
+          "credit_debit_indicator": "DBIT",
+          "booking_date": "2026-01-07",
+          "transaction_date": "2026-01-07",
+          "creditor": {
+            "name": "ATM SPA MILANO"
+          },
+          "remittance_information": [
+            "ABBONAMENTO MENSILE TRASPORTO"
+          ],
+          "merchant_category_code": "4111",
+          "balance_after_transaction": {
+            "currency": "EUR",
+            "amount": "1184.54"
+          }
+        },
+        {
+          "entry_reference": "2801823908",
+          "transaction_id": "cf36d58b-4737-8190-96da-1dac72ff5d2a",
+          "status": "BOOK",
+          "transaction_amount": {
+            "currency": "EUR",
+            "amount": "29.99"
+          },
+          "credit_debit_indicator": "DBIT",
+          "booking_date": "2026-01-08",
+          "transaction_date": "2026-01-08",
+          "creditor": {
+            "name": "VODAFONE ITALIA SPA"
+          },
+          "remittance_information": [
+            "CANONE FIBRA OPTICA",
+            "UTENZA 3921234567"
+          ],
+          "merchant_category_code": "4813",
+          "balance_after_transaction": {
+            "currency": "EUR",
+            "amount": "1154.55"
+          }
+        },
+        {
+          "entry_reference": "9639245200",
+          "transaction_id": "e2817efd-ae84-9217-1d53-434bb88139b9",
+          "status": "BOOK",
+          "transaction_amount": {
+            "currency": "EUR",
+            "amount": "1200.00"
+          },
+          "credit_debit_indicator": "CRDT",
+          "booking_date": "2026-01-10",
+          "transaction_date": "2026-01-10",
+          "debtor": {
+            "name": "FUTURO DIGITALE SRL"
+          },
+          "remittance_information": [
+            "FATTURA 2026/001",
+            "PROGETTO BRAND IDENTITY"
+          ],
+          "balance_after_transaction": {
+            "currency": "EUR",
+            "amount": "2354.55"
+          }
+        },
+        {
+          "entry_reference": "8047877267",
+          "transaction_id": "287d06ca-6f4c-c69a-4b22-d3081c8eaee9",
+          "status": "BOOK",
+          "transaction_amount": {
+            "currency": "EUR",
+            "amount": "62.22"
+          },
+          "credit_debit_indicator": "DBIT",
+          "booking_date": "2026-01-13",
+          "transaction_date": "2026-01-13",
+          "creditor": {
+            "name": "AMAZON EU SARL"
+          },
+          "remittance_information": [
+            "AMAZON.IT",
+            "ORDINE #905934"
+          ],
+          "merchant_category_code": "5942",
+          "balance_after_transaction": {
+            "currency": "EUR",
+            "amount": "2292.33"
+          }
+        },
+        {
+          "entry_reference": "4131575764",
+          "transaction_id": "451b4cf3-6123-fdf7-7656-af7229d4beef",
+          "status": "BOOK",
+          "transaction_amount": {
+            "currency": "EUR",
+            "amount": "83.73"
+          },
+          "credit_debit_indicator": "DBIT",
+          "booking_date": "2026-01-15",
+          "transaction_date": "2026-01-15",
+          "creditor": {
+            "name": "ESSELUNGA SPA"
+          },
+          "remittance_information": [
+            "PAGAMENTO POS",
+            "DATA 15/01/2026"
+          ],
+          "merchant_category_code": "5411",
+          "balance_after_transaction": {
+            "currency": "EUR",
+            "amount": "2208.60"
+          }
+        },
+        {
+          "entry_reference": "2812140441",
+          "transaction_id": "3b8faa18-37f8-a88b-17fc-695a07a0ca6e",
+          "status": "BOOK",
+          "transaction_amount": {
+            "currency": "EUR",
+            "amount": "71.83"
+          },
+          "credit_debit_indicator": "DBIT",
+          "booking_date": "2026-01-16",
+          "transaction_date": "2026-01-16",
+          "creditor": {
+            "name": "ENEL ENERGIA SPA"
+          },
+          "remittance_information": [
+            "UTENZA ELETTRICA",
+            "POD IT001E12345678",
+            "SCAD 16/01/2026"
+          ],
+          "merchant_category_code": "4911",
+          "balance_after_transaction": {
+            "currency": "EUR",
+            "amount": "2136.77"
+          }
+        },
+        {
+          "entry_reference": "7805745017",
+          "transaction_id": "5cabcc97-663f-1c97-9562-69f0e5d7b875",
+          "status": "BOOK",
+          "transaction_amount": {
+            "currency": "EUR",
+            "amount": "30.35"
+          },
+          "credit_debit_indicator": "DBIT",
+          "booking_date": "2026-01-16",
+          "transaction_date": "2026-01-16",
+          "creditor": {
+            "name": "GELATERIA ARTIGIANALE SNC"
+          },
+          "remittance_information": [
+            "PAGAMENTO POS"
+          ],
+          "merchant_category_code": "5814",
+          "balance_after_transaction": {
+            "currency": "EUR",
+            "amount": "2106.42"
+          }
+        },
+        {
+          "entry_reference": "3410529190",
+          "transaction_id": "8b8148f6-b38a-088c-a65e-d389b74d0fb1",
+          "status": "BOOK",
+          "transaction_amount": {
+            "currency": "EUR",
+            "amount": "70.89"
+          },
+          "credit_debit_indicator": "DBIT",
+          "booking_date": "2026-01-20",
+          "transaction_date": "2026-01-20",
+          "creditor": {
+            "name": "ENI GAS E LUCE SPA"
+          },
+          "remittance_information": [
+            "FORNITURA GAS NATURALE",
+            "PDR IT00100000000",
+            "SCAD 20/01/2026"
+          ],
+          "merchant_category_code": "4924",
+          "balance_after_transaction": {
+            "currency": "EUR",
+            "amount": "2035.53"
+          }
+        },
+        {
+          "entry_reference": "8995970241",
+          "transaction_id": "11ce5dd2-b45e-d1f0-3139-d32c93cd59bf",
+          "status": "BOOK",
+          "transaction_amount": {
+            "currency": "EUR",
+            "amount": "79.16"
+          },
+          "credit_debit_indicator": "DBIT",
+          "booking_date": "2026-01-20",
+          "transaction_date": "2026-01-20",
+          "creditor": {
+            "name": "ESSELUNGA SPA"
+          },
+          "remittance_information": [
+            "PAGAMENTO POS",
+            "DATA 20/01/2026"
+          ],
+          "merchant_category_code": "5411",
+          "balance_after_transaction": {
+            "currency": "EUR",
+            "amount": "1956.37"
+          }
+        },
+        {
+          "entry_reference": "6649827836",
+          "transaction_id": "e9c349e0-3602-f8ac-10f1-bc81448aaa9e",
+          "status": "BOOK",
+          "transaction_amount": {
+            "currency": "EUR",
+            "amount": "28.77"
+          },
+          "credit_debit_indicator": "DBIT",
+          "booking_date": "2026-01-22",
+          "transaction_date": "2026-01-21",
+          "creditor": {
+            "name": "TRATTORIA LOMBARDIA SRL"
+          },
+          "remittance_information": [
+            "PAGAMENTO POS"
+          ],
+          "merchant_category_code": "5812",
+          "balance_after_transaction": {
+            "currency": "EUR",
+            "amount": "1927.60"
+          }
+        },
+        {
+          "entry_reference": "8877444318",
+          "transaction_id": "35a240ae-5af3-0553-5ec4-2e0829a3b2e9",
+          "status": "BOOK",
+          "transaction_amount": {
+            "currency": "EUR",
+            "amount": "71.27"
+          },
+          "credit_debit_indicator": "DBIT",
+          "booking_date": "2026-01-22",
+          "transaction_date": "2026-01-22",
+          "creditor": {
+            "name": "CARREFOUR ITALIA SRL"
+          },
+          "remittance_information": [
+            "PAGAMENTO POS",
+            "DATA 22/01/2026"
+          ],
+          "merchant_category_code": "5411",
+          "balance_after_transaction": {
+            "currency": "EUR",
+            "amount": "1856.33"
+          }
+        },
+        {
+          "entry_reference": "2970753705",
+          "transaction_id": "beb79919-3f22-faf8-23be-d01d43cf2fde",
+          "status": "BOOK",
+          "transaction_amount": {
+            "currency": "EUR",
+            "amount": "48.81"
+          },
+          "credit_debit_indicator": "DBIT",
+          "booking_date": "2026-01-23",
+          "transaction_date": "2026-01-23",
+          "creditor": {
+            "name": "BAR DELLA PIAZZA SNC"
+          },
+          "remittance_information": [
+            "PAGAMENTO POS"
+          ],
+          "merchant_category_code": "5814",
+          "balance_after_transaction": {
+            "currency": "EUR",
+            "amount": "1807.52"
+          }
+        },
+        {
+          "entry_reference": "3746317213",
+          "transaction_id": "3eb13b90-4668-5257-bdd6-40fb06671ad1",
+          "status": "BOOK",
+          "transaction_amount": {
+            "currency": "EUR",
+            "amount": "2850.00"
+          },
+          "credit_debit_indicator": "CRDT",
+          "booking_date": "2026-01-27",
+          "transaction_date": "2026-01-27",
+          "debtor": {
+            "name": "STUDIO DIGITALE SRL"
+          },
+          "remittance_information": [
+            "STIPENDIO 01/2026",
+            "BONIFICO STIPENDIO"
+          ],
+          "balance_after_transaction": {
+            "currency": "EUR",
+            "amount": "4657.52"
+          }
+        },
+        {
+          "entry_reference": "9573276057",
+          "transaction_id": "8da0365b-f898-97b9-405c-acec877409a9",
+          "status": "BOOK",
+          "transaction_amount": {
+            "currency": "EUR",
+            "amount": "200.00"
+          },
+          "credit_debit_indicator": "DBIT",
+          "booking_date": "2026-01-28",
+          "transaction_date": "2026-01-28",
+          "creditor": {
+            "name": "PRELIEVO ATM FINECO"
+          },
+          "remittance_information": [
+            "PRELIEVO CONTANTE",
+            "ATM 01/2026"
+          ],
+          "merchant_category_code": "6011",
+          "balance_after_transaction": {
+            "currency": "EUR",
+            "amount": "4457.52"
+          }
+        },
+        {
+          "entry_reference": "8217611860",
+          "transaction_id": "61b1cd22-6280-1c45-1043-5a1098ae4334",
+          "status": "BOOK",
+          "transaction_amount": {
+            "currency": "EUR",
+            "amount": "14.85"
+          },
+          "credit_debit_indicator": "DBIT",
+          "booking_date": "2026-01-29",
+          "transaction_date": "2026-01-29",
+          "creditor": {
+            "name": "FARMACIA CENTRALE SRL"
+          },
+          "remittance_information": [
+            "ACQUISTO FARMACI E PRODOTTI"
+          ],
+          "merchant_category_code": "5912",
+          "balance_after_transaction": {
+            "currency": "EUR",
+            "amount": "4442.67"
+          }
+        },
+        {
+          "entry_reference": "3615507143",
+          "transaction_id": "295b4715-c333-e861-5fb8-d16c2720797d",
+          "status": "BOOK",
+          "transaction_amount": {
+            "currency": "EUR",
+            "amount": "950.00"
+          },
+          "credit_debit_indicator": "DBIT",
+          "booking_date": "2026-02-01",
+          "transaction_date": "2026-02-01",
+          "creditor": {
+            "name": "IMMOBILIARE ROSSI SNC"
+          },
+          "remittance_information": [
+            "AFFITTO 02/2026",
+            "RIF. CONTRATTO 2024/118"
+          ],
+          "merchant_category_code": "6513",
+          "balance_after_transaction": {
+            "currency": "EUR",
+            "amount": "3492.67"
+          }
+        },
+        {
+          "entry_reference": "1252860896",
+          "transaction_id": "dc1110c1-080a-adfb-e7c9-9b26114125c6",
+          "status": "BOOK",
+          "transaction_amount": {
+            "currency": "EUR",
+            "amount": "91.63"
+          },
+          "credit_debit_indicator": "DBIT",
+          "booking_date": "2026-02-02",
+          "transaction_date": "2026-02-02",
+          "creditor": {
+            "name": "ESSELUNGA SPA"
+          },
+          "remittance_information": [
+            "PAGAMENTO POS",
+            "DATA 02/02/2026"
+          ],
+          "merchant_category_code": "5411",
+          "balance_after_transaction": {
+            "currency": "EUR",
+            "amount": "3401.04"
+          }
+        },
+        {
+          "entry_reference": "9851745355",
+          "transaction_id": "958ca9ba-0cd6-20c2-0ea2-622b504867ba",
+          "status": "BOOK",
+          "transaction_amount": {
+            "currency": "EUR",
+            "amount": "49.00"
+          },
+          "credit_debit_indicator": "DBIT",
+          "booking_date": "2026-02-02",
+          "transaction_date": "2026-02-02",
+          "creditor": {
+            "name": "VIRGIN ACTIVE ITALIA SPA"
+          },
+          "remittance_information": [
+            "ABBONAMENTO MENSILE PALESTRA"
+          ],
+          "merchant_category_code": "7941",
+          "balance_after_transaction": {
+            "currency": "EUR",
+            "amount": "3352.04"
+          }
+        },
+        {
+          "entry_reference": "4289233844",
+          "transaction_id": "f264accc-79ac-1b1e-a8e5-6e0c20de435d",
+          "status": "BOOK",
+          "transaction_amount": {
+            "currency": "EUR",
+            "amount": "13.99"
+          },
+          "credit_debit_indicator": "DBIT",
+          "booking_date": "2026-02-03",
+          "transaction_date": "2026-02-03",
+          "creditor": {
+            "name": "NETFLIX INTERNATIONAL BV"
+          },
+          "remittance_information": [
+            "NETFLIX.COM"
+          ],
+          "merchant_category_code": "7994",
+          "balance_after_transaction": {
+            "currency": "EUR",
+            "amount": "3338.05"
+          }
+        },
+        {
+          "entry_reference": "1469306919",
+          "transaction_id": "72d8567d-894a-05e4-30b1-87ef310c0c00",
+          "status": "BOOK",
+          "transaction_amount": {
+            "currency": "EUR",
+            "amount": "52.23"
+          },
+          "credit_debit_indicator": "DBIT",
+          "booking_date": "2026-02-03",
+          "transaction_date": "2026-02-03",
+          "creditor": {
+            "name": "PIZZERIA DA MARIO SNC"
+          },
+          "remittance_information": [
+            "PAGAMENTO POS"
+          ],
+          "merchant_category_code": "5812",
+          "balance_after_transaction": {
+            "currency": "EUR",
+            "amount": "3285.82"
+          }
+        },
+        {
+          "entry_reference": "3361388464",
+          "transaction_id": "9b49bd26-df57-c59a-8715-a10343dac043",
+          "status": "BOOK",
+          "transaction_amount": {
+            "currency": "EUR",
+            "amount": "10.99"
+          },
+          "credit_debit_indicator": "DBIT",
+          "booking_date": "2026-02-05",
+          "transaction_date": "2026-02-05",
+          "creditor": {
+            "name": "SPOTIFY AB"
+          },
+          "remittance_information": [
+            "SPOTIFY PREMIUM"
+          ],
+          "merchant_category_code": "7929",
+          "balance_after_transaction": {
+            "currency": "EUR",
+            "amount": "3274.83"
+          }
+        },
+        {
+          "entry_reference": "2986972437",
+          "transaction_id": "71710434-134c-6c92-ec5b-227cdfde4fbf",
+          "status": "BOOK",
+          "transaction_amount": {
+            "currency": "EUR",
+            "amount": "26.62"
+          },
+          "credit_debit_indicator": "DBIT",
+          "booking_date": "2026-02-06",
+          "transaction_date": "2026-02-06",
+          "creditor": {
+            "name": "PIZZERIA DA MARIO SNC"
+          },
+          "remittance_information": [
+            "PAGAMENTO POS"
+          ],
+          "merchant_category_code": "5812",
+          "balance_after_transaction": {
+            "currency": "EUR",
+            "amount": "3248.21"
+          }
+        },
+        {
+          "entry_reference": "5067116918",
+          "transaction_id": "d0e6e660-7c69-dee1-bb5e-4bcf15ed6269",
+          "status": "BOOK",
+          "transaction_amount": {
+            "currency": "EUR",
+            "amount": "29.99"
+          },
+          "credit_debit_indicator": "DBIT",
+          "booking_date": "2026-02-08",
+          "transaction_date": "2026-02-08",
+          "creditor": {
+            "name": "VODAFONE ITALIA SPA"
+          },
+          "remittance_information": [
+            "CANONE FIBRA OPTICA",
+            "UTENZA 3921234567"
+          ],
+          "merchant_category_code": "4813",
+          "balance_after_transaction": {
+            "currency": "EUR",
+            "amount": "3218.22"
+          }
+        },
+        {
+          "entry_reference": "7040502394",
+          "transaction_id": "66aa9385-dd59-ba71-36b8-24817b3a4e3e",
+          "status": "BOOK",
+          "transaction_amount": {
+            "currency": "EUR",
+            "amount": "50.01"
+          },
+          "credit_debit_indicator": "DBIT",
+          "booking_date": "2026-02-09",
+          "transaction_date": "2026-02-09",
+          "creditor": {
+            "name": "ATM SPA MILANO"
+          },
+          "remittance_information": [
+            "ABBONAMENTO MENSILE TRASPORTO"
+          ],
+          "merchant_category_code": "4111",
+          "balance_after_transaction": {
+            "currency": "EUR",
+            "amount": "3168.21"
+          }
+        },
+        {
+          "entry_reference": "2627677155",
+          "transaction_id": "ed3049cf-43e4-58fc-63f2-ae24fc3d3348",
+          "status": "BOOK",
+          "transaction_amount": {
+            "currency": "EUR",
+            "amount": "35.46"
+          },
+          "credit_debit_indicator": "DBIT",
+          "booking_date": "2026-02-09",
+          "transaction_date": "2026-02-09",
+          "creditor": {
+            "name": "FARMACIA CENTRALE SRL"
+          },
+          "remittance_information": [
+            "ACQUISTO FARMACI E PRODOTTI"
+          ],
+          "merchant_category_code": "5912",
+          "balance_after_transaction": {
+            "currency": "EUR",
+            "amount": "3132.75"
+          }
+        },
+        {
+          "entry_reference": "6898796145",
+          "transaction_id": "1efa2197-7394-988f-847f-d9b4e64d1bcb",
+          "status": "BOOK",
+          "transaction_amount": {
+            "currency": "EUR",
+            "amount": "92.04"
+          },
+          "credit_debit_indicator": "DBIT",
+          "booking_date": "2026-02-10",
+          "transaction_date": "2026-02-10",
+          "creditor": {
+            "name": "COOP ITALIA SPA"
+          },
+          "remittance_information": [
+            "PAGAMENTO POS",
+            "DATA 10/02/2026"
+          ],
+          "merchant_category_code": "5411",
+          "balance_after_transaction": {
+            "currency": "EUR",
+            "amount": "3040.71"
+          }
+        },
+        {
+          "entry_reference": "9822598054",
+          "transaction_id": "1931e9ee-a56c-0941-fbf2-4050a748dbcf",
+          "status": "BOOK",
+          "transaction_amount": {
+            "currency": "EUR",
+            "amount": "37.32"
+          },
+          "credit_debit_indicator": "DBIT",
+          "booking_date": "2026-02-11",
+          "transaction_date": "2026-02-11",
+          "creditor": {
+            "name": "PIZZERIA DA MARIO SNC"
+          },
+          "remittance_information": [
+            "PAGAMENTO POS"
+          ],
+          "merchant_category_code": "5812",
+          "balance_after_transaction": {
+            "currency": "EUR",
+            "amount": "3003.39"
+          }
+        },
+        {
+          "entry_reference": "9680276057",
+          "transaction_id": "38602ab6-96a4-02f2-3ae8-cc938dcdcd03",
+          "status": "BOOK",
+          "transaction_amount": {
+            "currency": "EUR",
+            "amount": "40.12"
+          },
+          "credit_debit_indicator": "DBIT",
+          "booking_date": "2026-02-12",
+          "transaction_date": "2026-02-12",
+          "creditor": {
+            "name": "COOP ITALIA SPA"
+          },
+          "remittance_information": [
+            "PAGAMENTO POS",
+            "DATA 12/02/2026"
+          ],
+          "merchant_category_code": "5411",
+          "balance_after_transaction": {
+            "currency": "EUR",
+            "amount": "2963.27"
+          }
+        },
+        {
+          "entry_reference": "1977515194",
+          "transaction_id": "6601ddd0-3170-f437-a8f7-ef5a060edf5b",
+          "status": "BOOK",
+          "transaction_amount": {
+            "currency": "EUR",
+            "amount": "120.00"
+          },
+          "credit_debit_indicator": "DBIT",
+          "booking_date": "2026-02-16",
+          "transaction_date": "2026-02-14",
+          "creditor": {
+            "name": "TRATTORIA DA ENZO SRL"
+          },
+          "remittance_information": [
+            "CENA VALENTINO",
+            "TAVOLO 4 PERSONE",
+            "POS 14/02"
+          ],
+          "merchant_category_code": "5812",
+          "note": "SPLIT_DINNER_1_PARENT",
+          "balance_after_transaction": {
+            "currency": "EUR",
+            "amount": "2843.27"
+          }
+        },
+        {
+          "entry_reference": "4944899549",
+          "transaction_id": "04fc6d82-7d15-4385-52fb-e43b99546eb4",
+          "status": "BOOK",
+          "transaction_amount": {
+            "currency": "EUR",
+            "amount": "109.95"
+          },
+          "credit_debit_indicator": "DBIT",
+          "booking_date": "2026-02-16",
+          "transaction_date": "2026-02-16",
+          "creditor": {
+            "name": "ENEL ENERGIA SPA"
+          },
+          "remittance_information": [
+            "UTENZA ELETTRICA",
+            "POD IT001E12345678",
+            "SCAD 16/02/2026"
+          ],
+          "merchant_category_code": "4911",
+          "balance_after_transaction": {
+            "currency": "EUR",
+            "amount": "2733.32"
+          }
+        },
+        {
+          "entry_reference": "2320763135",
+          "transaction_id": "913e4de2-e0c5-3cb8-3da9-c2a90ed42f1a",
+          "status": "BOOK",
+          "transaction_amount": {
+            "currency": "EUR",
+            "amount": "84.95"
+          },
+          "credit_debit_indicator": "DBIT",
+          "booking_date": "2026-02-18",
+          "transaction_date": "2026-02-18",
+          "creditor": {
+            "name": "ENI GAS E LUCE SPA"
+          },
+          "remittance_information": [
+            "FORNITURA GAS NATURALE",
+            "PDR IT00100000000",
+            "SCAD 18/02/2026"
+          ],
+          "merchant_category_code": "4924",
+          "balance_after_transaction": {
+            "currency": "EUR",
+            "amount": "2648.37"
+          }
+        },
+        {
+          "entry_reference": "6704841644",
+          "transaction_id": "c5f8bc16-f786-0b50-11c5-8ef0dd463c09",
+          "status": "BOOK",
+          "transaction_amount": {
+            "currency": "EUR",
+            "amount": "30.00"
+          },
+          "credit_debit_indicator": "CRDT",
+          "booking_date": "2026-02-18",
+          "transaction_date": "2026-02-18",
+          "debtor": {
+            "name": "GIULIA BIANCHI"
+          },
+          "remittance_information": [
+            "CENA VALENTINO",
+            "PARTE MIA"
+          ],
+          "note": "SPLIT_DINNER_1_REPAY_1",
+          "balance_after_transaction": {
+            "currency": "EUR",
+            "amount": "2678.37"
+          }
+        },
+        {
+          "entry_reference": "3084839399",
+          "transaction_id": "ef7ddc76-b92d-a22b-21df-306f8a0b3c33",
+          "status": "BOOK",
+          "transaction_amount": {
+            "currency": "EUR",
+            "amount": "76.13"
+          },
+          "credit_debit_indicator": "DBIT",
+          "booking_date": "2026-02-19",
+          "transaction_date": "2026-02-19",
+          "creditor": {
+            "name": "ESSELUNGA SPA"
+          },
+          "remittance_information": [
+            "PAGAMENTO POS",
+            "DATA 19/02/2026"
+          ],
+          "merchant_category_code": "5411",
+          "balance_after_transaction": {
+            "currency": "EUR",
+            "amount": "2602.24"
+          }
+        },
+        {
+          "entry_reference": "6520103410",
+          "transaction_id": "fed4057d-bb02-6576-f512-c4c3b253d218",
+          "status": "BOOK",
+          "transaction_amount": {
+            "currency": "EUR",
+            "amount": "200.00"
+          },
+          "credit_debit_indicator": "DBIT",
+          "booking_date": "2026-02-20",
+          "transaction_date": "2026-02-20",
+          "creditor": {
+            "name": "PRELIEVO ATM FINECO"
+          },
+          "remittance_information": [
+            "PRELIEVO CONTANTE",
+            "ATM 02/2026"
+          ],
+          "merchant_category_code": "6011",
+          "balance_after_transaction": {
+            "currency": "EUR",
+            "amount": "2402.24"
+          }
+        },
+        {
+          "entry_reference": "6493800024",
+          "transaction_id": "adf4e62d-6651-529e-8268-690ba43825b5",
+          "status": "BOOK",
+          "transaction_amount": {
+            "currency": "EUR",
+            "amount": "30.00"
+          },
+          "credit_debit_indicator": "CRDT",
+          "booking_date": "2026-02-20",
+          "transaction_date": "2026-02-20",
+          "debtor": {
+            "name": "LUCA FERRARI"
+          },
+          "remittance_information": [
+            "TI RIMBORSO CENA",
+            "GRAZIE MARCO"
+          ],
+          "note": "SPLIT_DINNER_1_REPAY_2",
+          "balance_after_transaction": {
+            "currency": "EUR",
+            "amount": "2432.24"
+          }
+        },
+        {
+          "entry_reference": "4590711152",
+          "transaction_id": "c0e9ab30-ed26-62e9-17e0-11b7f8102383",
+          "status": "BOOK",
+          "transaction_amount": {
+            "currency": "EUR",
+            "amount": "20.38"
+          },
+          "credit_debit_indicator": "DBIT",
+          "booking_date": "2026-02-23",
+          "transaction_date": "2026-02-23",
+          "creditor": {
+            "name": "TRATTORIA LOMBARDIA SRL"
+          },
+          "remittance_information": [
+            "PAGAMENTO POS"
+          ],
+          "merchant_category_code": "5812",
+          "balance_after_transaction": {
+            "currency": "EUR",
+            "amount": "2411.86"
+          }
+        },
+        {
+          "entry_reference": "6110572428",
+          "transaction_id": "944528c0-0ef8-c2d6-f7fd-564637bb3eec",
+          "status": "BOOK",
+          "transaction_amount": {
+            "currency": "EUR",
+            "amount": "77.00"
+          },
+          "credit_debit_indicator": "DBIT",
+          "booking_date": "2026-02-23",
+          "transaction_date": "2026-02-23",
+          "creditor": {
+            "name": "AMAZON EU SARL"
+          },
+          "remittance_information": [
+            "AMAZON.IT",
+            "ORDINE #262316"
+          ],
+          "merchant_category_code": "5942",
+          "balance_after_transaction": {
+            "currency": "EUR",
+            "amount": "2334.86"
+          }
+        },
+        {
+          "entry_reference": "4919706735",
+          "transaction_id": "d777a477-4c66-e0a8-a013-ac6ededa4e16",
+          "status": "BOOK",
+          "transaction_amount": {
+            "currency": "EUR",
+            "amount": "2850.00"
+          },
+          "credit_debit_indicator": "CRDT",
+          "booking_date": "2026-02-27",
+          "transaction_date": "2026-02-27",
+          "debtor": {
+            "name": "STUDIO DIGITALE SRL"
+          },
+          "remittance_information": [
+            "STIPENDIO 02/2026",
+            "BONIFICO STIPENDIO"
+          ],
+          "balance_after_transaction": {
+            "currency": "EUR",
+            "amount": "5184.86"
+          }
+        },
+        {
+          "entry_reference": "8763140509",
+          "transaction_id": "a8b317fa-18d0-752b-1825-bc5430beb45f",
+          "status": "BOOK",
+          "transaction_amount": {
+            "currency": "EUR",
+            "amount": "97.77"
+          },
+          "credit_debit_indicator": "DBIT",
+          "booking_date": "2026-02-27",
+          "transaction_date": "2026-02-27",
+          "creditor": {
+            "name": "COOP ITALIA SPA"
+          },
+          "remittance_information": [
+            "PAGAMENTO POS",
+            "DATA 27/02/2026"
+          ],
+          "merchant_category_code": "5411",
+          "balance_after_transaction": {
+            "currency": "EUR",
+            "amount": "5087.09"
+          }
+        },
+        {
+          "entry_reference": "4656488400",
+          "transaction_id": "acdabacc-1165-e210-9854-3881118a9d29",
+          "status": "BOOK",
+          "transaction_amount": {
+            "currency": "EUR",
+            "amount": "950.00"
+          },
+          "credit_debit_indicator": "DBIT",
+          "booking_date": "2026-03-01",
+          "transaction_date": "2026-03-01",
+          "creditor": {
+            "name": "IMMOBILIARE ROSSI SNC"
+          },
+          "remittance_information": [
+            "AFFITTO 03/2026",
+            "RIF. CONTRATTO 2024/118"
+          ],
+          "merchant_category_code": "6513",
+          "balance_after_transaction": {
+            "currency": "EUR",
+            "amount": "4137.09"
+          }
+        },
+        {
+          "entry_reference": "1955345537",
+          "transaction_id": "598336e3-75d6-6ed4-eb1f-a9f2d10bd1d0",
+          "status": "BOOK",
+          "transaction_amount": {
+            "currency": "EUR",
+            "amount": "49.00"
+          },
+          "credit_debit_indicator": "DBIT",
+          "booking_date": "2026-03-02",
+          "transaction_date": "2026-03-02",
+          "creditor": {
+            "name": "VIRGIN ACTIVE ITALIA SPA"
+          },
+          "remittance_information": [
+            "ABBONAMENTO MENSILE PALESTRA"
+          ],
+          "merchant_category_code": "7941",
+          "balance_after_transaction": {
+            "currency": "EUR",
+            "amount": "4088.09"
+          }
+        },
+        {
+          "entry_reference": "6583444930",
+          "transaction_id": "ef8c485b-c07a-30f2-edd4-253b50f0fd0a",
+          "status": "BOOK",
+          "transaction_amount": {
+            "currency": "EUR",
+            "amount": "17.99"
+          },
+          "credit_debit_indicator": "DBIT",
+          "booking_date": "2026-03-03",
+          "transaction_date": "2026-03-03",
+          "creditor": {
+            "name": "NETFLIX INTERNATIONAL BV"
+          },
+          "remittance_information": [
+            "NETFLIX.COM"
+          ],
+          "merchant_category_code": "7994",
+          "balance_after_transaction": {
+            "currency": "EUR",
+            "amount": "4070.10"
+          }
+        },
+        {
+          "entry_reference": "6344160868",
+          "transaction_id": "d5704f32-702c-dd20-2862-18b848f4ef12",
+          "status": "BOOK",
+          "transaction_amount": {
+            "currency": "EUR",
+            "amount": "75.47"
+          },
+          "credit_debit_indicator": "DBIT",
+          "booking_date": "2026-03-04",
+          "transaction_date": "2026-03-04",
+          "creditor": {
+            "name": "COOP ITALIA SPA"
+          },
+          "remittance_information": [
+            "PAGAMENTO POS",
+            "DATA 04/03/2026"
+          ],
+          "merchant_category_code": "5411",
+          "balance_after_transaction": {
+            "currency": "EUR",
+            "amount": "3998.63"
+          }
+        },
+        {
+          "entry_reference": "1311570307",
+          "transaction_id": "902059e4-ff9a-b5c2-9f04-4aed75523327",
+          "status": "BOOK",
+          "transaction_amount": {
+            "currency": "EUR",
+            "amount": "10.99"
+          },
+          "credit_debit_indicator": "DBIT",
+          "booking_date": "2026-03-05",
+          "transaction_date": "2026-03-05",
+          "creditor": {
+            "name": "SPOTIFY AB"
+          },
+          "remittance_information": [
+            "SPOTIFY PREMIUM"
+          ],
+          "merchant_category_code": "7929",
+          "balance_after_transaction": {
+            "currency": "EUR",
+            "amount": "3987.64"
+          }
+        },
+        {
+          "entry_reference": "4821286999",
+          "transaction_id": "45b89cd9-27cb-6f2a-8da0-1097be0f051b",
+          "status": "BOOK",
+          "transaction_amount": {
+            "currency": "EUR",
+            "amount": "56.16"
+          },
+          "credit_debit_indicator": "DBIT",
+          "booking_date": "2026-03-06",
+          "transaction_date": "2026-03-06",
+          "creditor": {
+            "name": "COOP ITALIA SPA"
+          },
+          "remittance_information": [
+            "PAGAMENTO POS",
+            "DATA 06/03/2026"
+          ],
+          "merchant_category_code": "5411",
+          "balance_after_transaction": {
+            "currency": "EUR",
+            "amount": "3931.48"
+          }
+        },
+        {
+          "entry_reference": "8370987661",
+          "transaction_id": "21813d25-6552-38a6-43ff-50113d1a85dd",
+          "status": "BOOK",
+          "transaction_amount": {
+            "currency": "EUR",
+            "amount": "29.99"
+          },
+          "credit_debit_indicator": "DBIT",
+          "booking_date": "2026-03-08",
+          "transaction_date": "2026-03-08",
+          "creditor": {
+            "name": "VODAFONE ITALIA SPA"
+          },
+          "remittance_information": [
+            "CANONE FIBRA OPTICA",
+            "UTENZA 3921234567"
+          ],
+          "merchant_category_code": "4813",
+          "balance_after_transaction": {
+            "currency": "EUR",
+            "amount": "3901.49"
+          }
+        },
+        {
+          "entry_reference": "7597996327",
+          "transaction_id": "e08596db-1d87-0966-0710-d430f071d879",
+          "status": "BOOK",
+          "transaction_amount": {
+            "currency": "EUR",
+            "amount": "210.00"
+          },
+          "credit_debit_indicator": "DBIT",
+          "booking_date": "2026-03-09",
+          "transaction_date": "2026-03-06",
+          "creditor": {
+            "name": "AIRBNB IRELAND UC"
+          },
+          "remittance_information": [
+            "AIRBNB LAGO DI COMO",
+            "8-10 MAR 2026",
+            "CONF HMAB9Q2D"
+          ],
+          "merchant_category_code": "7011",
+          "note": "SPLIT_AIRBNB_PARENT",
+          "balance_after_transaction": {
+            "currency": "EUR",
+            "amount": "3691.49"
+          }
+        },
+        {
+          "entry_reference": "4482238042",
+          "transaction_id": "2dea9493-0658-663a-698c-206fe1a47e10",
+          "status": "BOOK",
+          "transaction_amount": {
+            "currency": "EUR",
+            "amount": "200.00"
+          },
+          "credit_debit_indicator": "DBIT",
+          "booking_date": "2026-03-09",
+          "transaction_date": "2026-03-09",
+          "creditor": {
+            "name": "PRELIEVO ATM FINECO"
+          },
+          "remittance_information": [
+            "PRELIEVO CONTANTE",
+            "ATM 03/2026"
+          ],
+          "merchant_category_code": "6011",
+          "balance_after_transaction": {
+            "currency": "EUR",
+            "amount": "3491.49"
+          }
+        },
+        {
+          "entry_reference": "9462806178",
+          "transaction_id": "fbc9f87a-f668-a617-94a1-875d2db69edb",
+          "status": "BOOK",
+          "transaction_amount": {
+            "currency": "EUR",
+            "amount": "70.00"
+          },
+          "credit_debit_indicator": "CRDT",
+          "booking_date": "2026-03-09",
+          "transaction_date": "2026-03-09",
+          "debtor": {
+            "name": "LORENZO CONTI"
+          },
+          "remittance_information": [
+            "AIRBNB COMO",
+            "QUOTA PARTE"
+          ],
+          "note": "SPLIT_AIRBNB_REPAY_1",
+          "balance_after_transaction": {
+            "currency": "EUR",
+            "amount": "3561.49"
+          }
+        },
+        {
+          "entry_reference": "6618926823",
+          "transaction_id": "f8e1daa7-cbce-abde-eede-db07e623a689",
+          "status": "BOOK",
+          "transaction_amount": {
+            "currency": "EUR",
+            "amount": "23.99"
+          },
+          "credit_debit_indicator": "DBIT",
+          "booking_date": "2026-03-10",
+          "transaction_date": "2026-03-10",
+          "creditor": {
+            "name": "PIZZERIA DA MARIO SNC"
+          },
+          "remittance_information": [
+            "PAGAMENTO POS"
+          ],
+          "merchant_category_code": "5812",
+          "balance_after_transaction": {
+            "currency": "EUR",
+            "amount": "3537.50"
+          }
+        },
+        {
+          "entry_reference": "5759234471",
+          "transaction_id": "787f2425-dbcc-c477-09e9-db0adf465290",
+          "status": "BOOK",
+          "transaction_amount": {
+            "currency": "EUR",
+            "amount": "78.64"
+          },
+          "credit_debit_indicator": "DBIT",
+          "booking_date": "2026-03-12",
+          "transaction_date": "2026-03-12",
+          "creditor": {
+            "name": "AMAZON EU SARL"
+          },
+          "remittance_information": [
+            "AMAZON.IT",
+            "ORDINE #266931"
+          ],
+          "merchant_category_code": "5942",
+          "balance_after_transaction": {
+            "currency": "EUR",
+            "amount": "3458.86"
+          }
+        },
+        {
+          "entry_reference": "3446737272",
+          "transaction_id": "9e8fc965-0a2c-827e-9832-685694340a03",
+          "status": "BOOK",
+          "transaction_amount": {
+            "currency": "EUR",
+            "amount": "85.77"
+          },
+          "credit_debit_indicator": "DBIT",
+          "booking_date": "2026-03-14",
+          "transaction_date": "2026-03-14",
+          "creditor": {
+            "name": "ENEL ENERGIA SPA"
+          },
+          "remittance_information": [
+            "UTENZA ELETTRICA",
+            "POD IT001E12345678",
+            "SCAD 14/03/2026"
+          ],
+          "merchant_category_code": "4911",
+          "balance_after_transaction": {
+            "currency": "EUR",
+            "amount": "3373.09"
+          }
+        },
+        {
+          "entry_reference": "7393195616",
+          "transaction_id": "0d01280f-d89a-40c0-e87d-1c78e7c421c7",
+          "status": "BOOK",
+          "transaction_amount": {
+            "currency": "EUR",
+            "amount": "92.41"
+          },
+          "credit_debit_indicator": "DBIT",
+          "booking_date": "2026-03-17",
+          "transaction_date": "2026-03-17",
+          "creditor": {
+            "name": "COOP ITALIA SPA"
+          },
+          "remittance_information": [
+            "PAGAMENTO POS",
+            "DATA 17/03/2026"
+          ],
+          "merchant_category_code": "5411",
+          "balance_after_transaction": {
+            "currency": "EUR",
+            "amount": "3280.68"
+          }
+        },
+        {
+          "entry_reference": "5736462531",
+          "transaction_id": "dfed2c43-e256-a6dc-8f54-86b7c7b5b2bc",
+          "status": "BOOK",
+          "transaction_amount": {
+            "currency": "EUR",
+            "amount": "50.40"
+          },
+          "credit_debit_indicator": "DBIT",
+          "booking_date": "2026-03-17",
+          "transaction_date": "2026-03-17",
+          "creditor": {
+            "name": "ATM SPA MILANO"
+          },
+          "remittance_information": [
+            "ABBONAMENTO MENSILE TRASPORTO"
+          ],
+          "merchant_category_code": "4111",
+          "balance_after_transaction": {
+            "currency": "EUR",
+            "amount": "3230.28"
+          }
+        },
+        {
+          "entry_reference": "7540301973",
+          "transaction_id": "ab73295b-344a-54b8-42c1-8a62ef48e8d5",
+          "status": "BOOK",
+          "transaction_amount": {
+            "currency": "EUR",
+            "amount": "63.03"
+          },
+          "credit_debit_indicator": "DBIT",
+          "booking_date": "2026-03-18",
+          "transaction_date": "2026-03-18",
+          "creditor": {
+            "name": "ENI GAS E LUCE SPA"
+          },
+          "remittance_information": [
+            "FORNITURA GAS NATURALE",
+            "PDR IT00100000000",
+            "SCAD 18/03/2026"
+          ],
+          "merchant_category_code": "4924",
+          "balance_after_transaction": {
+            "currency": "EUR",
+            "amount": "3167.25"
+          }
+        },
+        {
+          "entry_reference": "9292791081",
+          "transaction_id": "bc2cbb0d-dd33-4cc7-ab7f-089acd5f4822",
+          "status": "BOOK",
+          "transaction_amount": {
+            "currency": "EUR",
+            "amount": "800.00"
+          },
+          "credit_debit_indicator": "CRDT",
+          "booking_date": "2026-03-22",
+          "transaction_date": "2026-03-22",
+          "debtor": {
+            "name": "ARREDO ITALIA SPA"
+          },
+          "remittance_information": [
+            "FATTURA 2026/007",
+            "CONSULENZA UX MARZO"
+          ],
+          "balance_after_transaction": {
+            "currency": "EUR",
+            "amount": "3967.25"
+          }
+        },
+        {
+          "entry_reference": "9503167458",
+          "transaction_id": "8d3aed99-711c-21c9-bdc1-4f1f295d6fbf",
+          "status": "BOOK",
+          "transaction_amount": {
+            "currency": "EUR",
+            "amount": "20.07"
+          },
+          "credit_debit_indicator": "DBIT",
+          "booking_date": "2026-03-24",
+          "transaction_date": "2026-03-24",
+          "creditor": {
+            "name": "RISTORANTE IL NAVIGLIO SRL"
+          },
+          "remittance_information": [
+            "PAGAMENTO POS"
+          ],
+          "merchant_category_code": "5812",
+          "balance_after_transaction": {
+            "currency": "EUR",
+            "amount": "3947.18"
+          }
+        },
+        {
+          "entry_reference": "4882343658",
+          "transaction_id": "5e84f058-d5a8-04eb-0939-23de8babce3b",
+          "status": "BOOK",
+          "transaction_amount": {
+            "currency": "EUR",
+            "amount": "18.45"
+          },
+          "credit_debit_indicator": "DBIT",
+          "booking_date": "2026-03-25",
+          "transaction_date": "2026-03-25",
+          "creditor": {
+            "name": "GELATERIA ARTIGIANALE SNC"
+          },
+          "remittance_information": [
+            "PAGAMENTO POS"
+          ],
+          "merchant_category_code": "5814",
+          "balance_after_transaction": {
+            "currency": "EUR",
+            "amount": "3928.73"
+          }
+        },
+        {
+          "entry_reference": "9623534576",
+          "transaction_id": "ee87905e-4ca4-15ea-8dfa-6a56d12dbc9a",
+          "status": "BOOK",
+          "transaction_amount": {
+            "currency": "EUR",
+            "amount": "83.93"
+          },
+          "credit_debit_indicator": "DBIT",
+          "booking_date": "2026-03-26",
+          "transaction_date": "2026-03-26",
+          "creditor": {
+            "name": "CARREFOUR ITALIA SRL"
+          },
+          "remittance_information": [
+            "PAGAMENTO POS",
+            "DATA 26/03/2026"
+          ],
+          "merchant_category_code": "5411",
+          "balance_after_transaction": {
+            "currency": "EUR",
+            "amount": "3844.80"
+          }
+        },
+        {
+          "entry_reference": "3281169403",
+          "transaction_id": "14822f53-8201-0c62-f5f5-9b220e8fa8e0",
+          "status": "BOOK",
+          "transaction_amount": {
+            "currency": "EUR",
+            "amount": "2850.00"
+          },
+          "credit_debit_indicator": "CRDT",
+          "booking_date": "2026-03-27",
+          "transaction_date": "2026-03-27",
+          "debtor": {
+            "name": "STUDIO DIGITALE SRL"
+          },
+          "remittance_information": [
+            "STIPENDIO 03/2026",
+            "BONIFICO STIPENDIO"
+          ],
+          "balance_after_transaction": {
+            "currency": "EUR",
+            "amount": "6694.80"
+          }
+        },
+        {
+          "entry_reference": "4218981849",
+          "transaction_id": "dd56cc94-3c9a-d14c-ee0c-aeb5ecfedb99",
+          "status": "BOOK",
+          "transaction_amount": {
+            "currency": "EUR",
+            "amount": "22.57"
+          },
+          "credit_debit_indicator": "DBIT",
+          "booking_date": "2026-03-27",
+          "transaction_date": "2026-03-27",
+          "creditor": {
+            "name": "FARMACIA CENTRALE SRL"
+          },
+          "remittance_information": [
+            "ACQUISTO FARMACI E PRODOTTI"
+          ],
+          "merchant_category_code": "5912",
+          "balance_after_transaction": {
+            "currency": "EUR",
+            "amount": "6672.23"
+          }
+        }
+      ],
+      "continuation_key": null
+    },
+    "uid-nordea-dkk-001": {
+      "transactions": [
+        {
+          "entry_reference": "8672650595",
+          "transaction_id": "82ec9f2d-fbf6-e16f-9b30-80d56fb78271",
+          "status": "BOOK",
+          "transaction_amount": {
+            "currency": "DKK",
+            "amount": "9800.00"
+          },
+          "credit_debit_indicator": "DBIT",
+          "booking_date": "2026-01-01",
+          "transaction_date": "2026-01-01",
+          "creditor": {
+            "name": "PETER NIELSEN"
+          },
+          "remittance_information": [
+            "HUSLEJE JANUARY 2026",
+            "VESTERBRO 12, 1TV, 1800 KBH V"
+          ],
+          "merchant_category_code": "6513",
+          "balance_after_transaction": {
+            "currency": "DKK",
+            "amount": "2200.00"
+          }
+        },
+        {
+          "entry_reference": "1198486416",
+          "transaction_id": "d98868dd-9c7c-7377-79a2-8903fbe33b24",
+          "status": "BOOK",
+          "transaction_amount": {
+            "currency": "DKK",
+            "amount": "103.92"
+          },
+          "credit_debit_indicator": "DBIT",
+          "booking_date": "2026-01-01",
+          "transaction_date": "2026-01-01",
+          "creditor": {
+            "name": "REJSEKORT AS"
+          },
+          "remittance_information": [
+            "REJSEKORT OPTANKNING"
+          ],
+          "merchant_category_code": "4111",
+          "balance_after_transaction": {
+            "currency": "DKK",
+            "amount": "2096.08"
+          }
+        },
+        {
+          "entry_reference": "3880327491",
+          "transaction_id": "f2e9702d-11e9-cdaa-6e69-81a35d3d9e56",
+          "status": "BOOK",
+          "transaction_amount": {
+            "currency": "DKK",
+            "amount": "180.41"
+          },
+          "credit_debit_indicator": "DBIT",
+          "booking_date": "2026-01-02",
+          "transaction_date": "2026-01-02",
+          "creditor": {
+            "name": "REMA 1000 AS"
+          },
+          "remittance_information": [
+            "DANKORTKØB"
+          ],
+          "merchant_category_code": "5411",
+          "balance_after_transaction": {
+            "currency": "DKK",
+            "amount": "1915.67"
+          }
+        },
+        {
+          "entry_reference": "5791662169",
+          "transaction_id": "41357e8c-30a9-00ad-939b-462de645f129",
+          "status": "BOOK",
+          "transaction_amount": {
+            "currency": "DKK",
+            "amount": "299.00"
+          },
+          "credit_debit_indicator": "DBIT",
+          "booking_date": "2026-01-06",
+          "transaction_date": "2026-01-06",
+          "creditor": {
+            "name": "STOFA AS"
+          },
+          "remittance_information": [
+            "BREDBÅND ABONNEMENT",
+            "KUNDEID 44812230"
+          ],
+          "merchant_category_code": "4813",
+          "balance_after_transaction": {
+            "currency": "DKK",
+            "amount": "1616.67"
+          }
+        },
+        {
+          "entry_reference": "1164313410",
+          "transaction_id": "ba81edd9-587e-f344-6f3f-920c98b8e4cc",
+          "status": "BOOK",
+          "transaction_amount": {
+            "currency": "DKK",
+            "amount": "18500.00"
+          },
+          "credit_debit_indicator": "CRDT",
+          "booking_date": "2026-01-12",
+          "transaction_date": "2026-01-12",
+          "debtor": {
+            "name": "NORDIC PRODUCT STUDIO APS"
+          },
+          "remittance_information": [
+            "INVOICE 2026-DK-001",
+            "UX DESIGN RETAINER"
+          ],
+          "balance_after_transaction": {
+            "currency": "DKK",
+            "amount": "20116.67"
+          }
+        },
+        {
+          "entry_reference": "4160930353",
+          "transaction_id": "83f4a9a9-48a6-39d0-15b5-2908a8aa7158",
+          "status": "BOOK",
+          "transaction_amount": {
+            "currency": "DKK",
+            "amount": "326.37"
+          },
+          "credit_debit_indicator": "DBIT",
+          "booking_date": "2026-01-12",
+          "transaction_date": "2026-01-12",
+          "creditor": {
+            "name": "PAPIRØEN STREET FOOD APS"
+          },
+          "remittance_information": [
+            "DANKORTKØB"
+          ],
+          "merchant_category_code": "5812",
+          "balance_after_transaction": {
+            "currency": "DKK",
+            "amount": "19790.30"
+          }
+        },
+        {
+          "entry_reference": "8106906538",
+          "transaction_id": "acf5e81e-7131-6269-7118-e36477097749",
+          "status": "BOOK",
+          "transaction_amount": {
+            "currency": "DKK",
+            "amount": "231.77"
+          },
+          "credit_debit_indicator": "DBIT",
+          "booking_date": "2026-01-15",
+          "transaction_date": "2026-01-15",
+          "creditor": {
+            "name": "RESTAURANT SCHØNNEMANN AS"
+          },
+          "remittance_information": [
+            "DANKORTKØB"
+          ],
+          "merchant_category_code": "5812",
+          "balance_after_transaction": {
+            "currency": "DKK",
+            "amount": "19558.53"
+          }
+        },
+        {
+          "entry_reference": "9160639027",
+          "transaction_id": "688c7015-aab9-7e49-4f2d-479681d2c7de",
+          "status": "BOOK",
+          "transaction_amount": {
+            "currency": "DKK",
+            "amount": "339.21"
+          },
+          "credit_debit_indicator": "DBIT",
+          "booking_date": "2026-01-16",
+          "transaction_date": "2026-01-16",
+          "creditor": {
+            "name": "IRMA AS"
+          },
+          "remittance_information": [
+            "DANKORTKØB"
+          ],
+          "merchant_category_code": "5411",
+          "balance_after_transaction": {
+            "currency": "DKK",
+            "amount": "19219.32"
+          }
+        },
+        {
+          "entry_reference": "3381183483",
+          "transaction_id": "f0bbac67-aa38-d0a1-6ba2-5efe311c6eb6",
+          "status": "BOOK",
+          "transaction_amount": {
+            "currency": "DKK",
+            "amount": "347.33"
+          },
+          "credit_debit_indicator": "DBIT",
+          "booking_date": "2026-01-19",
+          "transaction_date": "2026-01-19",
+          "creditor": {
+            "name": "REMA 1000 AS"
+          },
+          "remittance_information": [
+            "DANKORTKØB"
+          ],
+          "merchant_category_code": "5411",
+          "balance_after_transaction": {
+            "currency": "DKK",
+            "amount": "18871.99"
+          }
+        },
+        {
+          "entry_reference": "7519578899",
+          "transaction_id": "eadf5085-3fcb-7546-8eb2-25790cdb1ca4",
+          "status": "BOOK",
+          "transaction_amount": {
+            "currency": "DKK",
+            "amount": "731.28"
+          },
+          "credit_debit_indicator": "DBIT",
+          "booking_date": "2026-01-20",
+          "transaction_date": "2026-01-20",
+          "creditor": {
+            "name": "ZALANDO SE"
+          },
+          "remittance_information": [
+            "ZALANDO.DK",
+            "ORD-38683"
+          ],
+          "merchant_category_code": "5651",
+          "balance_after_transaction": {
+            "currency": "DKK",
+            "amount": "18140.71"
+          }
+        },
+        {
+          "entry_reference": "8285786023",
+          "transaction_id": "25c73c44-3e75-c3b4-664f-a6637e8f8095",
+          "status": "BOOK",
+          "transaction_amount": {
+            "currency": "DKK",
+            "amount": "202.96"
+          },
+          "credit_debit_indicator": "DBIT",
+          "booking_date": "2026-01-21",
+          "transaction_date": "2026-01-21",
+          "creditor": {
+            "name": "APOTEK VESTERBRO APS"
+          },
+          "remittance_information": [
+            "APOTEKSVARE KØB"
+          ],
+          "merchant_category_code": "5912",
+          "balance_after_transaction": {
+            "currency": "DKK",
+            "amount": "17937.75"
+          }
+        },
+        {
+          "entry_reference": "6587537178",
+          "transaction_id": "4dcabfb7-001a-9a8b-d56f-03508c459ce2",
+          "status": "BOOK",
+          "transaction_amount": {
+            "currency": "DKK",
+            "amount": "327.72"
+          },
+          "credit_debit_indicator": "DBIT",
+          "booking_date": "2026-01-22",
+          "transaction_date": "2026-01-22",
+          "creditor": {
+            "name": "FØTEX AS"
+          },
+          "remittance_information": [
+            "DANKORTKØB"
+          ],
+          "merchant_category_code": "5411",
+          "balance_after_transaction": {
+            "currency": "DKK",
+            "amount": "17610.03"
+          }
+        },
+        {
+          "entry_reference": "4226113732",
+          "transaction_id": "ce7ae7f6-3982-0cff-4f77-a665ac3c5640",
+          "status": "BOOK",
+          "transaction_amount": {
+            "currency": "DKK",
+            "amount": "332.79"
+          },
+          "credit_debit_indicator": "DBIT",
+          "booking_date": "2026-01-23",
+          "transaction_date": "2026-01-23",
+          "creditor": {
+            "name": "CAFÉ NØRREPORT APS"
+          },
+          "remittance_information": [
+            "DANKORTKØB"
+          ],
+          "merchant_category_code": "5814",
+          "balance_after_transaction": {
+            "currency": "DKK",
+            "amount": "17277.24"
+          }
+        },
+        {
+          "entry_reference": "3953315788",
+          "transaction_id": "c521bf2d-dc45-d539-c03f-3538e4855aa1",
+          "status": "BOOK",
+          "transaction_amount": {
+            "currency": "DKK",
+            "amount": "1000.00"
+          },
+          "credit_debit_indicator": "DBIT",
+          "booking_date": "2026-01-29",
+          "transaction_date": "2026-01-29",
+          "creditor": {
+            "name": "NORDEA ATM VESTERBROGADE"
+          },
+          "remittance_information": [
+            "KONTANTHÆVNING ATM"
+          ],
+          "merchant_category_code": "6011",
+          "balance_after_transaction": {
+            "currency": "DKK",
+            "amount": "16277.24"
+          }
+        },
+        {
+          "entry_reference": "7852415525",
+          "transaction_id": "714c7df4-e434-7d51-c158-1092f335cba3",
+          "status": "BOOK",
+          "transaction_amount": {
+            "currency": "DKK",
+            "amount": "9800.00"
+          },
+          "credit_debit_indicator": "DBIT",
+          "booking_date": "2026-02-01",
+          "transaction_date": "2026-02-01",
+          "creditor": {
+            "name": "PETER NIELSEN"
+          },
+          "remittance_information": [
+            "HUSLEJE FEBRUARY 2026",
+            "VESTERBRO 12, 1TV, 1800 KBH V"
+          ],
+          "merchant_category_code": "6513",
+          "balance_after_transaction": {
+            "currency": "DKK",
+            "amount": "6477.24"
+          }
+        },
+        {
+          "entry_reference": "1116402431",
+          "transaction_id": "dde9f863-22bd-3388-6db9-9102a48b3dbe",
+          "status": "BOOK",
+          "transaction_amount": {
+            "currency": "DKK",
+            "amount": "207.39"
+          },
+          "credit_debit_indicator": "DBIT",
+          "booking_date": "2026-02-02",
+          "transaction_date": "2026-02-02",
+          "creditor": {
+            "name": "PAPIRØEN STREET FOOD APS"
+          },
+          "remittance_information": [
+            "DANKORTKØB"
+          ],
+          "merchant_category_code": "5812",
+          "balance_after_transaction": {
+            "currency": "DKK",
+            "amount": "6269.85"
+          }
+        },
+        {
+          "entry_reference": "6412330148",
+          "transaction_id": "53ac2ab9-7467-2cd9-362f-5e5c53cd6268",
+          "status": "BOOK",
+          "transaction_amount": {
+            "currency": "DKK",
+            "amount": "128.86"
+          },
+          "credit_debit_indicator": "DBIT",
+          "booking_date": "2026-02-03",
+          "transaction_date": "2026-02-03",
+          "creditor": {
+            "name": "REJSEKORT AS"
+          },
+          "remittance_information": [
+            "REJSEKORT OPTANKNING"
+          ],
+          "merchant_category_code": "4111",
+          "balance_after_transaction": {
+            "currency": "DKK",
+            "amount": "6140.99"
+          }
+        },
+        {
+          "entry_reference": "5078551333",
+          "transaction_id": "9f0fda8d-0537-9ff6-d6d7-b3b833094d35",
+          "status": "BOOK",
+          "transaction_amount": {
+            "currency": "DKK",
+            "amount": "774.37"
+          },
+          "credit_debit_indicator": "DBIT",
+          "booking_date": "2026-02-03",
+          "transaction_date": "2026-02-03",
+          "creditor": {
+            "name": "ZALANDO SE"
+          },
+          "remittance_information": [
+            "ZALANDO.DK",
+            "ORD-14067"
+          ],
+          "merchant_category_code": "5651",
+          "balance_after_transaction": {
+            "currency": "DKK",
+            "amount": "5366.62"
+          }
+        },
+        {
+          "entry_reference": "7462972995",
+          "transaction_id": "722764e6-8c41-561b-e827-a1b9d4a02e53",
+          "status": "BOOK",
+          "transaction_amount": {
+            "currency": "DKK",
+            "amount": "299.00"
+          },
+          "credit_debit_indicator": "DBIT",
+          "booking_date": "2026-02-06",
+          "transaction_date": "2026-02-06",
+          "creditor": {
+            "name": "STOFA AS"
+          },
+          "remittance_information": [
+            "BREDBÅND ABONNEMENT",
+            "KUNDEID 44812230"
+          ],
+          "merchant_category_code": "4813",
+          "balance_after_transaction": {
+            "currency": "DKK",
+            "amount": "5067.62"
+          }
+        },
+        {
+          "entry_reference": "7045593274",
+          "transaction_id": "0ff0a55c-6a70-2e2f-7746-d0ba8ae8905b",
+          "status": "BOOK",
+          "transaction_amount": {
+            "currency": "DKK",
+            "amount": "195.41"
+          },
+          "credit_debit_indicator": "DBIT",
+          "booking_date": "2026-02-06",
+          "transaction_date": "2026-02-06",
+          "creditor": {
+            "name": "FØTEX AS"
+          },
+          "remittance_information": [
+            "DANKORTKØB"
+          ],
+          "merchant_category_code": "5411",
+          "balance_after_transaction": {
+            "currency": "DKK",
+            "amount": "4872.21"
+          }
+        },
+        {
+          "entry_reference": "4228856718",
+          "transaction_id": "c40c5d91-46fd-e062-a33d-c7afd701410d",
+          "status": "BOOK",
+          "transaction_amount": {
+            "currency": "DKK",
+            "amount": "288.02"
+          },
+          "credit_debit_indicator": "DBIT",
+          "booking_date": "2026-02-09",
+          "transaction_date": "2026-02-09",
+          "creditor": {
+            "name": "REMA 1000 AS"
+          },
+          "remittance_information": [
+            "DANKORTKØB"
+          ],
+          "merchant_category_code": "5411",
+          "balance_after_transaction": {
+            "currency": "DKK",
+            "amount": "4584.19"
+          }
+        },
+        {
+          "entry_reference": "2960488639",
+          "transaction_id": "87f8424d-aae6-5fc1-76f2-dbfecd29a36f",
+          "status": "BOOK",
+          "transaction_amount": {
+            "currency": "DKK",
+            "amount": "18500.00"
+          },
+          "credit_debit_indicator": "CRDT",
+          "booking_date": "2026-02-10",
+          "transaction_date": "2026-02-10",
+          "debtor": {
+            "name": "NORDIC PRODUCT STUDIO APS"
+          },
+          "remittance_information": [
+            "INVOICE 2026-DK-002",
+            "UX DESIGN RETAINER"
+          ],
+          "balance_after_transaction": {
+            "currency": "DKK",
+            "amount": "23084.19"
+          }
+        },
+        {
+          "entry_reference": "6242173772",
+          "transaction_id": "7c5308bf-6f92-f25e-45df-16b6382c043f",
+          "status": "BOOK",
+          "transaction_amount": {
+            "currency": "DKK",
+            "amount": "341.90"
+          },
+          "credit_debit_indicator": "DBIT",
+          "booking_date": "2026-02-10",
+          "transaction_date": "2026-02-10",
+          "creditor": {
+            "name": "PAPIRØEN STREET FOOD APS"
+          },
+          "remittance_information": [
+            "DANKORTKØB"
+          ],
+          "merchant_category_code": "5812",
+          "balance_after_transaction": {
+            "currency": "DKK",
+            "amount": "22742.29"
+          }
+        },
+        {
+          "entry_reference": "7767538527",
+          "transaction_id": "5a0cdd7c-f157-8470-0182-67c47a1b5806",
+          "status": "BOOK",
+          "transaction_amount": {
+            "currency": "DKK",
+            "amount": "221.26"
+          },
+          "credit_debit_indicator": "DBIT",
+          "booking_date": "2026-02-12",
+          "transaction_date": "2026-02-12",
+          "creditor": {
+            "name": "PAPIRØEN STREET FOOD APS"
+          },
+          "remittance_information": [
+            "DANKORTKØB"
+          ],
+          "merchant_category_code": "5812",
+          "balance_after_transaction": {
+            "currency": "DKK",
+            "amount": "22521.03"
+          }
+        },
+        {
+          "entry_reference": "3319936135",
+          "transaction_id": "620e99d3-3b33-f3d8-269c-d696236c7b87",
+          "status": "BOOK",
+          "transaction_amount": {
+            "currency": "DKK",
+            "amount": "256.73"
+          },
+          "credit_debit_indicator": "DBIT",
+          "booking_date": "2026-02-13",
+          "transaction_date": "2026-02-13",
+          "creditor": {
+            "name": "IRMA AS"
+          },
+          "remittance_information": [
+            "DANKORTKØB"
+          ],
+          "merchant_category_code": "5411",
+          "balance_after_transaction": {
+            "currency": "DKK",
+            "amount": "22264.30"
+          }
+        },
+        {
+          "entry_reference": "7105574449",
+          "transaction_id": "04f64d86-7866-0765-14f7-ce8dd5bcb8d0",
+          "status": "BOOK",
+          "transaction_amount": {
+            "currency": "DKK",
+            "amount": "134.00"
+          },
+          "credit_debit_indicator": "DBIT",
+          "booking_date": "2026-02-18",
+          "transaction_date": "2026-02-18",
+          "creditor": {
+            "name": "APOTEK VESTERBRO APS"
+          },
+          "remittance_information": [
+            "APOTEKSVARE KØB"
+          ],
+          "merchant_category_code": "5912",
+          "balance_after_transaction": {
+            "currency": "DKK",
+            "amount": "22130.30"
+          }
+        },
+        {
+          "entry_reference": "6474354351",
+          "transaction_id": "3c07c574-4925-7af1-b6aa-e05b13d5f2f7",
+          "status": "BOOK",
+          "transaction_amount": {
+            "currency": "DKK",
+            "amount": "330.42"
+          },
+          "credit_debit_indicator": "DBIT",
+          "booking_date": "2026-02-25",
+          "transaction_date": "2026-02-25",
+          "creditor": {
+            "name": "REMA 1000 AS"
+          },
+          "remittance_information": [
+            "DANKORTKØB"
+          ],
+          "merchant_category_code": "5411",
+          "balance_after_transaction": {
+            "currency": "DKK",
+            "amount": "21799.88"
+          }
+        },
+        {
+          "entry_reference": "9383431259",
+          "transaction_id": "c7fee39f-1190-f938-a66f-d7f739669fa7",
+          "status": "BOOK",
+          "transaction_amount": {
+            "currency": "DKK",
+            "amount": "1000.00"
+          },
+          "credit_debit_indicator": "DBIT",
+          "booking_date": "2026-02-25",
+          "transaction_date": "2026-02-25",
+          "creditor": {
+            "name": "NORDEA ATM VESTERBROGADE"
+          },
+          "remittance_information": [
+            "KONTANTHÆVNING ATM"
+          ],
+          "merchant_category_code": "6011",
+          "balance_after_transaction": {
+            "currency": "DKK",
+            "amount": "20799.88"
+          }
+        },
+        {
+          "entry_reference": "1654477195",
+          "transaction_id": "1d48a071-ab61-a7b1-793b-4c3220500494",
+          "status": "BOOK",
+          "transaction_amount": {
+            "currency": "DKK",
+            "amount": "340.00"
+          },
+          "credit_debit_indicator": "DBIT",
+          "booking_date": "2026-03-03",
+          "transaction_date": "2026-03-03",
+          "creditor": {
+            "name": "RADIUS ELNET AS"
+          },
+          "remittance_information": [
+            "ELFORBRUG JANUAR-FEBRUAR 2026",
+            "SLUTOPGØRELSE"
+          ],
+          "merchant_category_code": "4911",
+          "balance_after_transaction": {
+            "currency": "DKK",
+            "amount": "20459.88"
+          }
+        },
+        {
+          "entry_reference": "4518871744",
+          "transaction_id": "9424aed5-1bac-5c15-4fa0-3f26f6f7f0cc",
+          "status": "BOOK",
+          "transaction_amount": {
+            "currency": "DKK",
+            "amount": "165.00"
+          },
+          "credit_debit_indicator": "DBIT",
+          "booking_date": "2026-03-04",
+          "transaction_date": "2026-03-04",
+          "creditor": {
+            "name": "NETTO AS"
+          },
+          "remittance_information": [
+            "DANKORTKØB"
+          ],
+          "merchant_category_code": "5411",
+          "balance_after_transaction": {
+            "currency": "DKK",
+            "amount": "20294.88"
+          }
+        },
+        {
+          "entry_reference": "6231117883",
+          "transaction_id": "5e6fea07-c453-6f1d-4199-2fdfb31022f0",
+          "status": "BOOK",
+          "transaction_amount": {
+            "currency": "DKK",
+            "amount": "299.00"
+          },
+          "credit_debit_indicator": "DBIT",
+          "booking_date": "2026-03-06",
+          "transaction_date": "2026-03-06",
+          "creditor": {
+            "name": "STOFA AS"
+          },
+          "remittance_information": [
+            "BREDBÅND ABONNEMENT",
+            "KUNDEID 44812230"
+          ],
+          "merchant_category_code": "4813",
+          "balance_after_transaction": {
+            "currency": "DKK",
+            "amount": "19995.88"
+          }
+        }
+      ],
+      "continuation_key": null
+    },
+    "uid-barclays-gbp-001": {
+      "transactions": [
+        {
+          "entry_reference": "5471357886",
+          "transaction_id": "5eddbbbf-a959-7663-6daa-2e688861fe18",
+          "status": "BOOK",
+          "transaction_amount": {
+            "currency": "GBP",
+            "amount": "54.99"
+          },
+          "credit_debit_indicator": "DBIT",
+          "booking_date": "2026-01-01",
+          "transaction_date": "2026-01-01",
+          "creditor": {
+            "name": "ADOBE INC"
+          },
+          "remittance_information": [
+            "ADOBE INC MONTHLY SUBSCRIPTION"
+          ],
+          "merchant_category_code": "7372",
+          "balance_after_transaction": {
+            "currency": "GBP",
+            "amount": "8445.01"
+          }
+        },
+        {
+          "entry_reference": "2465576748",
+          "transaction_id": "7d7ddbed-d284-476c-6b88-f83dd97dc9cd",
+          "status": "BOOK",
+          "transaction_amount": {
+            "currency": "GBP",
+            "amount": "4.00"
+          },
+          "credit_debit_indicator": "DBIT",
+          "booking_date": "2026-01-01",
+          "transaction_date": "2026-01-01",
+          "creditor": {
+            "name": "GITHUB INC"
+          },
+          "remittance_information": [
+            "GITHUB INC MONTHLY SUBSCRIPTION"
+          ],
+          "merchant_category_code": "7372",
+          "balance_after_transaction": {
+            "currency": "GBP",
+            "amount": "8441.01"
+          }
+        },
+        {
+          "entry_reference": "5952059278",
+          "transaction_id": "f7294951-8591-31d2-bbda-02422d174fc9",
+          "status": "BOOK",
+          "transaction_amount": {
+            "currency": "GBP",
+            "amount": "20.00"
+          },
+          "credit_debit_indicator": "DBIT",
+          "booking_date": "2026-01-01",
+          "transaction_date": "2026-01-01",
+          "creditor": {
+            "name": "OPENAI LLC"
+          },
+          "remittance_information": [
+            "OPENAI LLC MONTHLY SUBSCRIPTION"
+          ],
+          "merchant_category_code": "7372",
+          "balance_after_transaction": {
+            "currency": "GBP",
+            "amount": "8421.01"
+          }
+        },
+        {
+          "entry_reference": "8612747444",
+          "transaction_id": "ce3714af-99b4-9350-af2b-99b4d9acd158",
+          "status": "BOOK",
+          "transaction_amount": {
+            "currency": "GBP",
+            "amount": "16.00"
+          },
+          "credit_debit_indicator": "DBIT",
+          "booking_date": "2026-01-02",
+          "transaction_date": "2026-01-02",
+          "creditor": {
+            "name": "NOTION LABS INC"
+          },
+          "remittance_information": [
+            "NOTION LABS INC MONTHLY SUBSCRIPTION"
+          ],
+          "merchant_category_code": "7372",
+          "balance_after_transaction": {
+            "currency": "GBP",
+            "amount": "8405.01"
+          }
+        },
+        {
+          "entry_reference": "4070964768",
+          "transaction_id": "d4a057a7-b0cc-1b3b-9793-b9b413748146",
+          "status": "BOOK",
+          "transaction_amount": {
+            "currency": "GBP",
+            "amount": "45.00"
+          },
+          "credit_debit_indicator": "DBIT",
+          "booking_date": "2026-01-04",
+          "transaction_date": "2026-01-04",
+          "creditor": {
+            "name": "FIGMA INC"
+          },
+          "remittance_information": [
+            "FIGMA INC MONTHLY SUBSCRIPTION"
+          ],
+          "merchant_category_code": "7372",
+          "balance_after_transaction": {
+            "currency": "GBP",
+            "amount": "8360.01"
+          }
+        },
+        {
+          "entry_reference": "8622026979",
+          "transaction_id": "bb2488a3-d363-57b6-6f81-cf4f7701f7bb",
+          "status": "BOOK",
+          "transaction_amount": {
+            "currency": "GBP",
+            "amount": "50.33"
+          },
+          "credit_debit_indicator": "DBIT",
+          "booking_date": "2026-01-05",
+          "transaction_date": "2026-01-05",
+          "creditor": {
+            "name": "AMAZON WEB SERVICES INC"
+          },
+          "remittance_information": [
+            "AWS USAGE CHARGES",
+            "ACCOUNT 123456789012"
+          ],
+          "merchant_category_code": "7372",
+          "balance_after_transaction": {
+            "currency": "GBP",
+            "amount": "8309.68"
+          }
+        },
+        {
+          "entry_reference": "7839626408",
+          "transaction_id": "d4aac9a3-3ed8-c56c-da09-dfa052828d80",
+          "status": "BOOK",
+          "transaction_amount": {
+            "currency": "GBP",
+            "amount": "695.00"
+          },
+          "credit_debit_indicator": "DBIT",
+          "booking_date": "2026-01-10",
+          "transaction_date": "2026-01-10",
+          "creditor": {
+            "name": "AMERICAN EXPRESS COMPANY"
+          },
+          "remittance_information": [
+            "AMEX PLATINUM ANNUAL FEE",
+            "MEMBER SINCE 2021"
+          ],
+          "merchant_category_code": "6300",
+          "balance_after_transaction": {
+            "currency": "GBP",
+            "amount": "7614.68"
+          }
+        },
+        {
+          "entry_reference": "9284507318",
+          "transaction_id": "f54ad0a2-e874-66d7-ad66-a1bd93676a02",
+          "status": "BOOK",
+          "transaction_amount": {
+            "currency": "GBP",
+            "amount": "3500.00"
+          },
+          "credit_debit_indicator": "CRDT",
+          "booking_date": "2026-01-13",
+          "transaction_date": "2026-01-13",
+          "debtor": {
+            "name": "MERCURY GROWTH VENTURES LLC"
+          },
+          "remittance_information": [
+            "INV-2026-01",
+            "UX STRATEGY RETAINER",
+            "WIRE TRANSFER"
+          ],
+          "balance_after_transaction": {
+            "currency": "GBP",
+            "amount": "11114.68"
+          }
+        },
+        {
+          "entry_reference": "9081544414",
+          "transaction_id": "91e1aa96-76f7-2255-c01f-36bf3e6dd58b",
+          "status": "BOOK",
+          "transaction_amount": {
+            "currency": "GBP",
+            "amount": "14.15"
+          },
+          "credit_debit_indicator": "DBIT",
+          "booking_date": "2026-01-13",
+          "transaction_date": "2026-01-13",
+          "creditor": {
+            "name": "APPLE COM BILL"
+          },
+          "remittance_information": [
+            "APPLE.COM/BILL"
+          ],
+          "merchant_category_code": "5734",
+          "balance_after_transaction": {
+            "currency": "GBP",
+            "amount": "11100.53"
+          }
+        },
+        {
+          "entry_reference": "2444812497",
+          "transaction_id": "2e8d0e87-5334-20e6-d9d8-0b8d7e8adee7",
+          "status": "BOOK",
+          "transaction_amount": {
+            "currency": "GBP",
+            "amount": "41.40"
+          },
+          "credit_debit_indicator": "DBIT",
+          "booking_date": "2026-01-28",
+          "transaction_date": "2026-01-28",
+          "creditor": {
+            "name": "UBER"
+          },
+          "remittance_information": [
+            "UBER TRIP",
+            "JAN 28 2026"
+          ],
+          "merchant_category_code": "4121",
+          "balance_after_transaction": {
+            "currency": "GBP",
+            "amount": "11059.13"
+          }
+        },
+        {
+          "entry_reference": "7792729530",
+          "transaction_id": "58007c02-87ea-7ff5-8db0-674679279973",
+          "status": "BOOK",
+          "transaction_amount": {
+            "currency": "GBP",
+            "amount": "4.00"
+          },
+          "credit_debit_indicator": "DBIT",
+          "booking_date": "2026-02-02",
+          "transaction_date": "2026-02-02",
+          "creditor": {
+            "name": "GITHUB INC"
+          },
+          "remittance_information": [
+            "GITHUB INC MONTHLY SUBSCRIPTION"
+          ],
+          "merchant_category_code": "7372",
+          "balance_after_transaction": {
+            "currency": "GBP",
+            "amount": "11055.13"
+          }
+        },
+        {
+          "entry_reference": "4256292393",
+          "transaction_id": "b63b4dc3-a559-e463-79e1-3ceab0cbc61f",
+          "status": "BOOK",
+          "transaction_amount": {
+            "currency": "GBP",
+            "amount": "16.00"
+          },
+          "credit_debit_indicator": "DBIT",
+          "booking_date": "2026-02-04",
+          "transaction_date": "2026-02-04",
+          "creditor": {
+            "name": "NOTION LABS INC"
+          },
+          "remittance_information": [
+            "NOTION LABS INC MONTHLY SUBSCRIPTION"
+          ],
+          "merchant_category_code": "7372",
+          "balance_after_transaction": {
+            "currency": "GBP",
+            "amount": "11039.13"
+          }
+        },
+        {
+          "entry_reference": "1074059253",
+          "transaction_id": "b118f68d-6786-d506-38ba-8abc4b5305e5",
+          "status": "BOOK",
+          "transaction_amount": {
+            "currency": "GBP",
+            "amount": "54.99"
+          },
+          "credit_debit_indicator": "DBIT",
+          "booking_date": "2026-02-04",
+          "transaction_date": "2026-02-04",
+          "creditor": {
+            "name": "ADOBE INC"
+          },
+          "remittance_information": [
+            "ADOBE INC MONTHLY SUBSCRIPTION"
+          ],
+          "merchant_category_code": "7372",
+          "balance_after_transaction": {
+            "currency": "GBP",
+            "amount": "10984.14"
+          }
+        },
+        {
+          "entry_reference": "7658867789",
+          "transaction_id": "455ac762-7428-a656-b3ee-4d3b5a104129",
+          "status": "BOOK",
+          "transaction_amount": {
+            "currency": "GBP",
+            "amount": "20.00"
+          },
+          "credit_debit_indicator": "DBIT",
+          "booking_date": "2026-02-04",
+          "transaction_date": "2026-02-04",
+          "creditor": {
+            "name": "OPENAI LLC"
+          },
+          "remittance_information": [
+            "OPENAI LLC MONTHLY SUBSCRIPTION"
+          ],
+          "merchant_category_code": "7372",
+          "balance_after_transaction": {
+            "currency": "GBP",
+            "amount": "10964.14"
+          }
+        },
+        {
+          "entry_reference": "3948284698",
+          "transaction_id": "90164161-cfa7-01cd-2631-d00b26d794d3",
+          "status": "BOOK",
+          "transaction_amount": {
+            "currency": "GBP",
+            "amount": "37.66"
+          },
+          "credit_debit_indicator": "DBIT",
+          "booking_date": "2026-02-04",
+          "transaction_date": "2026-02-04",
+          "creditor": {
+            "name": "UBER"
+          },
+          "remittance_information": [
+            "UBER TRIP",
+            "FEB 04 2026"
+          ],
+          "merchant_category_code": "4121",
+          "balance_after_transaction": {
+            "currency": "GBP",
+            "amount": "10926.48"
+          }
+        },
+        {
+          "entry_reference": "9633533290",
+          "transaction_id": "3dc98290-15ea-bb27-30e9-12f2f2b43abf",
+          "status": "BOOK",
+          "transaction_amount": {
+            "currency": "GBP",
+            "amount": "45.00"
+          },
+          "credit_debit_indicator": "DBIT",
+          "booking_date": "2026-02-05",
+          "transaction_date": "2026-02-05",
+          "creditor": {
+            "name": "FIGMA INC"
+          },
+          "remittance_information": [
+            "FIGMA INC MONTHLY SUBSCRIPTION"
+          ],
+          "merchant_category_code": "7372",
+          "balance_after_transaction": {
+            "currency": "GBP",
+            "amount": "10881.48"
+          }
+        },
+        {
+          "entry_reference": "6122110529",
+          "transaction_id": "f36cb62b-892e-6161-be2d-740a1e9b23bc",
+          "status": "BOOK",
+          "transaction_amount": {
+            "currency": "GBP",
+            "amount": "33.56"
+          },
+          "credit_debit_indicator": "DBIT",
+          "booking_date": "2026-02-05",
+          "transaction_date": "2026-02-05",
+          "creditor": {
+            "name": "AMAZON WEB SERVICES INC"
+          },
+          "remittance_information": [
+            "AWS USAGE CHARGES",
+            "ACCOUNT 123456789012"
+          ],
+          "merchant_category_code": "7372",
+          "balance_after_transaction": {
+            "currency": "GBP",
+            "amount": "10847.92"
+          }
+        },
+        {
+          "entry_reference": "1822662216",
+          "transaction_id": "b97e6703-46c8-adfe-7bf4-7042bd1531c8",
+          "status": "BOOK",
+          "transaction_amount": {
+            "currency": "GBP",
+            "amount": "11.91"
+          },
+          "credit_debit_indicator": "DBIT",
+          "booking_date": "2026-02-09",
+          "transaction_date": "2026-02-09",
+          "creditor": {
+            "name": "APPLE COM BILL"
+          },
+          "remittance_information": [
+            "APPLE.COM/BILL"
+          ],
+          "merchant_category_code": "5734",
+          "balance_after_transaction": {
+            "currency": "GBP",
+            "amount": "10836.01"
+          }
+        },
+        {
+          "entry_reference": "2272368870",
+          "transaction_id": "039f3a25-4d61-68bd-2def-e1935c62b3a2",
+          "status": "BOOK",
+          "transaction_amount": {
+            "currency": "GBP",
+            "amount": "109.22"
+          },
+          "credit_debit_indicator": "DBIT",
+          "booking_date": "2026-02-10",
+          "transaction_date": "2026-02-10",
+          "creditor": {
+            "name": "LILIA RESTAURANT"
+          },
+          "remittance_information": [
+            "PURCHASE 02/10/2026"
+          ],
+          "merchant_category_code": "5812",
+          "balance_after_transaction": {
+            "currency": "GBP",
+            "amount": "10726.79"
+          }
+        },
+        {
+          "entry_reference": "3051831252",
+          "transaction_id": "7de31a51-6694-c343-10ba-58e3d2762bdc",
+          "status": "BOOK",
+          "transaction_amount": {
+            "currency": "GBP",
+            "amount": "52.58"
+          },
+          "credit_debit_indicator": "DBIT",
+          "booking_date": "2026-02-12",
+          "transaction_date": "2026-02-12",
+          "creditor": {
+            "name": "UBER"
+          },
+          "remittance_information": [
+            "UBER TRIP",
+            "FEB 12 2026"
+          ],
+          "merchant_category_code": "4121",
+          "balance_after_transaction": {
+            "currency": "GBP",
+            "amount": "10674.21"
+          }
+        },
+        {
+          "entry_reference": "6206015111",
+          "transaction_id": "4797b2c9-5720-7246-4223-623bcc3ebdde",
+          "status": "BOOK",
+          "transaction_amount": {
+            "currency": "GBP",
+            "amount": "3500.00"
+          },
+          "credit_debit_indicator": "CRDT",
+          "booking_date": "2026-02-16",
+          "transaction_date": "2026-02-16",
+          "debtor": {
+            "name": "MERCURY GROWTH VENTURES LLC"
+          },
+          "remittance_information": [
+            "INV-2026-02",
+            "UX STRATEGY RETAINER",
+            "WIRE TRANSFER"
+          ],
+          "balance_after_transaction": {
+            "currency": "GBP",
+            "amount": "14174.21"
+          }
+        },
+        {
+          "entry_reference": "3108307952",
+          "transaction_id": "48ca7651-92f5-df7b-0323-d342df6a8f93",
+          "status": "BOOK",
+          "transaction_amount": {
+            "currency": "GBP",
+            "amount": "13.97"
+          },
+          "credit_debit_indicator": "DBIT",
+          "booking_date": "2026-02-16",
+          "transaction_date": "2026-02-16",
+          "creditor": {
+            "name": "BLUE BOTTLE COFFEE"
+          },
+          "remittance_information": [
+            "PURCHASE 02/16/2026"
+          ],
+          "merchant_category_code": "5814",
+          "balance_after_transaction": {
+            "currency": "GBP",
+            "amount": "14160.24"
+          }
+        },
+        {
+          "entry_reference": "2065972034",
+          "transaction_id": "9b37a22b-6a8a-616f-c3b2-90d08edddfcd",
+          "status": "BOOK",
+          "transaction_amount": {
+            "currency": "GBP",
+            "amount": "17.49"
+          },
+          "credit_debit_indicator": "DBIT",
+          "booking_date": "2026-02-17",
+          "transaction_date": "2026-02-17",
+          "creditor": {
+            "name": "UBER"
+          },
+          "remittance_information": [
+            "UBER TRIP",
+            "FEB 17 2026"
+          ],
+          "merchant_category_code": "4121",
+          "balance_after_transaction": {
+            "currency": "GBP",
+            "amount": "14142.75"
+          }
+        },
+        {
+          "entry_reference": "7351029162",
+          "transaction_id": "0d270659-f72a-da9b-2f32-751e5738811d",
+          "status": "BOOK",
+          "transaction_amount": {
+            "currency": "GBP",
+            "amount": "89.03"
+          },
+          "credit_debit_indicator": "DBIT",
+          "booking_date": "2026-02-25",
+          "transaction_date": "2026-02-25",
+          "creditor": {
+            "name": "WHOLE FOODS MARKET"
+          },
+          "remittance_information": [
+            "PURCHASE 02/25/2026"
+          ],
+          "merchant_category_code": "5411",
+          "balance_after_transaction": {
+            "currency": "GBP",
+            "amount": "14053.72"
+          }
+        },
+        {
+          "entry_reference": "5838636972",
+          "transaction_id": "8da8eee4-0df5-6ac6-f96b-648a0ba6eab9",
+          "status": "BOOK",
+          "transaction_amount": {
+            "currency": "GBP",
+            "amount": "40.20"
+          },
+          "credit_debit_indicator": "DBIT",
+          "booking_date": "2026-02-26",
+          "transaction_date": "2026-02-26",
+          "creditor": {
+            "name": "PRIMA PIZZA"
+          },
+          "remittance_information": [
+            "PURCHASE 02/26/2026"
+          ],
+          "merchant_category_code": "5812",
+          "balance_after_transaction": {
+            "currency": "GBP",
+            "amount": "14013.52"
+          }
+        },
+        {
+          "entry_reference": "1674555072",
+          "transaction_id": "2812859a-1337-739e-8d4f-5d272c7f0b79",
+          "status": "BOOK",
+          "transaction_amount": {
+            "currency": "GBP",
+            "amount": "54.99"
+          },
+          "credit_debit_indicator": "DBIT",
+          "booking_date": "2026-03-01",
+          "transaction_date": "2026-03-01",
+          "creditor": {
+            "name": "ADOBE INC"
+          },
+          "remittance_information": [
+            "ADOBE INC MONTHLY SUBSCRIPTION"
+          ],
+          "merchant_category_code": "7372",
+          "balance_after_transaction": {
+            "currency": "GBP",
+            "amount": "13958.53"
+          }
+        },
+        {
+          "entry_reference": "7049536909",
+          "transaction_id": "4a8ff810-784c-2f29-9804-02a2b07aa066",
+          "status": "BOOK",
+          "transaction_amount": {
+            "currency": "GBP",
+            "amount": "4.00"
+          },
+          "credit_debit_indicator": "DBIT",
+          "booking_date": "2026-03-01",
+          "transaction_date": "2026-03-01",
+          "creditor": {
+            "name": "GITHUB INC"
+          },
+          "remittance_information": [
+            "GITHUB INC MONTHLY SUBSCRIPTION"
+          ],
+          "merchant_category_code": "7372",
+          "balance_after_transaction": {
+            "currency": "GBP",
+            "amount": "13954.53"
+          }
+        },
+        {
+          "entry_reference": "6289150149",
+          "transaction_id": "dc0f2fcf-b3f6-fe0d-4860-3b32b4fb0eb9",
+          "status": "BOOK",
+          "transaction_amount": {
+            "currency": "GBP",
+            "amount": "20.00"
+          },
+          "credit_debit_indicator": "DBIT",
+          "booking_date": "2026-03-01",
+          "transaction_date": "2026-03-01",
+          "creditor": {
+            "name": "OPENAI LLC"
+          },
+          "remittance_information": [
+            "OPENAI LLC MONTHLY SUBSCRIPTION"
+          ],
+          "merchant_category_code": "7372",
+          "balance_after_transaction": {
+            "currency": "GBP",
+            "amount": "13934.53"
+          }
+        },
+        {
+          "entry_reference": "9547119184",
+          "transaction_id": "0f6b40d0-9efb-a58b-9191-b3634e2d6645",
+          "status": "BOOK",
+          "transaction_amount": {
+            "currency": "GBP",
+            "amount": "45.00"
+          },
+          "credit_debit_indicator": "DBIT",
+          "booking_date": "2026-03-05",
+          "transaction_date": "2026-03-05",
+          "creditor": {
+            "name": "FIGMA INC"
+          },
+          "remittance_information": [
+            "FIGMA INC MONTHLY SUBSCRIPTION"
+          ],
+          "merchant_category_code": "7372",
+          "balance_after_transaction": {
+            "currency": "GBP",
+            "amount": "13889.53"
+          }
+        },
+        {
+          "entry_reference": "4275930923",
+          "transaction_id": "a911d192-43bf-d931-3605-bf54a021c0ca",
+          "status": "BOOK",
+          "transaction_amount": {
+            "currency": "GBP",
+            "amount": "16.00"
+          },
+          "credit_debit_indicator": "DBIT",
+          "booking_date": "2026-03-05",
+          "transaction_date": "2026-03-05",
+          "creditor": {
+            "name": "NOTION LABS INC"
+          },
+          "remittance_information": [
+            "NOTION LABS INC MONTHLY SUBSCRIPTION"
+          ],
+          "merchant_category_code": "7372",
+          "balance_after_transaction": {
+            "currency": "GBP",
+            "amount": "13873.53"
+          }
+        },
+        {
+          "entry_reference": "6144594354",
+          "transaction_id": "a5cb63a2-398d-1ca6-8b68-70b51d61fac3",
+          "status": "BOOK",
+          "transaction_amount": {
+            "currency": "GBP",
+            "amount": "25.27"
+          },
+          "credit_debit_indicator": "DBIT",
+          "booking_date": "2026-03-06",
+          "transaction_date": "2026-03-06",
+          "creditor": {
+            "name": "AMAZON WEB SERVICES INC"
+          },
+          "remittance_information": [
+            "AWS USAGE CHARGES",
+            "ACCOUNT 123456789012"
+          ],
+          "merchant_category_code": "7372",
+          "balance_after_transaction": {
+            "currency": "GBP",
+            "amount": "13848.26"
+          }
+        },
+        {
+          "entry_reference": "4550353803",
+          "transaction_id": "cae9b4a7-2a79-ea68-0f44-704f1247ea4e",
+          "status": "BOOK",
+          "transaction_amount": {
+            "currency": "GBP",
+            "amount": "3.94"
+          },
+          "credit_debit_indicator": "DBIT",
+          "booking_date": "2026-03-12",
+          "transaction_date": "2026-03-12",
+          "creditor": {
+            "name": "APPLE COM BILL"
+          },
+          "remittance_information": [
+            "APPLE.COM/BILL"
+          ],
+          "merchant_category_code": "5734",
+          "balance_after_transaction": {
+            "currency": "GBP",
+            "amount": "13844.32"
+          }
+        },
+        {
+          "entry_reference": "9251459094",
+          "transaction_id": "b04d3376-77fc-9703-1fd5-a423706c5c56",
+          "status": "BOOK",
+          "transaction_amount": {
+            "currency": "GBP",
+            "amount": "38.40"
+          },
+          "credit_debit_indicator": "DBIT",
+          "booking_date": "2026-03-13",
+          "transaction_date": "2026-03-13",
+          "creditor": {
+            "name": "UBER"
+          },
+          "remittance_information": [
+            "UBER TRIP",
+            "MAR 13 2026"
+          ],
+          "merchant_category_code": "4121",
+          "balance_after_transaction": {
+            "currency": "GBP",
+            "amount": "13805.92"
+          }
+        },
+        {
+          "entry_reference": "6928678489",
+          "transaction_id": "dc33e1f9-4c1f-55ab-7156-29eee893be3d",
+          "status": "BOOK",
+          "transaction_amount": {
+            "currency": "GBP",
+            "amount": "3500.00"
+          },
+          "credit_debit_indicator": "CRDT",
+          "booking_date": "2026-03-14",
+          "transaction_date": "2026-03-14",
+          "debtor": {
+            "name": "MERCURY GROWTH VENTURES LLC"
+          },
+          "remittance_information": [
+            "INV-2026-03",
+            "UX STRATEGY RETAINER",
+            "WIRE TRANSFER"
+          ],
+          "balance_after_transaction": {
+            "currency": "GBP",
+            "amount": "17305.92"
+          }
+        },
+        {
+          "entry_reference": "7614170462",
+          "transaction_id": "0a3450fc-9918-ee46-1497-d6587010f719",
+          "status": "BOOK",
+          "transaction_amount": {
+            "currency": "GBP",
+            "amount": "2000.00"
+          },
+          "credit_debit_indicator": "DBIT",
+          "booking_date": "2026-03-20",
+          "transaction_date": "2026-03-20",
+          "creditor": {
+            "name": "INTL WIRE TRANSFER"
+          },
+          "remittance_information": [
+            "OUTGOING INTERNATIONAL WIRE",
+            "BENEFICIARY: MARCO ROSSI",
+            "FINECO BANK IT"
+          ],
+          "merchant_category_code": "6012",
+          "balance_after_transaction": {
+            "currency": "GBP",
+            "amount": "15305.92"
+          }
+        }
+      ],
+      "continuation_key": null
+    }
+  }
+}

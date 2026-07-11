@@ -1,0 +1,204 @@
+-- Koinkat initial schema (profile-aware)
+--
+-- Every data table is owned by a profile — each profile is a fully
+-- isolated workspace (accounts, transactions, tags, budgets, bank
+-- connections, API credentials).
+--
+-- Cascading deletes for a profile are performed at the application
+-- layer (profile-service.ts) — SQLite FKs here only cover intra-profile
+-- parent/child relationships (e.g. transactions → accounts).
+
+-- ── Profiles (top-level workspace) ───────────────────────────────────
+CREATE TABLE IF NOT EXISTS profiles (
+    id                 TEXT PRIMARY KEY,
+    name               TEXT NOT NULL,
+    email              TEXT NOT NULL DEFAULT '',
+    preferred_currency TEXT NOT NULL DEFAULT 'EUR',
+    decimal_separator  TEXT NOT NULL DEFAULT ',' CHECK (decimal_separator IN ('.', ',')),
+    theme              TEXT NOT NULL DEFAULT 'dark' CHECK (theme IN ('light', 'dark', 'light-alt', 'dark-alt')),
+    created_at         TEXT NOT NULL DEFAULT (datetime('now')),
+    updated_at         TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+-- ── Accounts ─────────────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS accounts (
+    id              TEXT PRIMARY KEY,
+    profile_id      TEXT NOT NULL,
+    name            TEXT NOT NULL,
+    currency        TEXT NOT NULL,
+    color           TEXT NOT NULL DEFAULT '#2563eb',
+    current_balance TEXT NOT NULL DEFAULT '0',
+    is_pinned       INTEGER NOT NULL DEFAULT 0,
+    is_manual       INTEGER NOT NULL DEFAULT 1,
+    created_at      TEXT NOT NULL DEFAULT (datetime('now')),
+    updated_at      TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_accounts_profile ON accounts(profile_id);
+
+-- ── Tags ─────────────────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS tags (
+    id         TEXT PRIMARY KEY,
+    profile_id TEXT NOT NULL,
+    name       TEXT NOT NULL,
+    type       TEXT NOT NULL CHECK (type IN ('income', 'expense')),
+    is_system  INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+    UNIQUE(profile_id, name, type)
+);
+
+CREATE INDEX IF NOT EXISTS idx_tags_profile ON tags(profile_id);
+
+-- ── Budget events ────────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS budget_events (
+    id           TEXT PRIMARY KEY,
+    profile_id   TEXT NOT NULL,
+    name         TEXT NOT NULL,
+    description  TEXT,
+    limit_amount TEXT NOT NULL,
+    currency     TEXT NOT NULL,
+    is_expired   INTEGER NOT NULL DEFAULT 0,
+    created_at   TEXT NOT NULL DEFAULT (datetime('now')),
+    updated_at   TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_budget_events_profile ON budget_events(profile_id);
+
+-- ── Transactions ─────────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS transactions (
+    id                      TEXT PRIMARY KEY,
+    profile_id              TEXT NOT NULL,
+    account_id              TEXT NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+    destination_account_id  TEXT REFERENCES accounts(id) ON DELETE CASCADE,
+    related_transaction_id  TEXT REFERENCES transactions(id) ON DELETE CASCADE,
+    type                    TEXT NOT NULL CHECK (type IN ('income', 'expense', 'transfer')),
+    amount                  TEXT NOT NULL,
+    currency                TEXT NOT NULL,
+    exchange_rate           TEXT NOT NULL,
+    amount_in_account_ccy   TEXT NOT NULL,
+    amount_in_dest_ccy      TEXT,
+    tag_id                  TEXT REFERENCES tags(id) ON DELETE SET NULL,
+    note                    TEXT,
+    date                    TEXT NOT NULL,
+    is_budgeted             INTEGER NOT NULL DEFAULT 1,
+    budget_event_id         TEXT REFERENCES budget_events(id) ON DELETE SET NULL,
+    external_ref            TEXT,
+    recorded_at             TEXT NOT NULL DEFAULT (datetime('now')),
+    created_at              TEXT NOT NULL DEFAULT (datetime('now')),
+    updated_at              TEXT NOT NULL DEFAULT (datetime('now')),
+    CHECK (amount > 0),
+    CHECK (exchange_rate > 0),
+    CHECK (
+        (type = 'transfer' AND destination_account_id IS NOT NULL) OR
+        (type != 'transfer' AND destination_account_id IS NULL)
+    ),
+    CHECK (account_id != destination_account_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_transactions_profile      ON transactions(profile_id);
+CREATE INDEX IF NOT EXISTS idx_transactions_account      ON transactions(account_id);
+CREATE INDEX IF NOT EXISTS idx_transactions_dest_account ON transactions(destination_account_id);
+CREATE INDEX IF NOT EXISTS idx_transactions_date         ON transactions(date);
+CREATE INDEX IF NOT EXISTS idx_transactions_tag          ON transactions(tag_id);
+CREATE INDEX IF NOT EXISTS idx_transactions_related      ON transactions(related_transaction_id);
+CREATE INDEX IF NOT EXISTS idx_transactions_type         ON transactions(type);
+CREATE INDEX IF NOT EXISTS idx_transactions_external_ref ON transactions(external_ref);
+
+-- ── Recurring budgets ────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS recurring_budgets (
+    id           TEXT PRIMARY KEY,
+    profile_id   TEXT NOT NULL,
+    year         INTEGER NOT NULL CHECK (year >= 2000),
+    start_month  INTEGER NOT NULL CHECK (start_month BETWEEN 1 AND 12),
+    end_month    INTEGER NOT NULL CHECK (end_month BETWEEN 1 AND 12),
+    rhythm       TEXT NOT NULL DEFAULT 'monthly' CHECK (rhythm IN ('weekly', 'monthly', 'yearly')),
+    limit_amount TEXT NOT NULL,
+    currency     TEXT NOT NULL,
+    is_active    INTEGER NOT NULL DEFAULT 1,
+    created_at   TEXT NOT NULL DEFAULT (datetime('now')),
+    updated_at   TEXT NOT NULL DEFAULT (datetime('now')),
+    UNIQUE(profile_id, year)
+);
+
+CREATE INDEX IF NOT EXISTS idx_recurring_budgets_profile ON recurring_budgets(profile_id);
+
+-- ── Budget periods ───────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS budget_periods (
+    id                  TEXT PRIMARY KEY,
+    profile_id          TEXT NOT NULL,
+    recurring_budget_id TEXT NOT NULL REFERENCES recurring_budgets(id) ON DELETE CASCADE,
+    period_start        TEXT NOT NULL,
+    period_end          TEXT NOT NULL,
+    limit_amount        TEXT NOT NULL,
+    currency            TEXT NOT NULL,
+    is_customized       INTEGER NOT NULL DEFAULT 0,
+    notes               TEXT,
+    created_at          TEXT NOT NULL DEFAULT (datetime('now')),
+    updated_at          TEXT NOT NULL DEFAULT (datetime('now')),
+    UNIQUE(recurring_budget_id, period_start)
+);
+
+CREATE INDEX IF NOT EXISTS idx_budget_periods_profile ON budget_periods(profile_id);
+
+-- ── Bank connections ─────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS bank_connections (
+    id               TEXT PRIMARY KEY,
+    profile_id       TEXT NOT NULL,
+    aspsp_name       TEXT NOT NULL,
+    aspsp_country    TEXT NOT NULL,
+    session_id       TEXT,
+    authorization_id TEXT,
+    status           TEXT NOT NULL DEFAULT 'pending'
+                     CHECK (status IN ('pending', 'active', 'expired', 'error')),
+    valid_until      TEXT,
+    last_synced_at   TEXT,
+    error_message    TEXT,
+    is_demo          INTEGER NOT NULL DEFAULT 0,
+    created_at       TEXT NOT NULL DEFAULT (datetime('now')),
+    updated_at       TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_bank_connections_profile ON bank_connections(profile_id);
+
+-- ── Linked bank accounts ─────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS linked_accounts (
+    id                   TEXT PRIMARY KEY,
+    profile_id           TEXT NOT NULL,
+    bank_connection_id   TEXT NOT NULL REFERENCES bank_connections(id) ON DELETE CASCADE,
+    account_id           TEXT NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
+    external_account_uid TEXT NOT NULL,
+    iban                 TEXT,
+    last_synced_at       TEXT,
+    sync_cursor          TEXT,
+    created_at           TEXT NOT NULL DEFAULT (datetime('now')),
+    updated_at           TEXT NOT NULL DEFAULT (datetime('now')),
+    UNIQUE(profile_id, external_account_uid)
+);
+
+CREATE INDEX IF NOT EXISTS idx_linked_accounts_profile    ON linked_accounts(profile_id);
+CREATE INDEX IF NOT EXISTS idx_linked_accounts_connection ON linked_accounts(bank_connection_id);
+CREATE INDEX IF NOT EXISTS idx_linked_accounts_account    ON linked_accounts(account_id);
+
+-- ── Per-profile Enable Banking credentials ───────────────────────────
+CREATE TABLE IF NOT EXISTS api_configs (
+    profile_id      TEXT PRIMARY KEY,
+    app_id          TEXT,
+    private_key_pem TEXT,
+    environment     TEXT NOT NULL DEFAULT 'production' CHECK (environment IN ('sandbox', 'production')),
+    redirect_url    TEXT NOT NULL DEFAULT 'https://marcosburlino.github.io/koinkat-callback/',
+    is_configured   INTEGER NOT NULL DEFAULT 0,
+    is_demo_mode    INTEGER NOT NULL DEFAULT 0,
+    created_at      TEXT NOT NULL DEFAULT (datetime('now')),
+    updated_at      TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+-- ── Exchange rates (shared infrastructure, not per-profile) ──────────
+CREATE TABLE IF NOT EXISTS exchange_rates (
+    id         INTEGER PRIMARY KEY AUTOINCREMENT,
+    rate_date  TEXT NOT NULL UNIQUE,
+    rates_json TEXT NOT NULL,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_exchange_rates_date ON exchange_rates(rate_date);
