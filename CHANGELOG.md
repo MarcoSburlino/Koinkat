@@ -6,7 +6,9 @@ uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
-Initial public release candidate (0.1.0).
+## [0.1.0] - 2026-07-14
+
+Initial public release.
 
 ### Added
 - Bank linking via Enable Banking (PSD2): user-supplied application ID
@@ -26,6 +28,8 @@ Initial public release candidate (0.1.0).
   (Windows Credential Manager / macOS Keychain / Linux secret service)
   with a local-database fallback; legacy database-stored keys migrate to
   the keychain automatically on first read.
+- The Dashboard banner shown for sandbox workspaces can be dismissed for
+  the current session.
 - Adopted the GPL-3.0-or-later license (full text in LICENSE).
 
 ### Security
