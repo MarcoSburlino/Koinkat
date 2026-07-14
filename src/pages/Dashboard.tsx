@@ -30,6 +30,7 @@ import { useAppStore } from '../stores/app-store';
 import { useBankStore, FX_UNAVAILABLE_MSG, SYNC_INCOMPLETE_MSG } from '../stores/bank-store';
 import { ensureTodayRates } from '../services/exchange-rate-service';
 import { useKoinkatAccountStore } from '../stores/koinkat-account-store';
+import { getActiveKoinkatAccountId } from '../lib/active-koinkat-account';
 import { formatAmount, formatMoney } from '../lib/format';
 import { MONTH_NAMES, previousMonth } from '../lib/date-constants';
 import { dec } from '../domain/money';
@@ -45,6 +46,12 @@ import type { Account } from '../types/models';
 import type { AccountOverview, CategoryBreakdownRow } from '../services/reporting-service';
 import type { PeriodSpendingSummary } from '../services/budget-service';
 
+// Session-scoped dismissal marker for the sandbox banner. Lives in
+// sessionStorage so a dismissal survives in-app navigation but the banner
+// returns on the next app launch - a sandbox workspace should never hide
+// its nature permanently.
+const SANDBOX_BANNER_DISMISSED_KEY = 'koinkat_sandbox_banner_dismissed';
+
 export function Dashboard() {
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [overview, setOverview] = useState<AccountOverview | null>(null);
@@ -57,6 +64,14 @@ export function Dashboard() {
     ids: [],
   });
   const [pendingCount, setPendingCount] = useState(0);
+  const [sandboxBannerDismissed, setSandboxBannerDismissed] = useState(() => {
+    try {
+      const id = getActiveKoinkatAccountId();
+      return id !== null && sessionStorage.getItem(SANDBOX_BANNER_DISMISSED_KEY) === id;
+    } catch {
+      return false;
+    }
+  });
   const settings = useAppStore((s) => s.settings);
   const pendingReviewCount = useAppStore((s) => s.pendingReviewCount);
   const refreshPendingReviewCount = useAppStore(
@@ -161,6 +176,17 @@ export function Dashboard() {
     }
   }
 
+  function handleDismissSandboxBanner() {
+    try {
+      const id = getActiveKoinkatAccountId();
+      if (id) sessionStorage.setItem(SANDBOX_BANNER_DISMISSED_KEY, id);
+    } catch {
+      // sessionStorage unavailable - the banner stays hidden for this
+      // mount only, which is an acceptable degradation.
+    }
+    setSandboxBannerDismissed(true);
+  }
+
   async function handlePin(account: Account) {
     try {
       if (account.isPinned) {
@@ -193,8 +219,8 @@ export function Dashboard() {
 
   return (
     <div>
-      {/* Sandbox mode banner */}
-      {isDemoMode && (
+      {/* Sandbox mode banner - dismissible for the current app session */}
+      {isDemoMode && !sandboxBannerDismissed && (
         <div
           className="flex items-center justify-between rounded-lg px-4 py-2.5 mb-4"
           style={{ backgroundColor: 'var(--input-bg)', border: '1px solid var(--border)' }}
@@ -216,6 +242,15 @@ export function Dashboard() {
               style={{ color: 'var(--danger)' }}
             >
               Exit sandbox
+            </button>
+            <button
+              onClick={handleDismissSandboxBanner}
+              aria-label="Hide the sandbox banner for this session"
+              title="Hide for this session"
+              className="cursor-pointer px-1.5 py-1 rounded flex items-center"
+              style={{ color: 'var(--text-muted)' }}
+            >
+              <X size={14} />
             </button>
           </div>
         </div>
