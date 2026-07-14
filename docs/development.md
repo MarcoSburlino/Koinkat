@@ -38,7 +38,7 @@ imports) where the literal is `false`.
 | Flag | dev | demo | prod | Purpose |
 |---|---|---|---|---|
 | `__KOINKAT_ALLOW_MOCKS__` | `true` | `true` | `false` | Whether `src/mocks/` may be imported at all |
-| `__KOINKAT_EB_MOCK_DEFAULT__` | `true` | `true` | `false` | Whether the dispatcher in `src/services/enable-banking-service.ts` actually routes to the mock |
+| `__KOINKAT_EB_MOCK_DEFAULT__` | `true` unless `KOINKAT_EB_REAL=1` | `true` | `false` | Whether the dispatcher in `src/services/enable-banking-service.ts` actually routes to the mock |
 | `__KOINKAT_ALLOW_DEBUG_ROUTES__` | `true` | `false` | `false` | Whether `/rules` is registered in the router |
 | `__KOINKAT_ALLOW_SANDBOX_UI__` | `true` | `true` | `false` | Whether the Sandbox card is rendered in the workspace-creation hub |
 
@@ -92,23 +92,39 @@ Expanding coverage beyond money math is on the list - see
 ## Testing the real Enable Banking client in dev
 
 Dev mode defaults to mocks-on so contributors don't need credentials. To
-exercise the real client:
+exercise the real client, set `KOINKAT_EB_REAL=1` for the session:
 
-1. Open `vite.config.ts`.
-2. Change `const mocksOnByDefault = mode === "development" || mode === "demo";`
-   to `const mocksOnByDefault = mode === "demo";`.
-3. Restart `npm run tauri:dev`.
-4. In the Connection page (account hub), pick **Linked**, drop your Enable
-   Banking application `.pem`, and paste the matching `app_id` UUID.
+```powershell
+$env:KOINKAT_EB_REAL = '1'; npm run tauri:dev    # PowerShell
+```
 
-Revert the `vite.config.ts` change before committing.
+```bash
+KOINKAT_EB_REAL=1 npm run tauri:dev              # bash / zsh
+```
+
+The variable only affects `development` mode: demo always mocks, and
+production never mocks regardless of it.
+
+Then, in the Connection page (account hub):
+
+- Pick **Sandbox** with the credentials of an Enable Banking application
+  registered in the SANDBOX environment (Control Panel > Applications;
+  sandbox apps activate automatically and have their own application ID
+  and key pair). The sandbox uses the same `api.enablebanking.com` host;
+  its `GET /aspsps` returns Enable Banking's test banks, including the
+  fully simulated Mock ASPSP. Remember to whitelist your redirect URL on
+  the sandbox application - the whitelist is per application.
+- Or pick **Linked** with production credentials to test against real
+  banks.
 
 ## Environment variables
 
 There are no committed `.env*` files. The `.gitignore` blocks `.env` and
-`.env.*` entirely - all build-mode behavior is driven by the Vite `mode` at
-build time. If you need a local variable (e.g. `TAURI_DEV_HOST` for LAN
-mobile testing), create `.env.local`; it stays gitignored.
+`.env.*` entirely - build-mode behavior is driven by the Vite `mode` at
+build time, with one opt-in exception: `KOINKAT_EB_REAL=1` flips a
+development session to the real Enable Banking client (see above). If you
+need a local variable (e.g. `TAURI_DEV_HOST` for LAN mobile testing),
+create `.env.local`; it stays gitignored.
 
 ## OAuth callback
 

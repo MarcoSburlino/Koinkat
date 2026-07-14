@@ -5,7 +5,8 @@ import type { Plugin } from "vite";
 import pkg from "./package.json";
 
 // Three-build structure:
-//   mode=development : mocks available but off by default; debug routes + sandbox UI visible
+//   mode=development : mocks on by default (KOINKAT_EB_REAL=1 switches the
+//                      session to the real EB client); debug routes + sandbox UI visible
 //   mode=demo        : mocks on by default; debug routes hidden; sandbox UI visible
 //   mode=production  : mocks impossible (build aborts if somehow enabled); debug routes removed; sandbox UI hidden
 export default defineConfig(({ mode }) => {
@@ -14,9 +15,13 @@ export default defineConfig(({ mode }) => {
   const sandboxUiAllowed = mode === "development" || mode === "demo";
   // Dev + demo builds activate the fixture-backed mock client by default
   // so contributors never need a live Enable Banking session to run the
-  // app. To test the real client in dev, flip this to `mode === "demo"`
-  // for the session.
-  const mocksOnByDefault = mode === "development" || mode === "demo";
+  // app. Setting KOINKAT_EB_REAL=1 makes a development session use the
+  // real HTTP client instead (for testing against an Enable Banking
+  // sandbox application). Demo always mocks; production never mocks,
+  // regardless of the variable.
+  const mocksOnByDefault =
+    mode === "demo" ||
+    (mode === "development" && process.env.KOINKAT_EB_REAL !== "1");
 
   const host = process.env.TAURI_DEV_HOST;
 
