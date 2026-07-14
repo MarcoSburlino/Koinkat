@@ -63,23 +63,21 @@ const STEPS: Step[] = [
     title: 'Create an Enable Banking account',
     content: (
       <>
-        {/* TODO: verify exact Control Panel UI steps - draft below is best-guess */}
         <p className="text-sm mb-3" style={{ color: 'var(--text-muted)' }}>
           Enable Banking is the PSD2 service Koinkat uses to connect to European banks. You
-          need a free account and an organization before you can register an application.
+          need a free account before you can register an application.
         </p>
         <ol className="list-decimal list-inside flex flex-col gap-2 text-sm" style={{ color: 'var(--text-muted)' }}>
           <li>
             Go to{' '}
             <span style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--fs-caption)', color: 'var(--text)' }}>
-              enablebanking.com
+              enablebanking.com/sign-in/
             </span>{' '}
-            and click <strong style={{ color: 'var(--text)' }}>Sign up</strong>.
+            and enter your email address.
           </li>
-          <li>Fill in your details and verify your email address.</li>
           <li>
-            Once logged in, create an <strong style={{ color: 'var(--text)' }}>organization</strong> - this is the
-            entity that owns your applications. A personal organization is fine.
+            Open the one-time authentication link Enable Banking emails you - there is no
+            password. Your account is created automatically on first sign-in.
           </li>
         </ol>
       </>
@@ -91,25 +89,25 @@ const STEPS: Step[] = [
     title: 'Register an application in the Control Panel',
     content: (
       <>
-        {/* TODO: verify exact Control Panel UI steps - draft below is best-guess */}
         <p className="text-sm mb-3" style={{ color: 'var(--text-muted)' }}>
-          An "application" in Enable Banking is the container for your credentials - it holds your
-          public key and the list of banks you've activated.
+          An "application" in Enable Banking is the container for your credentials: its ID and
+          your key identify Koinkat to the API. Registration is a single form that also asks
+          for the key and the redirect URL - the next steps cover what to put in each field.
         </p>
         <ol className="list-decimal list-inside flex flex-col gap-2 text-sm" style={{ color: 'var(--text-muted)' }}>
           <li>
             Open the <strong style={{ color: 'var(--text)' }}>Control Panel</strong> at{' '}
             <span style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--fs-caption)', color: 'var(--text)' }}>
               enablebanking.com/cp/
-            </span>.
+            </span>{' '}
+            and go to the <strong style={{ color: 'var(--text)' }}>API applications</strong> page.
           </li>
+          <li>Register a new application and give it a name - e.g. "Koinkat personal".</li>
           <li>
-            Navigate to <strong style={{ color: 'var(--text)' }}>Applications</strong> and click{' '}
-            <strong style={{ color: 'var(--text)' }}>Create application</strong> (or{' '}
-            <strong style={{ color: 'var(--text)' }}>New application</strong>).
+            Choose the <strong style={{ color: 'var(--text)' }}>Production</strong> environment
+            for real banks. (Sandbox is Enable Banking's test environment with mock banks - pick
+            it only to try Koinkat without real accounts.)
           </li>
-          <li>Give it a name - e.g. "Koinkat personal" - and confirm.</li>
-          <li>Leave the new application page open - you'll need it in the next steps.</li>
         </ol>
       </>
     ),
@@ -141,27 +139,27 @@ const STEPS: Step[] = [
     title: 'Upload the public key to Enable Banking',
     content: (
       <>
-        {/* TODO: verify exact Control Panel UI steps - draft below is best-guess */}
         <p className="text-sm mb-3" style={{ color: 'var(--text-muted)' }}>
-          Now register your newly generated public key with the application you created.
+          The registration form asks how to handle the application's key. Both options work
+          with Koinkat:
         </p>
         <ol className="list-decimal list-inside flex flex-col gap-2 text-sm" style={{ color: 'var(--text-muted)' }}>
           <li>
-            In the Control Panel, open your application and find the{' '}
-            <strong style={{ color: 'var(--text)' }}>Keys</strong> or{' '}
-            <strong style={{ color: 'var(--text)' }}>Certificates</strong> section.
-          </li>
-          <li>
-            Click <strong style={{ color: 'var(--text)' }}>Add key</strong> (or Upload / Import).
-          </li>
-          <li>
-            Paste the full contents of{' '}
+            <strong style={{ color: 'var(--text)' }}>Provide your own key</strong>: pick the
+            option to supply a public key and paste the full contents of the{' '}
             <span style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--fs-caption)', color: 'var(--text)' }}>
               public.pem
             </span>{' '}
-            into the field, or use the file-upload button to select the file directly.
+            you generated in the previous step.
           </li>
-          <li>Save. Enable Banking will confirm the key is valid.</li>
+          <li>
+            <strong style={{ color: 'var(--text)' }}>Or let the browser generate one</strong>:
+            the private key is created locally (it is not transmitted) and downloads as{' '}
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--fs-caption)', color: 'var(--text)' }}>
+              {'<application-id>'}.pem
+            </span>{' '}
+            - keep that file; you will hand it to Koinkat instead of private.pem.
+          </li>
         </ol>
       </>
     ),
@@ -172,9 +170,9 @@ const STEPS: Step[] = [
     title: 'Locate your application ID',
     content: (
       <>
-        {/* TODO: verify exact Control Panel UI steps - draft below is best-guess */}
         <p className="text-sm mb-3" style={{ color: 'var(--text-muted)' }}>
-          Koinkat needs your application ID - a UUID - to identify your app when making API requests.
+          Koinkat needs your application ID - a UUID assigned at registration - to identify
+          your app when making API requests.
         </p>
         <ol className="list-decimal list-inside flex flex-col gap-2 text-sm" style={{ color: 'var(--text-muted)' }}>
           <li>
@@ -196,32 +194,31 @@ const STEPS: Step[] = [
 
   // ── Step 6 ────────────────────────────────────────────────────────────
   {
-    title: 'Add the banks you want to link',
+    title: 'Activate your application',
     content: (
       <>
-        {/* TODO: verify exact Control Panel UI steps - draft below is best-guess */}
         <p className="text-sm mb-3" style={{ color: 'var(--text-muted)' }}>
-          Before Koinkat can connect to a bank, that bank must be activated for your application
-          inside the Enable Banking Control Panel.
+          There is no per-bank setup: once your application is active, the banks Enable Banking
+          supports appear on Koinkat's Bank Link page. What needs activating is the application
+          itself.
         </p>
         <ol className="list-decimal list-inside flex flex-col gap-2 text-sm" style={{ color: 'var(--text-muted)' }}>
           <li>
-            In your application, find the{' '}
-            <strong style={{ color: 'var(--text)' }}>ASPSPs</strong> or{' '}
-            <strong style={{ color: 'var(--text)' }}>Banks</strong> section.
+            <strong style={{ color: 'var(--text)' }}>Sandbox</strong> applications activate
+            automatically - nothing to do.
           </li>
           <li>
-            Click <strong style={{ color: 'var(--text)' }}>Activate by linking accounts</strong> (or a
-            similar button) and search for each bank by name or country.
+            <strong style={{ color: 'var(--text)' }}>Production</strong> applications start
+            inactive. For personal use, activate in{' '}
+            <strong style={{ color: 'var(--text)' }}>restricted mode</strong> by linking one of
+            your own bank accounts when the Control Panel offers it - free, and sufficient when
+            you only connect accounts you own.
           </li>
           <li>
-            Complete the bank's OAuth flow for each bank you want to add. This is a one-time
-            activation that tells Enable Banking your application may request access on your behalf.
+            Full activation (manual review by Enable Banking, contract and KYC) is only needed
+            to offer an application to other people - not for personal use.
           </li>
         </ol>
-        <p className="text-sm mt-4" style={{ color: 'var(--text-muted)' }}>
-          Only banks activated here will appear as connectable on Koinkat's Bank Link page.
-        </p>
       </>
     ),
   },
