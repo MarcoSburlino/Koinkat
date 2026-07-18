@@ -34,7 +34,7 @@
     "big.js": "^6.2.2",
     "date-fns": "^4",
     "jose": "^6.2.2",
-    "lucide-react": "^0.468",
+    "lucide-react": "^1.25",
     "react": "^19",
     "react-dom": "^19",
     "react-router-dom": "^7",
