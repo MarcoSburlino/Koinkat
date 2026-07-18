@@ -31,7 +31,7 @@
     "@tauri-apps/plugin-http": "^2.5.9",
     "@tauri-apps/plugin-shell": "^2.3.5",
     "@tauri-apps/plugin-sql": "^2.4.0",
-    "big.js": "^6.2.2",
+    "big.js": "^7.0.1",
     "date-fns": "^4",
     "jose": "^6.2.2",
     "lucide-react": "^0.468",
@@ -44,7 +44,7 @@
   "devDependencies": {
     "@tailwindcss/vite": "^4",
     "@tauri-apps/cli": "^2.11.4",
-    "@types/big.js": "^6",
+    "@types/big.js": "^7",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@vitejs/plugin-react": "^4",
