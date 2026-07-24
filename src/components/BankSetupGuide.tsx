@@ -108,6 +108,12 @@ const STEPS: Step[] = [
             for real banks. (Sandbox is Enable Banking's test environment with mock banks - pick
             it only to try Koinkat without real accounts.)
           </li>
+          <li>
+            The form may also ask for an application description, a data protection email, and
+            terms-of-service and privacy-policy links. These exist for applications offered to
+            the public; for a personal application activated by linking your own accounts,
+            Enable Banking does not check them. Enter your own email and fill the rest plainly.
+          </li>
         </ol>
       </>
     ),
@@ -198,9 +204,9 @@ const STEPS: Step[] = [
     content: (
       <>
         <p className="text-sm mb-3" style={{ color: 'var(--text-muted)' }}>
-          There is no per-bank setup: once your application is active, the banks Enable Banking
-          supports appear on Koinkat's Bank Link page. What needs activating is the application
-          itself.
+          Activation turns a new application on and also fixes its scope: only the bank
+          accounts you link in the Control Panel will ever be visible to Koinkat. Link every
+          account, at every bank, you plan to use.
         </p>
         <ol className="list-decimal list-inside flex flex-col gap-2 text-sm" style={{ color: 'var(--text-muted)' }}>
           <li>
@@ -209,14 +215,19 @@ const STEPS: Step[] = [
           </li>
           <li>
             <strong style={{ color: 'var(--text)' }}>Production</strong> applications start
-            inactive. For personal use, activate in{' '}
-            <strong style={{ color: 'var(--text)' }}>restricted mode</strong> by linking one of
-            your own bank accounts when the Control Panel offers it - free, and sufficient when
-            you only connect accounts you own.
+            inactive. On the application's page, click{' '}
+            <strong style={{ color: 'var(--text)' }}>Activate by linking accounts</strong> and
+            link every account you plan to use - the list is a whitelist, and you will still
+            authorize each bank again inside Koinkat. You can link more accounts later from
+            the same page; Enable Banking may cap how many one application can link. The
+            result is an application active in restricted mode, for exactly the accounts you
+            linked.
           </li>
           <li>
             Full activation (manual review by Enable Banking, contract and KYC) is only needed
-            to offer an application to other people - not for personal use.
+            to offer an application to other people. Restricted mode covers your own personal
+            accounts only: not business accounts, not anyone else's, and no commercial use -
+            each person runs their own Enable Banking application.
           </li>
         </ol>
       </>
