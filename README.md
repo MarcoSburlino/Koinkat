@@ -429,8 +429,8 @@ used them in Koinkat:
 
 1. An Enable Banking **application ID** (a long identifier).
 2. A **private key file** ending in `.pem`, downloaded to your computer.
-3. An **activated** application, done by linking your own bank account
-   once in the Enable Banking portal.
+3. An **activated** application, done by linking, in the Enable Banking
+   portal, every bank account you plan to use in Koinkat.
 
 The same steps are also available inside the app: the workspace creation
 form has a link named **"Need help getting these? Open the setup
@@ -471,6 +471,13 @@ and it can never move money.
    (The other option, Sandbox, is Enable Banking's test environment
    with imitation banks and fake data; its credentials cannot see real
    accounts.)
+6. **Other fields:** the form may also ask for an application
+   description, a data protection email, and terms-of-service and
+   privacy-policy links. These exist for applications offered to the
+   public; for a personal application activated by linking your own
+   accounts, Enable Banking
+   [does not check them](https://enablebanking.com/docs/faq/). Enter
+   your own email and fill the rest plainly.
 
 ### Step 3: set the redirect URL
 
@@ -528,21 +535,32 @@ first part of your downloaded key's filename.)
 
 ### Step 6: activate the application by linking your accounts
 
-A newly registered Production application starts **inactive**. For
-personal use, Enable Banking activates it when you link your own bank
-account through the Control Panel:
+A newly registered Production application starts **inactive**, and
+activation also fixes its scope: only the accounts you link here will
+ever be visible to Koinkat. Link every account, at every bank, that you
+plan to use:
 
-1. On your application's page in the Control Panel, use the option to
-   **link accounts** (Enable Banking presents this as the way to
-   activate an application for personal or testing use).
-2. Pick your bank and complete its login and consent screens. This is
-   the same kind of bank-approval flow you will later use in Koinkat,
-   and it happens entirely on your bank's own website.
-3. When it completes, your application is active for personal use with
-   the accounts you own. No contract, review, or payment is involved;
-   the full commercial activation that Enable Banking offers is only
-   for companies providing their application to other people, which is
-   not what Koinkat users do.
+1. On your application's page in the Control Panel, click
+   **Activate by linking accounts**.
+2. Pick your bank and complete its login and consent screens, then
+   repeat for every bank whose accounts you want in Koinkat - only
+   linked accounts are ever returned to the app. This is the same kind
+   of bank-approval flow you will later use in Koinkat, and it happens
+   entirely on your bank's own website; the Control Panel linking is a
+   whitelist, not the connection itself, so you will still authorize
+   each bank again inside Koinkat. You can come back to the same page
+   to link more accounts later, and Enable Banking may cap how many
+   accounts one application can link.
+3. When it completes, your application is active in restricted mode,
+   for exactly the accounts you linked. Under Enable Banking's current
+   [Terms of Service](https://enablebanking.com/terms/), no contract,
+   review, or payment is involved, and the terms expressly permit
+   personal use by private individuals; commercial activation is for
+   companies offering their application to other people.
+
+This covers your own personal accounts only - not business accounts,
+not anyone else's, and no commercial use. Each person using Koinkat
+needs their own Enable Banking account and application.
 
 ### Step 7: enter the credentials in Koinkat
 
@@ -663,6 +681,13 @@ custom-protocol prompts. Use the copy-paste path on the callback page -
 it is fully supported, not a degraded mode. If Koinkat is freshly
 installed and the prompt is never offered at all, launch Koinkat once
 and retry (the app registers its `koinkat://` link handler at startup).
+
+**Bank linked successfully, but no accounts appeared.** In restricted
+mode Enable Banking returns only the accounts previously linked to your
+application in the Control Panel; authorizing an account that was not
+linked yields an empty list. Open your application in the Control
+Panel, link that bank's accounts via **Activate by linking accounts**,
+then link the bank again in Koinkat.
 
 **Connected, but no transactions.** First check the Review inbox -
 imports land there for categorization, not directly in Transactions.

@@ -6,6 +6,12 @@ uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Fixed
+- Corrected the Enable Banking setup guidance in the README and the
+  in-app guide: restricted-mode activation covers only the accounts you
+  link in the Control Panel, with a matching troubleshooting entry for
+  the empty-account-list case.
+
 ## [0.1.0] - 2026-07-14
 
 Initial public release.
