@@ -207,6 +207,12 @@ chmod +x Koinkat_0.1.0_amd64.AppImage
 ./Koinkat_0.1.0_amd64.AppImage
 ```
 
+  If it refuses to start with a FUSE error ("AppImages require FUSE to
+  run"), install the FUSE 2 compatibility library, which recent
+  Ubuntu/Debian releases no longer preinstall (`sudo apt install
+  libfuse2`), or run it once without installing anything:
+  `./Koinkat_0.1.0_amd64.AppImage --appimage-extract-and-run`
+
 - **Debian / Ubuntu** (`Koinkat_<version>_amd64.deb`):
 
 ```bash
@@ -688,6 +694,13 @@ custom-protocol prompts. Use the copy-paste path on the callback page -
 it is fully supported, not a degraded mode. If Koinkat is freshly
 installed and the prompt is never offered at all, launch Koinkat once
 and retry (the app registers its `koinkat://` link handler at startup).
+
+**The Windows installer fails while fetching WebView2.** The installer
+downloads Microsoft's WebView2 runtime only when it is missing - it is
+preinstalled on Windows 10 (April 2018 update and later) and Windows
+11, so this only happens on older or offline systems. Connect to the
+internet and rerun the installer, or install the "WebView2 Runtime"
+manually from Microsoft's site first.
 
 **Bank linked successfully, but no accounts appeared.** In restricted
 mode Enable Banking returns only the accounts previously linked to your
