@@ -157,22 +157,29 @@ exactly how to proceed past them.
 5. A window opens showing the Koinkat icon and an Applications folder
    shortcut. Drag the Koinkat icon onto **Applications**.
 6. Open **Launchpad** (or Finder > Applications) and click Koinkat. On
-   first open, macOS blocks the app because it is not signed.
-7. Open **System Settings**, go to **Privacy & Security**, and scroll
-   down: you will find a message saying Koinkat was blocked. Click
-   **Open Anyway** and confirm. (On macOS versions before Sequoia you
-   can instead right-click the app in Applications and choose **Open**.)
-8. If macOS instead claims the app "is damaged and can't be opened",
-   the download is not actually damaged: that message is how macOS
-   flags unsigned apps it quarantined during download. To clear the
-   flag, open **Terminal** (press Cmd+Space, type `terminal`, press
-   Enter) and run:
+   first open, macOS blocks the app because it is not signed, showing
+   one of two dialogs. Both are expected; each has its way through.
+7. **"Koinkat is damaged and can't be opened. You should move it to
+   the Trash."** This is the usual dialog on current macOS. The app is
+   not damaged: this is how macOS blocks unsigned apps that were
+   quarantined during download, and the dialog offers no button to
+   proceed. Clear the quarantine flag instead: open **Terminal** (press
+   Cmd+Space, type `terminal`, press Enter) and run:
 
 ```bash
 xattr -cr /Applications/Koinkat.app
 ```
 
-   Then open the app again from Applications.
+   Then open the app again from Applications. The command removes the
+   "downloaded from the internet" marker from the app and changes
+   nothing else.
+8. **"Koinkat can't be opened because it is from an unidentified
+   developer"** (or a similar block without the "damaged" wording):
+   open **System Settings**, go to **Privacy & Security**, and scroll
+   down to the message saying Koinkat was blocked. Click
+   **Open Anyway** and confirm. On macOS versions before Sequoia you
+   can instead right-click the app in Applications and choose
+   **Open**.
 
 #### Linux
 
