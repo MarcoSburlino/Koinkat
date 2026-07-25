@@ -1,5 +1,5 @@
 import Big from 'big.js';
-import { getDb, withTransaction } from '../db/database';
+import { getDb, executeAtomicBatch } from '../db/database';
 import { dec, qCent, tryConvert } from '../domain/money';
 import {
   TX_BOOKED_ONLY,
@@ -155,54 +155,64 @@ export async function updateRecurringBudgetLimit(
   newLimit: string,
 ): Promise<RecurringBudget> {
   const koinkatAccountId = requireActiveKoinkatAccountId();
+  const db = await getDb();
   const limitAmount = qCent(dec(newLimit)).toFixed(2);
 
   // Budget + period updates are atomic: a failure between them would show
   // the new limit on the budget while every period kept the old one.
-  const rows = await withTransaction(async (tx) => {
-    await tx.execute(
-      `UPDATE recurring_budgets
-          SET limit_amount = ?, updated_at = datetime('now')
-        WHERE id = ? AND koinkat_account_id = ?`,
-      [limitAmount, budgetId, koinkatAccountId],
-    );
-
+  await executeAtomicBatch([
+    {
+      sql: `UPDATE recurring_budgets
+               SET limit_amount = ?, updated_at = datetime('now')
+             WHERE id = ? AND koinkat_account_id = ?`,
+      params: [limitAmount, budgetId, koinkatAccountId],
+    },
     // Also update all non-customized periods
-    await tx.execute(
-      `UPDATE budget_periods
-          SET limit_amount = ?, updated_at = datetime('now')
-        WHERE recurring_budget_id = ?
-          AND koinkat_account_id = ?
-          AND is_customized = 0`,
-      [limitAmount, budgetId, koinkatAccountId],
-    );
+    {
+      sql: `UPDATE budget_periods
+               SET limit_amount = ?, updated_at = datetime('now')
+             WHERE recurring_budget_id = ?
+               AND koinkat_account_id = ?
+               AND is_customized = 0`,
+      params: [limitAmount, budgetId, koinkatAccountId],
+    },
+  ]);
 
-    return tx.select<RecurringBudgetRow[]>(
-      'SELECT * FROM recurring_budgets WHERE id = ? AND koinkat_account_id = ?',
-      [budgetId, koinkatAccountId],
-    );
-  });
+  const rows = await db.select<RecurringBudgetRow[]>(
+    'SELECT * FROM recurring_budgets WHERE id = ? AND koinkat_account_id = ?',
+    [budgetId, koinkatAccountId],
+  );
   if (rows.length === 0) throw new Error('Budget not found');
   return toRecurringBudget(rows[0]);
 }
 
 export async function deleteRecurringBudget(budgetId: string): Promise<boolean> {
   const koinkatAccountId = requireActiveKoinkatAccountId();
+  const db = await getDb();
+
+  // Pre-check existence: the batch result only reports the SUMMED
+  // rowsAffected, which can't distinguish "budget missing" from
+  // "periods deleted". The queue serializes calls, so the row can't
+  // vanish between this check and the batch.
+  const existing = await db.select<{ id: string }[]>(
+    'SELECT id FROM recurring_budgets WHERE id = ? AND koinkat_account_id = ?',
+    [budgetId, koinkatAccountId],
+  );
+  if (existing.length === 0) return false;
 
   // Atomic: a failure after the periods DELETE would leave an orphaned
   // parent whose periods silently regenerate via ensurePeriodsForYear.
-  return withTransaction(async (tx) => {
-    await tx.execute(
-      'DELETE FROM budget_periods WHERE recurring_budget_id = ? AND koinkat_account_id = ?',
-      [budgetId, koinkatAccountId],
-    );
-
-    const result = await tx.execute(
-      'DELETE FROM recurring_budgets WHERE id = ? AND koinkat_account_id = ?',
-      [budgetId, koinkatAccountId],
-    );
-    return result.rowsAffected > 0;
-  });
+  await executeAtomicBatch([
+    {
+      sql: 'DELETE FROM budget_periods WHERE recurring_budget_id = ? AND koinkat_account_id = ?',
+      params: [budgetId, koinkatAccountId],
+    },
+    {
+      sql: 'DELETE FROM recurring_budgets WHERE id = ? AND koinkat_account_id = ?',
+      params: [budgetId, koinkatAccountId],
+    },
+  ]);
+  return true;
 }
 
 /** First/last ISO dates covered by a budget's month range. */
@@ -218,8 +228,26 @@ function budgetRangeDates(
 }
 
 /**
+ * Shared WHERE clause for the backfill banner count and the backfill
+ * UPDATE - the two MUST stay textually identical or the banner won't
+ * clear after "Include" runs. Mirrors TX_BOOKED_ONLY +
+ * TX_EXCLUDE_REPAYMENT (tx-sql.ts) plus the transfer-pair exclusion,
+ * inlined un-aliased because the backfill UPDATE has no t-table alias.
+ * Keep in sync with tx-sql.ts.
+ */
+const UNBUDGETED_EXPENSE_WHERE = `type = 'expense' AND is_budgeted = 0
+       AND koinkat_account_id = ?
+       AND date >= ? AND date <= ?
+       AND transfer_pair_id IS NULL
+       AND (relation_kind IS NULL OR relation_kind != 'repayment')
+       AND status = 'booked'`;
+
+/**
  * Count expenses excluded from budgeting (`is_budgeted = 0`) inside a
  * budget's date range. Drives the Budgets page's backfill banner.
+ * Transfers, repayments, and bank-pending rows never count: they are
+ * excluded from budget aggregation regardless of `is_budgeted`, so
+ * offering to "include" them would be a lie.
  */
 export async function countUnbudgetedExpenses(params: {
   year: number;
@@ -235,9 +263,7 @@ export async function countUnbudgetedExpenses(params: {
   );
   const rows = await db.select<{ cnt: number }[]>(
     `SELECT COUNT(*) as cnt FROM transactions
-     WHERE type = 'expense' AND is_budgeted = 0
-       AND koinkat_account_id = ?
-       AND date >= ? AND date <= ?`,
+     WHERE ${UNBUDGETED_EXPENSE_WHERE}`,
     [koinkatAccountId, startDate, endDate],
   );
   return rows[0]?.cnt ?? 0;
@@ -265,9 +291,7 @@ export async function backfillBudgetedExpenses(params: {
   );
   await db.execute(
     `UPDATE transactions SET is_budgeted = 1
-     WHERE type = 'expense' AND is_budgeted = 0
-       AND koinkat_account_id = ?
-       AND date >= ? AND date <= ?`,
+     WHERE ${UNBUDGETED_EXPENSE_WHERE}`,
     [koinkatAccountId, startDate, endDate],
   );
 }
@@ -1236,22 +1260,30 @@ export async function getMatchingEventsForDate(
 
 export async function deleteBudgetEvent(id: string): Promise<boolean> {
   const koinkatAccountId = requireActiveKoinkatAccountId();
+  const db = await getDb();
+
+  // Pre-check existence (same rationale as deleteRecurringBudget: the
+  // batch result can't isolate the DELETE's own rowsAffected).
+  const existing = await db.select<{ id: string }[]>(
+    'SELECT id FROM budget_events WHERE id = ? AND koinkat_account_id = ?',
+    [id, koinkatAccountId],
+  );
+  if (existing.length === 0) return false;
 
   // Atomic: failing between unlink and delete would strand transactions
   // unlinked from an event that still exists.
-  return withTransaction(async (tx) => {
+  await executeAtomicBatch([
     // Unlink transactions referencing this event (within this profile)
-    await tx.execute(
-      'UPDATE transactions SET budget_event_id = NULL WHERE koinkat_account_id = ? AND budget_event_id = ?',
-      [koinkatAccountId, id],
-    );
-
-    const result = await tx.execute(
-      'DELETE FROM budget_events WHERE id = ? AND koinkat_account_id = ?',
-      [id, koinkatAccountId],
-    );
-    return result.rowsAffected > 0;
-  });
+    {
+      sql: 'UPDATE transactions SET budget_event_id = NULL WHERE koinkat_account_id = ? AND budget_event_id = ?',
+      params: [koinkatAccountId, id],
+    },
+    {
+      sql: 'DELETE FROM budget_events WHERE id = ? AND koinkat_account_id = ?',
+      params: [id, koinkatAccountId],
+    },
+  ]);
+  return true;
 }
 
 export async function calculateEventSpending(
@@ -1342,6 +1374,12 @@ export async function calculateEventSpendingBatch(
  * or `auto_capture = 0`. Wrapped callers can invoke it unconditionally
  * after event create / update.
  *
+ * The returned counts are best-effort: they are read via COUNT(*) with
+ * the sweeps' exact predicates immediately before the atomic batch, so
+ * a concurrent queued write could land in between. Production callers
+ * (createBudgetEvent / updateBudgetEvent) discard them; only tests
+ * assert on them.
+ *
  * Side note on math: a transaction linked to a `sum_to_budget = 1`
  * event whose `sum_to_month` matches a budgeted period contributes
  * via Query 2 of `calculatePeriodSpending`. Query 1 excludes any row
@@ -1365,17 +1403,13 @@ export async function applyAutoCaptureForEvent(
   if (event.isExpired) return { linked: 0, unlinked: 0 };
   if (!event.startDate || !event.endDate) return { linked: 0, unlinked: 0 };
 
-  // Atomic: a failure between the two sweeps would leave rows linked to
-  // the event alongside stale captures that should have been released.
-  return withTransaction(async (tx) => {
-    // Link sweep: anything in range and currently unlinked (or pointing
-    // at a different event without a pin) becomes ours.
-    const linkRes = await tx.execute(
-      `UPDATE transactions
-          SET budget_event_id = ?,
-              is_budgeted = 1,
-              updated_at = datetime('now')
-        WHERE koinkat_account_id = ?
+  // Predicates shared by the pre-counts and the sweeps below. The link
+  // sweep targets anything in range and currently unlinked (or pointing
+  // at a different event without a pin); the unlink sweep targets rows
+  // pointing at this event but no longer in range (because the event's
+  // dates moved). The unlink sweep never touches is_budgeted - that was
+  // set by the user.
+  const linkWhere = `WHERE koinkat_account_id = ?
           AND type = 'expense'
           AND transfer_pair_id IS NULL
           -- mirrors TX_EXCLUDE_REPAYMENT (tx-sql.ts); inlined un-aliased because
@@ -1383,29 +1417,57 @@ export async function applyAutoCaptureForEvent(
           AND (relation_kind IS NULL OR relation_kind != 'repayment')
           AND date BETWEEN ? AND ?
           AND event_link_pinned = 0
-          AND (budget_event_id IS NULL OR budget_event_id != ?)`,
-      [eventId, koinkatAccountId, event.startDate, event.endDate, eventId],
-    );
-
-    // Unlink sweep: rows currently pointing at this event but no longer
-    // in range (because the event's dates moved) drop their link. We
-    // never touch is_budgeted here - that was set by the user.
-    const unlinkRes = await tx.execute(
-      `UPDATE transactions
-          SET budget_event_id = NULL,
-              updated_at = datetime('now')
-        WHERE koinkat_account_id = ?
+          AND (budget_event_id IS NULL OR budget_event_id != ?)`;
+  const linkWhereParams = [
+    koinkatAccountId,
+    event.startDate,
+    event.endDate,
+    eventId,
+  ];
+  const unlinkWhere = `WHERE koinkat_account_id = ?
           AND budget_event_id = ?
           AND event_link_pinned = 0
-          AND (date < ? OR date > ?)`,
-      [koinkatAccountId, eventId, event.startDate, event.endDate],
-    );
+          AND (date < ? OR date > ?)`;
+  const unlinkWhereParams = [
+    koinkatAccountId,
+    eventId,
+    event.startDate,
+    event.endDate,
+  ];
 
-    return {
-      linked: linkRes.rowsAffected ?? 0,
-      unlinked: unlinkRes.rowsAffected ?? 0,
-    };
-  });
+  const linkCount = await db.select<{ cnt: number }[]>(
+    `SELECT COUNT(*) AS cnt FROM transactions ${linkWhere}`,
+    linkWhereParams,
+  );
+  const unlinkCount = await db.select<{ cnt: number }[]>(
+    `SELECT COUNT(*) AS cnt FROM transactions ${unlinkWhere}`,
+    unlinkWhereParams,
+  );
+
+  // Atomic: a failure between the two sweeps would leave rows linked to
+  // the event alongside stale captures that should have been released.
+  await executeAtomicBatch([
+    {
+      sql: `UPDATE transactions
+          SET budget_event_id = ?,
+              is_budgeted = 1,
+              updated_at = datetime('now')
+        ${linkWhere}`,
+      params: [eventId, ...linkWhereParams],
+    },
+    {
+      sql: `UPDATE transactions
+          SET budget_event_id = NULL,
+              updated_at = datetime('now')
+        ${unlinkWhere}`,
+      params: unlinkWhereParams,
+    },
+  ]);
+
+  return {
+    linked: linkCount[0]?.cnt ?? 0,
+    unlinked: unlinkCount[0]?.cnt ?? 0,
+  };
 }
 
 /**

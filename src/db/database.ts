@@ -15,7 +15,7 @@ let rawSelect: Database['select'] | null = null;
  * `loaded` Database returned has its methods transparently wrapped
  * below.
  *
- * **Why it exists.** `tauri-plugin-sql` v2.3.2 wraps an `sqlx::SqlitePool`
+ * **Why it exists.** `tauri-plugin-sql` v2.4.0 wraps an `sqlx::SqlitePool`
  * (default `max_connections=10`) and there's no JS-exposed config knob
  * to force size=1. sqlx releases the connection back to the pool after
  * every `execute`/`select`, so consecutive `db.execute` calls can land
@@ -53,6 +53,23 @@ function serialize<T>(fn: () => Promise<T>): Promise<T> {
 }
 
 /**
+ * Tauri plugin commands reject with plain STRINGS (the Rust error is
+ * serialized via `to_string`), so the `err instanceof Error` checks all
+ * over the app would fall back to generic messages and hide the real SQL
+ * error. Normalize every rejection into a proper `Error` here, at the one
+ * point all DB calls flow through.
+ */
+function toDbError(err: unknown): Error {
+  if (err instanceof Error) return err;
+  if (typeof err === 'string') return new Error(err);
+  try {
+    return new Error(JSON.stringify(err));
+  } catch {
+    return new Error(String(err));
+  }
+}
+
+/**
  * Open (or return the cached) database handle. The returned `Database`
  * has its `execute` and `select` methods transparently wrapped in the
  * single-queue serializer documented on `opQueue` above.
@@ -66,7 +83,7 @@ function serialize<T>(fn: () => Promise<T>): Promise<T> {
  *     versa. Side effect: `koinkat.db-wal` + `koinkat.db-shm` sidecar
  *     files appear next to the DB.
  *
- * `tauri-plugin-sql` v2.3.2 does NOT accept `?_pragma=…` URL params
+ * `tauri-plugin-sql` v2.4.0 does NOT accept `?_pragma=…` URL params
  * (it rejects them at parse time with `unknown query parameter`), so
  * the URL stays bare.
  */
@@ -78,12 +95,23 @@ export async function getDb(): Promise<Database> {
       // and pin the connection that subsequent calls will land on.
       const origExecute = loaded.execute.bind(loaded);
       const origSelect = loaded.select.bind(loaded);
-      rawExecute = origExecute;
-      rawSelect = origSelect;
+      // Normalize rejections at the source so every path (queued calls,
+      // the raw `tx` executor inside withTransaction, executeAtomicBatch)
+      // throws a real Error carrying the plugin's message.
+      const wrappedExecute = ((sql: string, args?: unknown[]) =>
+        origExecute(sql, args).catch((err) => {
+          throw toDbError(err);
+        })) as typeof loaded.execute;
+      const wrappedSelect = (<T>(sql: string, args?: unknown[]) =>
+        origSelect<T>(sql, args).catch((err) => {
+          throw toDbError(err);
+        })) as typeof loaded.select;
+      rawExecute = wrappedExecute;
+      rawSelect = wrappedSelect;
       loaded.execute = ((sql: string, args?: unknown[]) =>
-        serialize(() => origExecute(sql, args))) as typeof loaded.execute;
+        serialize(() => wrappedExecute(sql, args))) as typeof loaded.execute;
       loaded.select = (<T>(sql: string, args?: unknown[]) =>
-        serialize(() => origSelect<T>(sql, args))) as typeof loaded.select;
+        serialize(() => wrappedSelect<T>(sql, args))) as typeof loaded.select;
 
       try {
         await loaded.execute('PRAGMA busy_timeout = 5000');
@@ -112,6 +140,12 @@ export interface DbExecutor {
   select<T>(sql: string, args?: unknown[]): Promise<T>;
 }
 
+/** One statement of an `executeAtomicBatch` group. */
+export interface BatchStatement {
+  sql: string;
+  params?: unknown[];
+}
+
 /**
  * Run `fn` inside a single `BEGIN IMMEDIATE … COMMIT` transaction that holds
  * the global op-queue for its entire duration.
@@ -130,6 +164,15 @@ export interface DbExecutor {
  * IMPORTANT: the body must use the passed `tx` for every DB call (and pass it
  * to any helper that touches the DB). A wrapped `getDb()` call inside the body
  * would deadlock behind this held task.
+ *
+ * CAVEAT: each statement is still its own pool acquire, and sqlx closes
+ * pooled connections on release once they pass `max_lifetime` (30 min
+ * default) or sit idle past `idle_timeout` (10 min default). A recycle
+ * that lands between this function's statements silently drops the open
+ * transaction, and the COMMIT then fails with "cannot commit - no
+ * transaction is active". Prefer `executeAtomicBatch` for write-only
+ * groups - it is immune to that failure mode. Keep `withTransaction`
+ * only for bodies that must read or run JS logic mid-transaction.
  */
 export async function withTransaction<T>(
   fn: (tx: DbExecutor) => Promise<T>,
@@ -161,6 +204,84 @@ export async function withTransaction<T>(
       } catch {
         // Secondary failure during rollback isn't actionable - keep the
         // original error as the thing surfaced to the caller.
+      }
+      throw err;
+    }
+  });
+}
+
+/**
+ * Run a group of write statements as ONE atomic SQLite transaction sent
+ * in a SINGLE plugin `execute` call: `BEGIN IMMEDIATE; <stmts>; COMMIT`.
+ *
+ * Why this exists: `withTransaction` issues BEGIN / body / COMMIT as
+ * separate `execute` calls, each its own pool acquire, and a connection
+ * recycle between them drops the transaction mid-flight (see the caveat
+ * on `withTransaction`). sqlx's SQLite driver splits a multi-statement
+ * string on ';', binds positional args across the statements in order,
+ * and runs everything on ONE connection inside one acquire - so this
+ * batch form cannot be torn apart by pool churn.
+ *
+ * Contract:
+ *   - Statements must be developer literals using `?` binds only, with
+ *     no `;` and no literal `?` inside quoted strings. Guarded below:
+ *     an embedded `;` is rejected (it would misalign every following
+ *     statement's binds) and each statement's `?` count must match its
+ *     params length.
+ *   - Write-only: rows produced by a SELECT would be discarded.
+ *   - `rowsAffected` is the SUM across all statements in the batch.
+ *   - On failure the recovery ROLLBACK is best-effort, same residual
+ *     risk and self-healing preamble as `withTransaction`.
+ */
+export async function executeAtomicBatch(
+  statements: BatchStatement[],
+): Promise<{ rowsAffected: number }> {
+  if (statements.length === 0) return { rowsAffected: 0 };
+  await getDb(); // ensures rawExecute is assigned
+  const exec = rawExecute;
+  if (!exec) throw new Error('Database not initialised');
+
+  for (const stmt of statements) {
+    if (stmt.sql.includes(';')) {
+      throw new Error(
+        `executeAtomicBatch: statement contains ';': ${stmt.sql.slice(0, 80)}`,
+      );
+    }
+    const placeholders = (stmt.sql.match(/\?/g) ?? []).length;
+    const paramCount = stmt.params?.length ?? 0;
+    if (placeholders !== paramCount) {
+      throw new Error(
+        `executeAtomicBatch: ${placeholders} placeholders but ${paramCount} params: ${stmt.sql.slice(0, 80)}`,
+      );
+    }
+  }
+
+  const sql = [
+    'BEGIN IMMEDIATE',
+    ...statements.map((s) => s.sql),
+    'COMMIT',
+  ].join('; ');
+  const args = statements.flatMap((s) => s.params ?? []);
+
+  return serialize(async () => {
+    // Clear a transaction abandoned by a previous crash on this
+    // connection (errors harmlessly when none is active) - same
+    // rationale as withTransaction's preamble.
+    try {
+      await exec('ROLLBACK');
+    } catch {
+      // No active transaction - nothing to clear.
+    }
+    try {
+      const result = await exec(sql, args);
+      return { rowsAffected: result.rowsAffected };
+    } catch (err) {
+      // A mid-batch failure leaves the transaction open on the
+      // connection that served the batch; roll it back best-effort.
+      try {
+        await exec('ROLLBACK');
+      } catch {
+        // Keep the original error as the surfaced failure.
       }
       throw err;
     }

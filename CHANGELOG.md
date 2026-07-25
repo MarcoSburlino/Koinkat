@@ -11,6 +11,14 @@ uses [Semantic Versioning](https://semver.org/).
   in-app guide: restricted-mode activation covers only the accounts you
   link in the Control Panel, with a matching troubleshooting entry for
   the empty-account-list case.
+- Grouped budget writes now run as single atomic SQLite batches, immune
+  to pool-connection recycling dropping a transaction mid-flight
+  ("cannot commit - no transaction is active"); database-plugin errors
+  now surface their real message, and a failed budget deletion shows
+  its reason in the dialog instead of failing silently.
+
+### Changed
+- Refreshed the app icon set.
 
 ## [0.1.0] - 2026-07-14
 

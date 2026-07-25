@@ -148,6 +148,7 @@ export function Budgets() {
   // have no modal to live in, so they render under the page header.
   const [actionError, setActionError] = useState<string | null>(null);
   const [deleteEventError, setDeleteEventError] = useState<string | null>(null);
+  const [deleteBudgetError, setDeleteBudgetError] = useState<string | null>(null);
 
   // Collapsible sections
   const [breakdownOpen, setBreakdownOpen] = useState(false);
@@ -375,6 +376,22 @@ export function Budgets() {
         err instanceof Error ? err.message : 'Failed to delete budget event',
       );
     }
+  }
+
+  async function handleDeleteBudget() {
+    if (!yearlyData) return;
+    setDeleteBudgetError(null);
+    try {
+      await budgetService.deleteRecurringBudget(yearlyData.budget.id);
+    } catch (err) {
+      // Keep the modal open so the user can read why deletion failed.
+      setDeleteBudgetError(
+        err instanceof Error ? err.message : 'Failed to delete budget',
+      );
+      return;
+    }
+    setDeleteBudgetOpen(false);
+    await load();
   }
 
   // ── Render ────────────────────────────────────────────────────────────
@@ -684,14 +701,10 @@ export function Budgets() {
 
       <DeleteBudgetModal
         open={deleteBudgetOpen}
-        onCancel={() => setDeleteBudgetOpen(false)}
+        error={deleteBudgetError}
+        onCancel={() => { setDeleteBudgetOpen(false); setDeleteBudgetError(null); }}
         budget={yearlyData?.budget ?? null}
-        onConfirm={async () => {
-          if (!yearlyData) return;
-          await budgetService.deleteRecurringBudget(yearlyData.budget.id);
-          setDeleteBudgetOpen(false);
-          await load();
-        }}
+        onConfirm={handleDeleteBudget}
       />
     </div>
   );
@@ -1776,12 +1789,14 @@ function CreateBudgetModal({
         limitAmount,
         currency,
       });
-      await onCreated();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to create budget.');
+      return;
     } finally {
       setSubmitting(false);
     }
+    // Outside the try: a reload hiccup must not read as a save failure.
+    await onCreated();
   }
 
   return (
@@ -1865,14 +1880,16 @@ function EditPeriodModal({
     setError('');
     try {
       await budgetService.customizePeriod(period.id, limit, notes || undefined);
-      await onSaved();
     } catch (err) {
       setError(
         err instanceof Error ? err.message : 'Failed to customize period.',
       );
+      return;
     } finally {
       setSubmitting(false);
     }
+    // Outside the try: a reload hiccup must not read as a save failure.
+    await onSaved();
   }
 
   const monthLabel = period
@@ -1948,14 +1965,16 @@ function EditBudgetLimitModal({
     setError('');
     try {
       await budgetService.updateRecurringBudgetLimit(budget.id, limit);
-      await onSaved();
     } catch (err) {
       setError(
         err instanceof Error ? err.message : 'Failed to update budget limit.',
       );
+      return;
     } finally {
       setSubmitting(false);
     }
+    // Outside the try: a reload hiccup must not read as a save failure.
+    await onSaved();
   }
 
   return (
@@ -2347,11 +2366,13 @@ function EditEventModal({
 
 function DeleteBudgetModal({
   open,
+  error,
   onCancel,
   budget,
   onConfirm,
 }: {
   open: boolean;
+  error: string | null;
   onCancel: () => void;
   budget: YearlyBudgetData['budget'] | null;
   onConfirm: () => Promise<void>;
@@ -2374,6 +2395,11 @@ function DeleteBudgetModal({
         Transactions in this period will be preserved (they simply won't
         belong to a budget anymore).
       </p>
+      {error && (
+        <p className="text-sm mb-4" style={{ color: 'var(--danger)' }}>
+          {error}
+        </p>
+      )}
       <div className="flex justify-end gap-3">
         <Button variant="ghost" onClick={onCancel}>Cancel</Button>
         <Button variant="danger" onClick={handle} disabled={submitting}>

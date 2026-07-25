@@ -50,9 +50,11 @@ vi.mock('../db/database', () => ({
   withTransaction: vi.fn(async <T,>(fn: (tx: unknown) => Promise<T>) =>
     fn(fakeDb),
   ),
+  executeAtomicBatch: vi.fn(async () => ({ rowsAffected: 0 })),
 }));
 
 // Imports must come AFTER vi.mock calls.
+import { executeAtomicBatch } from '../db/database';
 import {
   applyAutoCaptureForEvent,
   applyAutoCaptureForTransaction,
@@ -94,6 +96,7 @@ function txnRow(overrides: Record<string, unknown> = {}) {
 
 beforeEach(() => {
   resetFakeDb();
+  vi.mocked(executeAtomicBatch).mockClear();
 });
 
 // ── applyAutoCaptureForEvent ──────────────────────────────────────
@@ -103,7 +106,7 @@ describe('applyAutoCaptureForEvent', () => {
     fakeDb.selects.push({ sql: 'SELECT * FROM budget_events', params: [], rows: [] });
     const result = await applyAutoCaptureForEvent('evt-x');
     expect(result).toEqual({ linked: 0, unlinked: 0 });
-    expect(fakeDb.executes.length).toBe(0);
+    expect(vi.mocked(executeAtomicBatch)).not.toHaveBeenCalled();
   });
 
   it('bails when auto_capture is 0', async () => {
@@ -114,7 +117,7 @@ describe('applyAutoCaptureForEvent', () => {
     });
     const result = await applyAutoCaptureForEvent('evt-1');
     expect(result).toEqual({ linked: 0, unlinked: 0 });
-    expect(fakeDb.executes.length).toBe(0);
+    expect(vi.mocked(executeAtomicBatch)).not.toHaveBeenCalled();
   });
 
   it('bails when the event is expired', async () => {
@@ -125,6 +128,7 @@ describe('applyAutoCaptureForEvent', () => {
     });
     const result = await applyAutoCaptureForEvent('evt-1');
     expect(result).toEqual({ linked: 0, unlinked: 0 });
+    expect(vi.mocked(executeAtomicBatch)).not.toHaveBeenCalled();
   });
 
   it('bails when the event has no dates', async () => {
@@ -135,6 +139,7 @@ describe('applyAutoCaptureForEvent', () => {
     });
     const result = await applyAutoCaptureForEvent('evt-1');
     expect(result).toEqual({ linked: 0, unlinked: 0 });
+    expect(vi.mocked(executeAtomicBatch)).not.toHaveBeenCalled();
   });
 
   it('runs both link and unlink sweeps when conditions are met', async () => {
@@ -143,12 +148,18 @@ describe('applyAutoCaptureForEvent', () => {
       params: [],
       rows: [eventRow()],
     });
-    fakeDb.executes.push({ sql: 'link', params: [], rowsAffected: 4 });
-    fakeDb.executes.push({ sql: 'unlink', params: [], rowsAffected: 2 });
+    // Pre-counts: link candidates, then stale-link candidates.
+    fakeDb.selects.push({ sql: 'link count', params: [], rows: [{ cnt: 4 }] });
+    fakeDb.selects.push({ sql: 'unlink count', params: [], rows: [{ cnt: 2 }] });
 
     const result = await applyAutoCaptureForEvent('evt-1');
     expect(result).toEqual({ linked: 4, unlinked: 2 });
-    expect(fakeDb.executes.length).toBe(0);
+
+    expect(vi.mocked(executeAtomicBatch)).toHaveBeenCalledTimes(1);
+    const statements = vi.mocked(executeAtomicBatch).mock.calls[0][0];
+    expect(statements).toHaveLength(2);
+    expect(statements[0].sql).toContain('SET budget_event_id = ?');
+    expect(statements[1].sql).toContain('SET budget_event_id = NULL');
   });
 });
 
