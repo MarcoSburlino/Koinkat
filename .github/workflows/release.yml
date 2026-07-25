@@ -63,6 +63,6 @@ jobs:
 
             - Windows: SmartScreen shows "Windows protected your PC". Click "More info", then "Run anyway".
             - macOS (Apple Silicon only): if macOS says Koinkat "is damaged and can't be opened", it is not damaged - that is the quarantine block on unsigned apps. Run `xattr -cr /Applications/Koinkat.app` in Terminal and open the app again. If you instead get an "unidentified developer" block, use System Settings > Privacy & Security > Open Anyway.
-            - Linux: the AppImage needs `chmod +x` before it runs; deb and rpm install normally.
+            - Linux: the AppImage needs `chmod +x` before it runs; if it reports a FUSE error, install libfuse2 (`sudo apt install libfuse2`) or run it with `--appimage-extract-and-run`. deb and rpm install normally.
           releaseDraft: true
           prerelease: false
