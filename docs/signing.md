@@ -1,146 +1,133 @@
-# Code signing and the "blocked install" problem
+# Fixing blocked installs without paying for certificates
 
-This document explains why downloaded Koinkat installers get blocked or
-flagged on Windows and macOS, what actually fixes it, what each fix
-costs, and exactly how to turn signing on in this repository's release
-pipeline. It is written for the maintainer; end-user workarounds live in
-the [README install guide](../README.md#path-a-install-the-released-app).
+Downloaded Koinkat installers get blocked because release builds are
+not code-signed. This document explains the mechanics and lays out the
+**zero-cost playbook** for reducing or eliminating the blocks. Paid
+signing (which the project deliberately does not buy) is covered at the
+end only as reference — the release pipeline is already wired for it if
+that ever changes.
 
 ## Why installs get blocked
 
-The releases built by `.github/workflows/release.yml` are **not
-code-signed**. That single fact produces every symptom users report:
-
 | OS | What the user sees | Mechanism |
 |---|---|---|
-| Windows | "Windows protected your PC" (SmartScreen), Defender or third-party AV quarantining the installer | SmartScreen blocks executables that carry the "downloaded from the internet" mark and have no signature *and* no accumulated reputation. Unsigned NSIS installers are also a favorite packaging for malware, so AV heuristics score them aggressively. |
-| macOS | "Koinkat is damaged and can't be opened" or "unidentified developer" | Gatekeeper refuses quarantined apps that are not signed with a Developer ID certificate **and notarized by Apple**. The "damaged" wording is misleading but standard: it is the quarantine block, not corruption. |
-| Linux | AppImage won't start | Not a signing issue: the AppImage needs `chmod +x`, and recent Ubuntu/Debian lack the FUSE 2 library it needs (`sudo apt install libfuse2`). deb/rpm install normally. |
+| Windows | "Windows protected your PC" (SmartScreen); Defender/AV flags | SmartScreen blocks internet-downloaded executables that have no signature *and* no accumulated reputation. Unsigned NSIS installers also score high in AV heuristics because that packaging is popular with malware. |
+| macOS | "Koinkat is damaged and can't be opened" or "unidentified developer" | Gatekeeper refuses **quarantined** apps that are not Developer-ID-signed and notarized. The "damaged" wording is misleading but standard: it is the quarantine block, not corruption. |
+| Linux | AppImage won't start | Not signing-related: missing exec bit, or missing FUSE 2 on recent Ubuntu/Debian. |
 
-Nothing about the app's behavior triggers this: a hello-world app
-shipped the same way gets the same treatment. The fix is identity, not
-code changes.
+Key insight for the free playbook: on macOS the trigger is the
+`com.apple.quarantine` flag that **browsers** attach to downloads, and
+on Windows the trigger is the Mark-of-the-Web plus zero reputation.
+Distribution channels that sidestep those triggers avoid the dialogs
+without any certificate.
 
-## What fixes it
+## The free playbook
 
-### macOS — Apple Developer Program + notarization
+### 1. Windows: apply to SignPath Foundation (free, real signing)
 
-**Cost: US$99/year.** There is no free path: ad-hoc signing, self-signed
-certificates, and free Apple accounts all still hit the Gatekeeper
-block. Once builds are Developer-ID-signed and notarized, the app opens
-with no dialog at all.
+[SignPath](https://signpath.io/open-source) runs a program that gives
+qualifying open-source projects **free code signing**: the SignPath
+Foundation signs your CI-built artifacts with its own publicly trusted
+certificate. Koinkat is a good fit (OSS license, public CI builds on
+GitHub Actions). This is the only genuinely free way to get Windows
+binaries signed.
 
-1. Join the [Apple Developer Program](https://developer.apple.com/programs/)
-   (the account holder role is required for the next step).
-2. In Xcode or at developer.apple.com, create a **Developer ID
-   Application** certificate. Download it, add it to your local
-   Keychain, then export it (certificate + private key) as a `.p12` file
-   with a password.
-3. Base64-encode the file: `base64 -i certificate.p12 | pbcopy`
-4. Create an **app-specific password** for your Apple ID at
-   [account.apple.com](https://account.apple.com/) (Sign-In and
-   Security > App-Specific Passwords). Notarization uses it; your real
-   password never goes into CI.
-5. Add these repository secrets (Settings > Secrets and variables >
-   Actions):
+- Apply on their site with the repository link.
+- Once approved, integration is their GitHub Action
+  ([`SignPath/github-action-submit-signing-request`](https://github.com/SignPath/github-action-submit-signing-request)):
+  the release workflow uploads the built `.exe`/`.msi` as a signing
+  request and downloads the signed artifact before attaching it to the
+  release. Wire it into `release.yml` when the account exists.
+- Note their conditions: the certificate names SignPath Foundation OSS
+  as publisher (with the project in the metadata), and they require the
+  build to be reproducible from public CI.
 
-   | Secret | Value |
-   |---|---|
-   | `APPLE_CERTIFICATE` | base64 of the `.p12` |
-   | `APPLE_CERTIFICATE_PASSWORD` | the `.p12` export password |
-   | `APPLE_SIGNING_IDENTITY` | the certificate name, e.g. `Developer ID Application: Marco Sburlino (TEAMID)` |
-   | `APPLE_ID` | your Apple ID email |
-   | `APPLE_PASSWORD` | the app-specific password |
-   | `APPLE_TEAM_ID` | your 10-character team ID |
+### 2. Windows: publish to winget (free, no certificate)
 
-That's it — the release workflow detects `APPLE_CERTIFICATE` and
-enables signing + notarization automatically (Tauri imports the
-certificate into a temporary keychain, signs the bundle, submits it to
-Apple's notary service, and staples the ticket). Verify a produced
-build with:
+`winget install MarcoSburlino.Koinkat` downloads and runs the installer
+without the browser download flow, so users never meet the SmartScreen
+dialog. Microsoft validates submissions on their side.
+
+Ready-to-submit manifests for v0.1.0 (with the official release SHA256
+hashes) are in [`packaging/winget/`](../packaging/winget/) — see
+[`packaging/README.md`](../packaging/README.md) for the submission
+steps. Per release, only version + hashes change; the
+`wingetcreate update` command automates the bump.
+
+### 3. macOS: offer the Terminal install path (free, no dialogs)
+
+There is **no free signing or notarization for macOS** — ad-hoc
+signing, self-signed certificates, and free Apple accounts all still
+hit Gatekeeper. But Gatekeeper only assesses *quarantined* apps, and
+the quarantine flag is attached by browsers. `curl` and `tar` do not
+set it, so this installs with no warning dialogs at all:
 
 ```bash
-spctl -a -t exec -vv /Applications/Koinkat.app   # should say "accepted ... Notarized Developer ID"
+cd ~/Downloads
+curl -L -o Koinkat.app.tar.gz https://github.com/MarcoSburlino/Koinkat/releases/latest/download/Koinkat_0.1.0_aarch64.app.tar.gz
+tar xzf Koinkat.app.tar.gz
+mv Koinkat.app /Applications/
 ```
 
-While at it, consider adding an Intel (x86_64) or universal build —
-today's release is Apple Silicon only, which is a separate reason some
-Mac users cannot run the app at all.
+This is now documented in the README as the recommended macOS
+alternative, and the release notes point to it. The `.app.tar.gz`
+asset that Tauri already uploads with every release is exactly what
+this needs — no pipeline change required.
 
-### Windows — Azure Artifact Signing (recommended) or an OV certificate
+### 4. macOS: personal Homebrew tap (free)
 
-**Option A — Azure Artifact Signing** (formerly "Trusted Signing"),
-**~US$10/month**. Microsoft's cloud signing service; certificates are
-short-lived and managed for you, and signatures get SmartScreen
-reputation quickly. Individual (non-company) identity validation is
-supported.
+A tap repo needs no notability threshold (unlike homebrew/cask). Create
+a repository named `homebrew-koinkat` under your account, copy
+[`packaging/homebrew/Casks/koinkat.rb`](../packaging/homebrew/Casks/koinkat.rb)
+into it, and users install with:
 
-1. Create an [Azure account](https://azure.microsoft.com/) and an
-   **Artifact Signing** (Trusted Signing) resource; complete identity
-   validation and create a **certificate profile** (public trust).
-2. Create a Microsoft Entra **App Registration** with a client secret,
-   and give it the *Trusted Signing Certificate Profile Signer* role on
-   the signing account.
-3. Add these repository secrets:
+```bash
+brew tap marcosburlino/koinkat
+brew install --cask --no-quarantine koinkat
+```
 
-   | Secret | Value |
-   |---|---|
-   | `AZURE_TENANT_ID` | Entra directory (tenant) ID |
-   | `AZURE_CLIENT_ID` | App Registration client ID |
-   | `AZURE_CLIENT_SECRET` | App Registration client secret |
-   | `AZURE_SIGNING_ENDPOINT` | e.g. `https://weu.codesigning.azure.net` (your region) |
-   | `AZURE_SIGNING_ACCOUNT` | the signing account name |
-   | `AZURE_SIGNING_PROFILE` | the certificate profile name |
+(`--no-quarantine` skips the Gatekeeper flag, mirroring the Terminal
+path above; without it Homebrew applies quarantine and the usual
+`xattr` workaround applies. The cask's caveats text explains this to
+users.)
 
-The release workflow detects `AZURE_CLIENT_SECRET`, installs
-[`artifact-signing-cli`](https://crates.io/crates/artifact-signing-cli),
-and writes a `tauri.windows.conf.json` overlay whose
-`bundle.windows.signCommand` signs every produced `.exe` and `.msi`.
+### 5. Linux: Flathub and AUR (free)
 
-**Option B — a classic OV code-signing certificate** (Certum's open
-source certificate is the cheapest route, roughly €70 first year;
-Sectigo/SSL.com OV certs run US$70–250/year). Works, but note: a fresh
-OV certificate does **not** silence SmartScreen immediately — reputation
-accrues per certificate as downloads accumulate, so early downloads
-still warn. Most CAs now require the key on hardware (token or cloud
-HSM), which complicates CI; if you go this route, wire the vendor's
-signing tool into `bundle > windows > signCommand` the same way the
-workflow does for Option A.
+Linux friction is FUSE/exec-bit, not signatures. Flathub distribution
+removes it entirely and is where many Linux users look first; an AUR
+package covers Arch. Both are free; Flathub requires a flatpak manifest
+(Tauri documents the process) and a review PR to flathub/flathub.
 
-### Zero-cost mitigations (no certificate)
+### 6. Keep the workaround docs prominent (done)
 
-These don't remove the warnings from direct downloads, but reduce how
-many users hit them:
+The README's step-by-step instructions for SmartScreen / Gatekeeper /
+FUSE remain necessary for plain browser downloads, and the website and
+release notes link to them.
 
-- **winget** — submit a manifest to
-  [microsoft/winget-pkgs](https://github.com/microsoft/winget-pkgs)
-  pointing at the release installer. `winget install koinkat` installs
-  without the SmartScreen browser-download flow, and is re-validated by
-  Microsoft's pipeline on submission.
-- **Homebrew cask** for macOS — `brew install --cask` users can bypass
-  quarantine knowingly; note homebrew/cask has notability requirements
-  (GitHub stars/forks) that a young project may not meet yet, but a
-  personal tap (`brew tap marcosburlino/koinkat`) works today with no
-  requirements.
-- **Flathub / AUR** for Linux — solves the AppImage FUSE friction
-  entirely and is where many Linux users look first.
-- Keep the README's step-by-step "how to get past the warning"
-  instructions (already done) and link them from every download
-  surface, including the website.
+### What the free playbook does not fix
 
-## How the pipeline behaves
+A user who downloads the `.exe` in a browser and double-clicks it will
+still see SmartScreen until the project either gets SignPath approval
+or enough downloads accumulate reputation. Same for the `.dmg` in a
+browser without the Terminal path. The free channels above are
+alternatives around the dialogs, not a removal of them.
 
-`release.yml` is now signing-ready but signing-optional:
+## Reference: the paid options (not planned)
 
-- **No secrets configured** (today): the enable-signing steps print
-  "build will be UNSIGNED" and exit; the release is built exactly as
-  before.
-- **Apple secrets added**: the macOS job signs and notarizes; the
-  Gatekeeper "damaged"/"unidentified developer" dialogs disappear for
-  new releases.
-- **Azure secrets added**: the Windows job signs the NSIS and MSI
-  installers; SmartScreen and most AV heuristic flags disappear for new
-  releases.
+The release workflow auto-enables signing if these secrets ever exist —
+no workflow edits needed (steps are no-ops today):
 
-No workflow edits are needed when the secrets are added later — push
-the next version tag and the release comes out signed.
+- **macOS** (US$99/year, Apple Developer Program): Developer ID
+  Application certificate + notarization. Secrets: `APPLE_CERTIFICATE`
+  (base64 .p12), `APPLE_CERTIFICATE_PASSWORD`, `APPLE_SIGNING_IDENTITY`,
+  `APPLE_ID`, `APPLE_PASSWORD` (app-specific), `APPLE_TEAM_ID`. Tauri
+  imports, signs, notarizes, and staples natively. This is the only
+  thing that removes the Gatekeeper dialogs for browser downloads.
+- **Windows** (~US$10/month, Azure Artifact Signing — formerly Trusted
+  Signing): secrets `AZURE_TENANT_ID`, `AZURE_CLIENT_ID`,
+  `AZURE_CLIENT_SECRET`, `AZURE_SIGNING_ENDPOINT`,
+  `AZURE_SIGNING_ACCOUNT`, `AZURE_SIGNING_PROFILE`. The workflow
+  installs `artifact-signing-cli` and injects a
+  `tauri.windows.conf.json` overlay with the `signCommand`. Classic OV
+  certificates (Certum ~€70/yr for OSS) also work via `signCommand`,
+  but fresh OV certs still warn until reputation accrues.

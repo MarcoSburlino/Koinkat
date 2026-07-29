@@ -129,7 +129,7 @@ jobs:
             Install notes - the full guide is in the README. If this build is unsigned (no signing certificates configured), the operating systems warn as follows:
 
             - Windows: SmartScreen shows "Windows protected your PC". Click "More info", then "Run anyway".
-            - macOS (Apple Silicon only): if macOS says Koinkat "is damaged and can't be opened", it is not damaged - that is the quarantine block on unsigned apps. Run `xattr -cr /Applications/Koinkat.app` in Terminal and open the app again. If you instead get an "unidentified developer" block, use System Settings > Privacy & Security > Open Anyway.
+            - macOS (Apple Silicon only): if macOS says Koinkat "is damaged and can't be opened", it is not damaged - that is the quarantine block on unsigned apps. Run `xattr -cr /Applications/Koinkat.app` in Terminal and open the app again. If you instead get an "unidentified developer" block, use System Settings > Privacy & Security > Open Anyway. Tip: downloading the `.app.tar.gz` asset with `curl` and extracting it with `tar` skips the quarantine flag entirely - no dialogs (see the README's "install from Terminal" alternative).
             - Linux: the AppImage needs `chmod +x` before it runs; if it reports a FUSE error, install libfuse2 (`sudo apt install libfuse2`) or run it with `--appimage-extract-and-run`. deb and rpm install normally.
           releaseDraft: true
           prerelease: false

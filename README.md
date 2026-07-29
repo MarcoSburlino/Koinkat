@@ -108,9 +108,10 @@ and Path B below builds the identical app from it. The warnings you will
 see in the steps below are therefore expected, and the steps show
 exactly how to proceed past them.
 
-(The release pipeline is already wired to sign and notarize builds the
-moment signing credentials are configured — the options, costs, and
-setup steps are documented in [docs/signing.md](docs/signing.md).)
+There are also install routes that avoid the warnings without anyone
+buying a certificate — the macOS Terminal install below, and package
+managers like winget and Homebrew as they come online. The full
+no-cost distribution plan lives in [docs/signing.md](docs/signing.md).
 
 #### Windows
 
@@ -184,6 +185,26 @@ xattr -cr /Applications/Koinkat.app
    **Open Anyway** and confirm. On macOS versions before Sequoia you
    can instead right-click the app in Applications and choose
    **Open**.
+
+##### Alternative: install from Terminal, with no warnings at all
+
+The blocks above are triggered by a "downloaded from the internet"
+quarantine flag that **browsers** attach to files. Terminal downloads
+do not carry that flag, so this route installs the same app with no
+dialogs. Open **Terminal** (Cmd+Space, type `terminal`, Enter) and run
+the four commands one at a time:
+
+```bash
+cd ~/Downloads
+curl -L -o Koinkat.app.tar.gz https://github.com/MarcoSburlino/Koinkat/releases/latest/download/Koinkat_0.1.0_aarch64.app.tar.gz
+tar xzf Koinkat.app.tar.gz
+mv Koinkat.app /Applications/
+```
+
+Then open Koinkat from Launchpad or Applications as normal. (In newer
+releases the version number in the URL changes; the file you want is
+the one ending in `.app.tar.gz` on the
+[releases page](https://github.com/MarcoSburlino/Koinkat/releases/latest).)
 
 #### Linux
 
