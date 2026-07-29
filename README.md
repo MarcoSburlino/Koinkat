@@ -142,6 +142,28 @@ no-cost distribution plan lives in [docs/signing.md](docs/signing.md).
 9. To start the app: press the **Start** key, type `Koinkat`, and press
    Enter. Koinkat is now in your Start menu like any other program.
 
+##### Alternative: download from PowerShell to skip the SmartScreen dialog
+
+The SmartScreen block is triggered by a "downloaded from the internet"
+marker that browsers attach to files. Windows' built-in `curl.exe` does
+not attach it, so an installer downloaded this way starts without the
+blue SmartScreen dialog. Open **PowerShell** (Start key, type
+`powershell`, Enter) and run the two commands one at a time:
+
+```powershell
+cd ~\Downloads
+curl.exe -L -o Koinkat-setup.exe https://github.com/MarcoSburlino/Koinkat/releases/latest/download/Koinkat_0.1.0_x64-setup.exe
+```
+
+Then run `.\Koinkat-setup.exe` (or double-click it in Downloads) and
+continue from step 8 above. One honest caveat: this skips the
+SmartScreen dialog, but Microsoft Defender and third-party antivirus
+programs scan every file regardless of how it was downloaded, so an
+aggressive antivirus can still flag the unsigned installer either way.
+(In newer releases the version number in the URL changes; the file you
+want ends in `_x64-setup.exe` on the
+[releases page](https://github.com/MarcoSburlino/Koinkat/releases/latest).)
+
 #### macOS
 
 1. In your browser, open the latest release page:
