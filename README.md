@@ -108,6 +108,10 @@ and Path B below builds the identical app from it. The warnings you will
 see in the steps below are therefore expected, and the steps show
 exactly how to proceed past them.
 
+(The release pipeline is already wired to sign and notarize builds the
+moment signing credentials are configured — the options, costs, and
+setup steps are documented in [docs/signing.md](docs/signing.md).)
+
 #### Windows
 
 1. In your browser, open the latest release page:
