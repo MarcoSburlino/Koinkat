@@ -1,9 +1,12 @@
-# Release signing setup (macOS)
+# Release signing setup
 
 The release workflow signs and notarizes macOS builds automatically when
 six repository secrets exist. Without them, builds stay unsigned and the
-workflow succeeds as before. Windows signing is handled through SignPath
-(see [code-signing-policy.md](code-signing-policy.md)), not here.
+workflow succeeds as before. Windows signing goes through SignPath
+rather than workflow secrets (see
+[code-signing-policy.md](code-signing-policy.md)); the last section here
+covers antivirus false positives on Windows, which are a separate matter
+from signing.
 
 ## One-time setup
 
@@ -57,3 +60,26 @@ spctl -a -t exec -vv /Applications/Koinkat.app
 
 Expected output ends with `accepted` and
 `source=Notarized Developer ID`.
+
+## Windows: reporting antivirus false positives
+
+This is separate from the SmartScreen dialog. When Microsoft Defender or
+a third-party antivirus flags an installer as malware outright, that is
+a false positive, and the vendor clears it on request. This is the
+standard channel unsigned open-source projects use:
+
+- **Microsoft Defender:** submit the flagged `.exe` or `.msi` at the
+  [Microsoft Security Intelligence portal](https://www.microsoft.com/en-us/wdsi/filesubmission).
+  Choose "Software developer", attach the file, and mark it as an
+  incorrect detection. Reviews typically land within days and ship as a
+  Defender definitions update, which also feeds SmartScreen reputation.
+- **Other engines:** upload each release's installers to
+  [VirusTotal](https://www.virustotal.com/) to see which engines flag
+  them. Every major vendor (Avast, AVG, Bitdefender, Kaspersky, Norton
+  and the rest) runs its own false-positive form; submitting to the two
+  or three engines VirusTotal shows flagging is usually enough.
+
+This is per-release work: every new installer is a new file hash with no
+reputation, so resubmit after each release. It addresses outright
+antivirus blocks, not the SmartScreen "unrecognized app" dialog, which
+needs a signature or accumulated download reputation.
