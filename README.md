@@ -61,7 +61,6 @@ makes, verified from the source code:
 |---|---|---|---|
 | `api.enablebanking.com` | Only if you link a bank, during linking and syncs | Requests signed with your own Enable Banking application ID, the bank you picked, and session identifiers; the API returns your balances and transactions | Your online-banking username and password - you enter those on your bank's own website, never in Koinkat |
 | `cdn.jsdelivr.net` (fallback: `*.currency-api.pages.dev`) | On app start and before syncs | A request for the day's public exchange-rate table (`.../currency-api@<date>/v1/currencies/usd.json`) | Anything about you - the URL contains only the date; not even your chosen currency |
-| `fonts.googleapis.com` and `fonts.gstatic.com` | At app launch | A standard request for the app's fonts (DM Sans, DM Serif Display, JetBrains Mono) | Any app or financial data |
 | Your bank's authorization page, then `marcosburlino.github.io/koinkat-callback/` | Only during bank linking, in your regular browser (not inside the app) | The bank redirects your browser to the callback page with a one-time authorization code; the page is a single static file that makes zero further network requests and hands the code back to the app locally | The code is never sent anywhere by the page, and it is useless without the private key that exists only on your machine |
 
 Like every internet request, these servers technically see your IP
@@ -866,8 +865,9 @@ Koinkat is local-first; the trust boundary is your machine.
   itself.
 - **Network:** the content-security policy allows data connections only
   to `api.enablebanking.com` and the exchange-rate CDN
-  (`cdn.jsdelivr.net`, `*.currency-api.pages.dev`), plus Google Fonts
-  for the app's typefaces. The complete outbound inventory is in
+  (`cdn.jsdelivr.net`, `*.currency-api.pages.dev`). Typefaces are
+  bundled with the app, so no font host is contacted. The complete
+  outbound inventory is in
   [How Koinkat handles your data](#how-koinkat-handles-your-data).
   There is no telemetry endpoint to allow.
 - **OAuth:** the bank-link deep-link callback validates a cryptographically

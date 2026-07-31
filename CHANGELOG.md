@@ -19,6 +19,11 @@ uses [Semantic Versioning](https://semver.org/).
 
 ### Changed
 - Refreshed the app icon set.
+- The app's typefaces (DM Sans, DM Serif Display, JetBrains Mono; all
+  SIL OFL 1.1) are now bundled instead of loaded from Google Fonts, so
+  launching Koinkat no longer contacts any font host and works fully
+  offline; the content-security policy no longer allows the Google
+  Fonts domains.
 
 ## [0.1.0] - 2026-07-14
 

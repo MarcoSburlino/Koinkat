@@ -21,7 +21,7 @@
       }
     ],
     "security": {
-      "csp": "default-src 'self' tauri:; script-src 'self' tauri:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob:; connect-src 'self' https://api.enablebanking.com https://cdn.jsdelivr.net https://latest.currency-api.pages.dev https://*.currency-api.pages.dev ipc: http://ipc.localhost; frame-ancestors 'none'; object-src 'none'; base-uri 'self'"
+      "csp": "default-src 'self' tauri:; script-src 'self' tauri:; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data: blob:; connect-src 'self' https://api.enablebanking.com https://cdn.jsdelivr.net https://latest.currency-api.pages.dev https://*.currency-api.pages.dev ipc: http://ipc.localhost; frame-ancestors 'none'; object-src 'none'; base-uri 'self'"
     }
   },
   "plugins": {
