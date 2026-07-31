@@ -166,9 +166,9 @@ want ends in `_x64-setup.exe` on the
 
 #### macOS
 
-**Important:** the macOS build runs on Apple Silicon Macs only (M1 chip
-or newer, roughly every Mac sold since late 2020). There is currently
-no build for older Intel Macs; on those, use
+**Note:** releases after v0.1.0 ship a universal macOS build that runs
+on both Apple Silicon and Intel Macs. The v0.1.0 build itself is Apple
+Silicon only (M1 or newer); on an Intel Mac, use a newer release or
 [Path B](#path-b-build-from-source).
 
 The recommended route is the Terminal one below: files downloaded with
@@ -183,8 +183,13 @@ with no security dialog and there is nothing to work around.
    [releases page](https://github.com/MarcoSburlino/Koinkat/releases/latest).)
 
 ```bash
-curl -L -o ~/Downloads/Koinkat.app.tar.gz https://github.com/MarcoSburlino/Koinkat/releases/download/v0.1.0/Koinkat_0.1.0_aarch64.app.tar.gz
+curl -L -o ~/Downloads/Koinkat.app.tar.gz https://github.com/MarcoSburlino/Koinkat/releases/download/v0.1.0/Koinkat_0.1.0_universal.app.tar.gz
 ```
+
+   (v0.1.0 predates the universal build and its file is named
+   `Koinkat_0.1.0_aarch64.app.tar.gz` instead; if the address above
+   returns an error, take the current file name from the releases
+   page.)
 
 ```bash
 tar -xzf ~/Downloads/Koinkat.app.tar.gz -C ~/Downloads
@@ -198,7 +203,7 @@ mv ~/Downloads/Koinkat.app /Applications/
    starts without any warning dialog.
 
 **Alternative: the .dmg in the browser.** If you prefer, download
-`Koinkat_<version>_aarch64.dmg` from the
+`Koinkat_<version>_universal.dmg` from the
 [releases page](https://github.com/MarcoSburlino/Koinkat/releases/latest)
 (expand the **Assets** list; ignore the "Source code" entries), open it
 from your Downloads folder, and drag the Koinkat icon onto

@@ -31,6 +31,8 @@ jobs:
           - platform: ubuntu-latest
           - platform: windows-latest
           - platform: macos-latest
+            rust-targets: aarch64-apple-darwin,x86_64-apple-darwin
+            tauri-args: --target universal-apple-darwin
     runs-on: ${{ matrix.platform }}
     steps:
       - uses: actions/checkout@v4
@@ -46,6 +48,10 @@ jobs:
           node-version: 22
           cache: npm
       - uses: dtolnay/rust-toolchain@stable
+        with:
+          # Both Apple targets on the macOS leg (universal build); empty
+          # elsewhere, which the action treats as no extra targets.
+          targets: ${{ matrix.rust-targets }}
       - uses: Swatinem/rust-cache@v2
         with:
           workspaces: src-tauri
@@ -77,6 +83,9 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
+          # Universal macOS binary (Apple Silicon + Intel); empty on the
+          # other platforms.
+          args: ${{ matrix.tauri-args }}
           tagName: ${{ github.ref_name }}
           releaseName: 'Koinkat ${{ github.ref_name }}'
           releaseBody: |
@@ -85,7 +94,7 @@ jobs:
             Install notes - builds are unsigned; the full guide is in the README:
 
             - Windows: SmartScreen shows "Windows protected your PC". Click "More info", then "Run anyway".
-            - macOS (Apple Silicon only): if macOS says Koinkat "is damaged and can't be opened", it is not damaged - that is the quarantine block on unsigned apps. Run `xattr -cr /Applications/Koinkat.app` in Terminal and open the app again. If you instead get an "unidentified developer" block, use System Settings > Privacy & Security > Open Anyway.
+            - macOS (universal, Apple Silicon and Intel): if macOS says Koinkat "is damaged and can't be opened", it is not damaged - that is the quarantine block on unsigned apps. Run `xattr -cr /Applications/Koinkat.app` in Terminal and open the app again. If you instead get an "unidentified developer" block, use System Settings > Privacy & Security > Open Anyway.
             - Linux: the AppImage needs `chmod +x` before it runs; if it reports a FUSE error, install libfuse2 (`sudo apt install libfuse2`) or run it with `--appimage-extract-and-run`. deb and rpm install normally.
           releaseDraft: true
           prerelease: false
