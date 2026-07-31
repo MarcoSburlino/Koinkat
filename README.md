@@ -22,6 +22,7 @@ accounts system.
 - [First run: setting up inside the app](#first-run-setting-up-inside-the-app)
 - [Connecting a bank](#connecting-a-bank)
 - [Troubleshooting](#troubleshooting)
+- [Uninstalling](#uninstalling)
 - [Build modes](#build-modes)
 - [Stack](#stack)
 - [Security model](#security-model)
@@ -794,6 +795,38 @@ keychain is simply the safer location.
 **Net worth shows "could not reconcile" or missing conversions.** The
 daily exchange-rate fetch failed (offline, or the CDN was unreachable).
 The Dashboard offers a refresh; rates are cached per day once fetched.
+
+## Uninstalling
+
+Removing the app itself:
+
+- **Windows:** Settings > Apps > Installed apps > Koinkat > Uninstall.
+- **macOS:** drag `/Applications/Koinkat.app` to the Trash.
+- **Linux:** remove the package with your package manager
+  (`sudo apt remove koinkat` on Debian/Ubuntu); for the AppImage,
+  simply delete the file.
+
+Uninstalling does not touch your data, so a reinstall finds everything
+as you left it. To remove the data as well:
+
+- **Database and settings** live in one folder; deleting it removes
+  every workspace, account, and transaction:
+  - Windows: `C:\Users\<you>\AppData\Roaming\com.koinkat.app`
+  - macOS: `~/Library/Application Support/com.koinkat.app`
+  - Linux: `~/.config/com.koinkat.app`
+- **Enable Banking keys** (present only if you linked a bank) are
+  stored in the operating system's credential store under the service
+  name `koinkat`, one entry per workspace named `eb-pem-<workspace-id>`:
+  - Windows: **Credential Manager** > Windows Credentials - remove the
+    entries containing `koinkat`.
+  - macOS: **Keychain Access** - search for `koinkat` and delete the
+    entries.
+  - Linux: your keyring tool (for example GNOME's Passwords and Keys) -
+    search for `koinkat`.
+
+Deleting a workspace inside the app performs the same cleanup for that
+workspace, including its credential-store entry, so removing all
+workspaces before uninstalling also leaves nothing behind.
 
 ## Build modes
 
