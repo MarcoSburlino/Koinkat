@@ -166,47 +166,64 @@ want ends in `_x64-setup.exe` on the
 
 #### macOS
 
-1. In your browser, open the latest release page:
-   [github.com/MarcoSburlino/Koinkat/releases/latest](https://github.com/MarcoSburlino/Koinkat/releases/latest).
-2. Scroll past the release description to the **Assets** section. If
-   you only see the word "Assets" with a number next to it, click it -
-   the list of downloadable files unfolds.
-3. Click the file ending in `.dmg` (for version 0.1.0:
-   `Koinkat_0.1.0_aarch64.dmg`). Ignore the "Source code" entries -
-   they are not installers.
-   **Important:** this build runs on Apple Silicon Macs only (M1 chip or
-   newer, roughly every Mac sold since late 2020). There is currently no
-   build for older Intel Macs; on those, use
-   [Path B](#path-b-build-from-source).
-4. Open your Downloads folder (the **Downloads** stack at the right end
-   of the Dock, or **Finder** and then **Downloads** in the sidebar) and
-   double-click the `.dmg` file.
-5. A window opens showing the Koinkat icon and an Applications folder
-   shortcut. Drag the Koinkat icon onto **Applications**.
-6. Open **Launchpad** (or Finder > Applications) and click Koinkat. On
-   first open, macOS blocks the app because it is not signed, showing
-   one of two dialogs. Both are expected; each has its way through.
-7. **"Koinkat is damaged and can't be opened. You should move it to
-   the Trash."** This is the usual dialog on current macOS. The app is
-   not damaged: this is how macOS blocks unsigned apps that were
-   quarantined during download, and the dialog offers no button to
-   proceed. Clear the quarantine flag instead: open **Terminal** (press
-   Cmd+Space, type `terminal`, press Enter) and run:
+**Important:** the macOS build runs on Apple Silicon Macs only (M1 chip
+or newer, roughly every Mac sold since late 2020). There is currently
+no build for older Intel Macs; on those, use
+[Path B](#path-b-build-from-source).
+
+The recommended route is the Terminal one below: files downloaded with
+`curl` never receive macOS's download-quarantine flag, so the app opens
+with no security dialog and there is nothing to work around.
+
+1. Open **Terminal** (press Cmd+Space, type `terminal`, press Enter)
+   and run these three commands one at a time. They download the app
+   archive, unpack it, and move Koinkat into Applications. (In newer
+   releases, replace both version numbers in the address with the
+   current ones from the
+   [releases page](https://github.com/MarcoSburlino/Koinkat/releases/latest).)
+
+```bash
+curl -L -o ~/Downloads/Koinkat.app.tar.gz https://github.com/MarcoSburlino/Koinkat/releases/download/v0.1.0/Koinkat_0.1.0_aarch64.app.tar.gz
+```
+
+```bash
+tar -xzf ~/Downloads/Koinkat.app.tar.gz -C ~/Downloads
+```
+
+```bash
+mv ~/Downloads/Koinkat.app /Applications/
+```
+
+2. Open **Launchpad** (or Finder > Applications) and click Koinkat. It
+   starts without any warning dialog.
+
+**Alternative: the .dmg in the browser.** If you prefer, download
+`Koinkat_<version>_aarch64.dmg` from the
+[releases page](https://github.com/MarcoSburlino/Koinkat/releases/latest)
+(expand the **Assets** list; ignore the "Source code" entries), open it
+from your Downloads folder, and drag the Koinkat icon onto
+**Applications**. Because browsers mark downloads with the quarantine
+flag and the app is not signed, the first open then shows one of two
+dialogs. Both are expected:
+
+- **"Koinkat is damaged and can't be opened. You should move it to the
+  Trash."** The usual dialog on current macOS. The app is not damaged:
+  this is how macOS blocks unsigned apps that were quarantined during
+  download, and the dialog offers no button to proceed. Clear the flag
+  in Terminal:
 
 ```bash
 xattr -cr /Applications/Koinkat.app
 ```
 
-   Then open the app again from Applications. The command removes the
-   "downloaded from the internet" marker from the app and changes
-   nothing else.
-8. **"Koinkat can't be opened because it is from an unidentified
-   developer"** (or a similar block without the "damaged" wording):
-   open **System Settings**, go to **Privacy & Security**, and scroll
-   down to the message saying Koinkat was blocked. Click
-   **Open Anyway** and confirm. On macOS versions before Sequoia you
-   can instead right-click the app in Applications and choose
-   **Open**.
+  Then open the app again from Applications. The command removes the
+  "downloaded from the internet" marker and changes nothing else.
+- **"Koinkat can't be opened because it is from an unidentified
+  developer"** (or a similar block without the "damaged" wording): open
+  **System Settings**, go to **Privacy & Security**, and scroll down to
+  the message saying Koinkat was blocked. Click **Open Anyway** and
+  confirm. On macOS versions before Sequoia you can instead right-click
+  the app in Applications and choose **Open**.
 
 ##### Alternative: install from Terminal, with no warnings at all
 
