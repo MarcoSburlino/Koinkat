@@ -904,6 +904,8 @@ Koinkat/
   three-build-mode setup, migrations recipe, conventions.
 - [`docs/restructure-audit.md`](docs/restructure-audit.md) - historical
   audit of the pre-publication restructure (2026-04-24) and follow-up.
+- [Code signing policy](docs/code-signing-policy.md) - how release
+  artifacts are signed, team roles, and the privacy policy.
 
 Don't see what you're looking for? Open an issue.
 
