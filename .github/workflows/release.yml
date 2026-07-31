@@ -7,6 +7,11 @@ name: Release
 #
 # The maintainer reviews the draft and publishes it manually.
 #
+# It can also be started by hand (Actions > Release > Run workflow) to
+# test that the bundles build without publishing anything: a manual run
+# creates no tag and no release, and attaches the installers to the run
+# as downloadable workflow artifacts instead.
+#
 # Signing: macOS signing and notarization activate automatically once the
 # six APPLE_* repository secrets exist (setup guide: docs/signing.md).
 # The export step below sets the env vars only when a secret is
@@ -19,6 +24,7 @@ on:
   push:
     tags:
       - 'v*'
+  workflow_dispatch:
 
 jobs:
   build:
@@ -86,8 +92,14 @@ jobs:
           # Universal macOS binary (Apple Silicon + Intel); empty on the
           # other platforms.
           args: ${{ matrix.tauri-args }}
-          tagName: ${{ github.ref_name }}
-          releaseName: 'Koinkat ${{ github.ref_name }}'
+          # On a tag push these carry the tag and a draft release is
+          # created as usual. On a manual run there is no tag, so both
+          # stay empty: tauri-action then builds and skips every upload
+          # (its tagName check is a plain truthiness test), and the
+          # bundles come back as workflow artifacts instead.
+          tagName: ${{ github.event_name == 'push' && github.ref_name || '' }}
+          releaseName: ${{ github.event_name == 'push' && format('Koinkat {0}', github.ref_name) || '' }}
+          uploadWorkflowArtifacts: ${{ github.event_name == 'workflow_dispatch' }}
           releaseBody: |
             See CHANGELOG.md for what changed.
 
