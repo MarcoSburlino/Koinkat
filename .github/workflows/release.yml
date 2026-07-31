@@ -7,21 +7,13 @@ name: Release
 #
 # The maintainer reviews the draft and publishes it manually.
 #
-# Code signing is OPTIONAL and activates automatically when the
-# corresponding repository secrets exist (see docs/signing.md for the
-# full setup guide, costs, and secret names):
-#
-#   macOS   - APPLE_CERTIFICATE (+ password/identity/notarization vars)
-#             enables Developer ID signing and notarization, which is
-#             what stops the Gatekeeper "damaged / unidentified
-#             developer" block.
-#   Windows - AZURE_CLIENT_SECRET (+ tenant/client/endpoint vars)
-#             enables Azure Artifact Signing (formerly "Trusted
-#             Signing") via a custom sign command, which is what stops
-#             the SmartScreen "Windows protected your PC" block.
-#
-# When the secrets are absent the steps below are no-ops and the build
-# stays unsigned, exactly as before.
+# Signing: macOS signing and notarization activate automatically once the
+# six APPLE_* repository secrets exist (setup guide: docs/signing.md).
+# The export step below sets the env vars only when a secret is
+# non-empty, because the Tauri bundler treats an empty APPLE_CERTIFICATE
+# as present and would fail the build; with no secrets configured,
+# builds stay unsigned exactly as before. Windows signing goes through
+# SignPath, not workflow certificates (see docs/code-signing-policy.md).
 
 on:
   push:
@@ -58,13 +50,8 @@ jobs:
         with:
           workspaces: src-tauri
       - run: npm ci
-
-      # Exports the APPLE_* variables Tauri reads natively (it imports the
-      # certificate into a temporary keychain, signs, notarizes, and
-      # staples on its own) - but only when the secrets are configured,
-      # so an empty secret can never half-enable signing.
-      - name: Enable macOS signing and notarization (when secrets exist)
-        if: runner.os == 'macOS'
+      - name: Enable macOS signing when secrets are configured
+        if: matrix.platform == 'macos-latest'
         shell: bash
         env:
           APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
@@ -74,49 +61,18 @@ jobs:
           APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
         run: |
-          if [ -z "$APPLE_CERTIFICATE" ]; then
-            echo "APPLE_CERTIFICATE secret is not set - this macOS build will be UNSIGNED."
-            echo "See docs/signing.md to enable signing and notarization."
-            exit 0
-          fi
-          for name in APPLE_CERTIFICATE APPLE_CERTIFICATE_PASSWORD \
-                      APPLE_SIGNING_IDENTITY APPLE_ID APPLE_PASSWORD APPLE_TEAM_ID; do
-            value="$(printenv "$name")"
-            if [ -n "$value" ]; then
-              printf '%s<<__SECRET_EOF__\n%s\n__SECRET_EOF__\n' "$name" "$value" >> "$GITHUB_ENV"
+          # The Tauri bundler treats empty signing vars as present, so only
+          # export the ones that hold a value. Heredoc syntax keeps
+          # multi-line values (the base64 certificate) intact.
+          for v in APPLE_CERTIFICATE APPLE_CERTIFICATE_PASSWORD APPLE_SIGNING_IDENTITY APPLE_ID APPLE_PASSWORD APPLE_TEAM_ID; do
+            if [ -n "${!v}" ]; then
+              {
+                echo "$v<<KOINKAT_EOF_$v"
+                echo "${!v}"
+                echo "KOINKAT_EOF_$v"
+              } >> "$GITHUB_ENV"
             fi
           done
-          echo "macOS code signing enabled (notarization requires APPLE_ID/APPLE_PASSWORD/APPLE_TEAM_ID)."
-
-      # Writes the platform config overlay src-tauri/tauri.windows.conf.json
-      # (merged automatically by the Tauri CLI) with a signCommand that
-      # signs every produced .exe/.msi through Azure Artifact Signing.
-      - name: Enable Windows signing via Azure Artifact Signing (when secrets exist)
-        if: runner.os == 'Windows'
-        shell: bash
-        env:
-          AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
-          AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
-          AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
-          AZURE_SIGNING_ENDPOINT: ${{ secrets.AZURE_SIGNING_ENDPOINT }}
-          AZURE_SIGNING_ACCOUNT: ${{ secrets.AZURE_SIGNING_ACCOUNT }}
-          AZURE_SIGNING_PROFILE: ${{ secrets.AZURE_SIGNING_PROFILE }}
-        run: |
-          if [ -z "$AZURE_CLIENT_SECRET" ]; then
-            echo "AZURE_CLIENT_SECRET secret is not set - this Windows build will be UNSIGNED."
-            echo "See docs/signing.md to enable Azure Artifact Signing."
-            exit 0
-          fi
-          cargo install artifact-signing-cli --locked
-          printf '{"bundle":{"windows":{"signCommand":"artifact-signing-cli -e %s -a %s -c %s -d Koinkat %%1"}}}\n' \
-            "$AZURE_SIGNING_ENDPOINT" "$AZURE_SIGNING_ACCOUNT" "$AZURE_SIGNING_PROFILE" \
-            > src-tauri/tauri.windows.conf.json
-          for name in AZURE_TENANT_ID AZURE_CLIENT_ID AZURE_CLIENT_SECRET; do
-            value="$(printenv "$name")"
-            printf '%s<<__SECRET_EOF__\n%s\n__SECRET_EOF__\n' "$name" "$value" >> "$GITHUB_ENV"
-          done
-          echo "Windows code signing enabled via Azure Artifact Signing."
-
       - uses: tauri-apps/tauri-action@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -126,10 +82,10 @@ jobs:
           releaseBody: |
             See CHANGELOG.md for what changed.
 
-            Install notes - the full guide is in the README. If this build is unsigned (no signing certificates configured), the operating systems warn as follows:
+            Install notes - builds are unsigned; the full guide is in the README:
 
             - Windows: SmartScreen shows "Windows protected your PC". Click "More info", then "Run anyway".
-            - macOS (Apple Silicon only): if macOS says Koinkat "is damaged and can't be opened", it is not damaged - that is the quarantine block on unsigned apps. Run `xattr -cr /Applications/Koinkat.app` in Terminal and open the app again. If you instead get an "unidentified developer" block, use System Settings > Privacy & Security > Open Anyway. Tip: downloading the `.app.tar.gz` asset with `curl` and extracting it with `tar` skips the quarantine flag entirely - no dialogs (see the README's "install from Terminal" alternative).
+            - macOS (Apple Silicon only): if macOS says Koinkat "is damaged and can't be opened", it is not damaged - that is the quarantine block on unsigned apps. Run `xattr -cr /Applications/Koinkat.app` in Terminal and open the app again. If you instead get an "unidentified developer" block, use System Settings > Privacy & Security > Open Anyway.
             - Linux: the AppImage needs `chmod +x` before it runs; if it reports a FUSE error, install libfuse2 (`sudo apt install libfuse2`) or run it with `--appimage-extract-and-run`. deb and rpm install normally.
           releaseDraft: true
           prerelease: false
