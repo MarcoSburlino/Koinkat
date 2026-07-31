@@ -108,10 +108,10 @@ and Path B below builds the identical app from it. The warnings you will
 see in the steps below are therefore expected, and the steps show
 exactly how to proceed past them.
 
-There are also install routes that avoid the warnings without anyone
-buying a certificate — the macOS Terminal install below, and package
-managers like winget and Homebrew as they come online. The full
-no-cost distribution plan lives in [docs/signing.md](docs/signing.md).
+Two routes below avoid the warnings entirely without any certificate:
+the PowerShell download on Windows and the Terminal install on macOS.
+Both work because the operating systems only warn about files a browser
+marked as downloaded from the internet.
 
 #### Windows
 
