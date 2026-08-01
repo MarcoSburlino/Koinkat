@@ -2,8 +2,7 @@
 
 The release workflow signs and notarizes macOS builds automatically when
 six repository secrets exist. Without them, builds stay unsigned and the
-workflow succeeds as before. Windows signing goes through SignPath
-rather than workflow secrets (see
+workflow succeeds as before. Windows builds are not signed (see
 [code-signing-policy.md](code-signing-policy.md)); the last section here
 covers antivirus false positives on Windows, which are a separate matter
 from signing.

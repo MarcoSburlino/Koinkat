@@ -5,24 +5,39 @@ built from this repository and have not been tampered with in transit.
 
 ## Windows
 
-Free code signing provided by [SignPath.io](https://about.signpath.io/),
-certificate by [SignPath Foundation](https://signpath.org/).
+Windows builds are not code-signed. Two consequences follow: SmartScreen
+warns on first run for installers downloaded through a browser, and some
+antivirus engines flag unsigned NSIS installers on heuristics alone.
 
-Status: application pending. Until approval, Windows installers are
-unsigned and Windows SmartScreen will warn on first run. The README's
-Windows install section documents the exact steps to proceed past the
-warning.
+Two install routes avoid the browser download that triggers those
+warnings: installing through winget
+(`winget install MarcoSburlino.Koinkat`, once the package is accepted
+into the winget repository), and downloading the installer with
+`curl.exe` from PowerShell, which does not mark the file as
+internet-downloaded. The README's Windows install section has the exact
+commands for both, and the steps to proceed past the warning for a
+browser download.
 
-The private key is held by SignPath in a hardware security module. This
-project never has access to it. Every signing request is submitted by
-the release workflow in `.github/workflows/release.yml` and requires
-manual approval before a signature is issued.
+Every GitHub release publishes a SHA256 digest for each artifact, so a
+download can be verified independently of any signature.
+
+Signing the Windows artifacts is intended. It is not in place yet.
 
 ## macOS
 
-Signed with an Apple Developer ID Application certificate and notarized
-by Apple. The notarization ticket is stapled to the artifact at release
-time.
+Signing uses an Apple Developer ID Application certificate with Apple
+notarization, and the notarization ticket is stapled to the artifact at
+release time. The Apple Developer enrolment is in place and the release
+workflow is configured to sign and notarize automatically once the
+signing credentials are added to the repository.
+
+No released build is signed yet. Signing starts with the first release
+tagged after those credentials are added, which will be a future
+release. Until then macOS shows its quarantine dialog ("Koinkat is
+damaged and can't be opened") for installers downloaded through a
+browser. The README's macOS install section documents the Terminal
+download route that avoids the dialog, and the command that clears the
+flag afterwards.
 
 ## Linux
 
@@ -43,7 +58,7 @@ the repository owner:
 
 All contributions from outside this list arrive as pull requests and are
 reviewed before merge. Multi-factor authentication is enforced on the
-maintainer's GitHub account and on SignPath.
+maintainer's GitHub account.
 
 ## Privacy policy
 
@@ -89,7 +104,5 @@ database and the keychain entries to delete on each operating system.
 
 ## Reporting
 
-To report a signed artifact that appears to violate SignPath Foundation
-policy, contact [support@signpath.io](mailto:support@signpath.io). To
-report a security issue in Koinkat itself, see
+To report a security issue in Koinkat, see
 [SECURITY.md](../SECURITY.md).

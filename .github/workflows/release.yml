@@ -17,8 +17,8 @@ name: Release
 # The export step below sets the env vars only when a secret is
 # non-empty, because the Tauri bundler treats an empty APPLE_CERTIFICATE
 # as present and would fail the build; with no secrets configured,
-# builds stay unsigned exactly as before. Windows signing goes through
-# SignPath, not workflow certificates (see docs/code-signing-policy.md).
+# builds stay unsigned exactly as before. Windows builds are not signed
+# (see docs/code-signing-policy.md).
 
 on:
   push:
