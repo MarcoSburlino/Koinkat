@@ -6,6 +6,23 @@ uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-08-03
+
+### Added
+- macOS builds are signed with an Apple Developer ID certificate and
+  notarized by Apple, so the "damaged and can't be opened" dialog no
+  longer appears.
+- macOS builds are universal and run on Intel Macs as well as Apple
+  Silicon. 0.1.0 was Apple Silicon only.
+
+### Changed
+- The app's typefaces (DM Sans, DM Serif Display, JetBrains Mono; all
+  SIL OFL 1.1) are now bundled instead of loaded from Google Fonts, so
+  launching Koinkat no longer contacts any font host and works fully
+  offline; the content-security policy no longer allows the Google
+  Fonts domains.
+- Refreshed the app icon set.
+
 ### Fixed
 - Corrected the Enable Banking setup guidance in the README and the
   in-app guide: restricted-mode activation covers only the accounts you
@@ -16,14 +33,6 @@ uses [Semantic Versioning](https://semver.org/).
   ("cannot commit - no transaction is active"); database-plugin errors
   now surface their real message, and a failed budget deletion shows
   its reason in the dialog instead of failing silently.
-
-### Changed
-- Refreshed the app icon set.
-- The app's typefaces (DM Sans, DM Serif Display, JetBrains Mono; all
-  SIL OFL 1.1) are now bundled instead of loaded from Google Fonts, so
-  launching Koinkat no longer contacts any font host and works fully
-  offline; the content-security policy no longer allows the Google
-  Fonts domains.
 
 ## [0.1.0] - 2026-07-14
 
