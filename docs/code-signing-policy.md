@@ -25,19 +25,15 @@ Signing the Windows artifacts is intended. It is not in place yet.
 
 ## macOS
 
-Signing uses an Apple Developer ID Application certificate with Apple
-notarization, and the notarization ticket is stapled to the artifact at
-release time. The Apple Developer enrolment is in place and the release
-workflow is configured to sign and notarize automatically once the
-signing credentials are added to the repository.
+Release builds are signed with an Apple Developer ID Application
+certificate and notarized by Apple, and the notarization ticket is
+stapled to the artifact at release time. The app opens with no security
+dialog.
 
-No released build is signed yet. Signing starts with the first release
-tagged after those credentials are added, which will be a future
-release. Until then macOS shows its quarantine dialog ("Koinkat is
-damaged and can't be opened") for installers downloaded through a
-browser. The README's macOS install section documents the Terminal
-download route that avoids the dialog, and the command that clears the
-flag afterwards.
+Signing began with v0.1.1, the first signed release. Builds up to and
+including v0.1.0 are unsigned, so macOS still refuses them with its
+quarantine dialog ("Koinkat is damaged and can't be opened"). Updating
+to v0.1.1 or later is the fix; nothing needs to be worked around.
 
 ## Linux
 
