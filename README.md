@@ -6,7 +6,7 @@ Local-first multi-currency personal finance manager. Built as a Tauri 2
 desktop app. All data stays on your device - no cloud, no telemetry, no
 accounts system.
 
-> **Status:** v0.1.0 is the first public release. If something does not
+> **Status:** v0.1.1 is the current release. If something does not
 > behave as this guide describes, please
 > [open an issue](https://github.com/MarcoSburlino/Koinkat/issues).
 
@@ -96,22 +96,22 @@ to it. The steps below are complete for each operating system, from
 finding the right file to launching the installed app, so jump straight
 to the section for your system.
 
-#### Why the installers show a security warning
+#### Why the Windows installer shows a security warning
 
-Windows and macOS only skip their warnings for apps whose maker bought a
-code-signing identity: an Apple developer membership or a Windows
-code-signing certificate, both of which cost a meaningful yearly fee.
+macOS builds are signed with an Apple Developer ID Application
+certificate and notarized by Apple from 0.1.1 onward, so they open with
+no warning at all. Windows is a different story.
+
+Windows skips its warning only for installers whose publisher bought a
+code-signing certificate, which carries a meaningful recurring fee.
 Koinkat is free, open-source software with no revenue, so that money is
-deliberately not spent. Signing changes the label the operating system
-puts on an app, not what the app does: the full source code is public,
-and Path B below builds the identical app from it. The warnings you will
-see in the steps below are therefore expected, and the steps show
-exactly how to proceed past them.
-
-Two routes below avoid the warnings entirely without any certificate:
-the PowerShell download on Windows and the Terminal install on macOS.
-Both work because the operating systems only warn about files a browser
-marked as downloaded from the internet.
+deliberately not spent on Windows signing. Signing changes the label the
+operating system puts on an app, not what the app does: the full source
+code is public, and Path B below builds the identical app from it. The
+Windows warning is therefore expected, and the steps below show exactly
+how to proceed past it. Downloading with PowerShell instead of a browser
+avoids the warning entirely, because Windows only warns about files a
+browser marked as downloaded from the internet.
 
 #### Windows
 
@@ -120,7 +120,7 @@ marked as downloaded from the internet.
 2. Scroll past the release description to the **Assets** section. If
    you only see the word "Assets" with a number next to it, click it -
    the list of downloadable files unfolds.
-3. Click the file named `Koinkat_0.1.0_x64-setup.exe`. In newer
+3. Click the file named `Koinkat_0.1.1_x64-setup.exe`. In newer
    releases the version number in the middle changes; the file you want
    is the one ending in `_x64-setup.exe`. Ignore the two "Source code"
    entries at the bottom of the list - they contain the program's
@@ -131,7 +131,7 @@ marked as downloaded from the internet.
    open **File Explorer** (the folder icon in the taskbar) and click
    **Downloads** in the left sidebar - or press Ctrl+J in the browser
    and open the file from its download list.
-5. Double-click `Koinkat_0.1.0_x64-setup.exe`.
+5. Double-click `Koinkat_0.1.1_x64-setup.exe`.
 6. A blue dialog titled **"Windows protected your PC"** appears, saying
    Microsoft Defender SmartScreen prevented an unrecognized app from
    starting. This is the unsigned-app warning explained above.
@@ -152,7 +152,7 @@ blue SmartScreen dialog. Open **PowerShell** (Start key, type
 
 ```powershell
 cd ~\Downloads
-curl.exe -L -o Koinkat-setup.exe https://github.com/MarcoSburlino/Koinkat/releases/latest/download/Koinkat_0.1.0_x64-setup.exe
+curl.exe -L -o Koinkat-setup.exe https://github.com/MarcoSburlino/Koinkat/releases/download/v0.1.1/Koinkat_0.1.1_x64-setup.exe
 ```
 
 Then run `.\Koinkat-setup.exe` (or double-click it in Downloads) and
@@ -166,89 +166,49 @@ want ends in `_x64-setup.exe` on the
 
 #### macOS
 
-**Note:** releases after v0.1.0 ship a universal macOS build that runs
-on both Apple Silicon and Intel Macs. The v0.1.0 build itself is Apple
-Silicon only (M1 or newer); on an Intel Mac, use a newer release or
-[Path B](#path-b-build-from-source).
+Koinkat runs on macOS 11 or later, on both Apple Silicon and Intel
+Macs: the download is a universal build containing both architectures.
 
-The recommended route is the Terminal one below: files downloaded with
-`curl` never receive macOS's download-quarantine flag, so the app opens
-with no security dialog and there is nothing to work around.
+1. In your browser, open the latest release page:
+   [github.com/MarcoSburlino/Koinkat/releases/latest](https://github.com/MarcoSburlino/Koinkat/releases/latest).
+2. Scroll past the release description to the **Assets** section. If
+   you only see the word "Assets" with a number next to it, click it -
+   the list of downloadable files unfolds.
+3. Click the file ending in `.dmg` (for version 0.1.1:
+   `Koinkat_0.1.1_universal.dmg`). Ignore the "Source code" entries -
+   they are not installers.
+4. Open your Downloads folder (the **Downloads** stack at the right end
+   of the Dock, or **Finder** and then **Downloads** in the sidebar) and
+   double-click the `.dmg` file.
+5. A window opens showing the Koinkat icon and an Applications folder
+   shortcut. Drag the Koinkat icon onto **Applications**.
+6. Open **Launchpad** (or Finder > Applications) and click Koinkat. The
+   app is signed with an Apple Developer ID Application certificate and
+   notarized by Apple, so it opens normally, with no security dialog and
+   nothing to work around.
 
-1. Open **Terminal** (press Cmd+Space, type `terminal`, press Enter)
-   and run these three commands one at a time. They download the app
-   archive, unpack it, and move Koinkat into Applications. (In newer
-   releases, replace both version numbers in the address with the
-   current ones from the
-   [releases page](https://github.com/MarcoSburlino/Koinkat/releases/latest).)
+##### Alternative: install from Terminal
 
-```bash
-curl -L -o ~/Downloads/Koinkat.app.tar.gz https://github.com/MarcoSburlino/Koinkat/releases/download/v0.1.0/Koinkat_0.1.0_universal.app.tar.gz
-```
-
-   (v0.1.0 predates the universal build and its file is named
-   `Koinkat_0.1.0_aarch64.app.tar.gz` instead; if the address above
-   returns an error, take the current file name from the releases
-   page.)
-
-```bash
-tar -xzf ~/Downloads/Koinkat.app.tar.gz -C ~/Downloads
-```
-
-```bash
-mv ~/Downloads/Koinkat.app /Applications/
-```
-
-2. Open **Launchpad** (or Finder > Applications) and click Koinkat. It
-   starts without any warning dialog.
-
-**Alternative: the .dmg in the browser.** If you prefer, download
-`Koinkat_<version>_universal.dmg` from the
-[releases page](https://github.com/MarcoSburlino/Koinkat/releases/latest)
-(expand the **Assets** list; ignore the "Source code" entries), open it
-from your Downloads folder, and drag the Koinkat icon onto
-**Applications**. Because browsers mark downloads with the quarantine
-flag and the app is not signed, the first open then shows one of two
-dialogs. Both are expected:
-
-- **"Koinkat is damaged and can't be opened. You should move it to the
-  Trash."** The usual dialog on current macOS. The app is not damaged:
-  this is how macOS blocks unsigned apps that were quarantined during
-  download, and the dialog offers no button to proceed. Clear the flag
-  in Terminal:
-
-```bash
-xattr -cr /Applications/Koinkat.app
-```
-
-  Then open the app again from Applications. The command removes the
-  "downloaded from the internet" marker and changes nothing else.
-- **"Koinkat can't be opened because it is from an unidentified
-  developer"** (or a similar block without the "damaged" wording): open
-  **System Settings**, go to **Privacy & Security**, and scroll down to
-  the message saying Koinkat was blocked. Click **Open Anyway** and
-  confirm. On macOS versions before Sequoia you can instead right-click
-  the app in Applications and choose **Open**.
-
-##### Alternative: install from Terminal, with no warnings at all
-
-The blocks above are triggered by a "downloaded from the internet"
-quarantine flag that **browsers** attach to files. Terminal downloads
-do not carry that flag, so this route installs the same app with no
-dialogs. Open **Terminal** (Cmd+Space, type `terminal`, Enter) and run
-the four commands one at a time:
+The releases page also carries a `.app.tar.gz` archive of the same
+application, for anyone who prefers the command line. Open **Terminal**
+(Cmd+Space, type `terminal`, Enter) and run these one at a time:
 
 ```bash
 cd ~/Downloads
-curl -L -o Koinkat.app.tar.gz https://github.com/MarcoSburlino/Koinkat/releases/latest/download/Koinkat_0.1.0_aarch64.app.tar.gz
-tar xzf Koinkat.app.tar.gz
+curl -L -o Koinkat.app.tar.gz https://github.com/MarcoSburlino/Koinkat/releases/download/v0.1.1/Koinkat_0.1.1_universal.app.tar.gz
+tar -xzf Koinkat.app.tar.gz
 mv Koinkat.app /Applications/
 ```
 
 Then open Koinkat from Launchpad or Applications as normal. (In newer
-releases the version number in the URL changes; the file you want is
-the one ending in `.app.tar.gz` on the
+releases the version number in the address changes; the file you want
+is the one ending in `_universal.app.tar.gz` on the
 [releases page](https://github.com/MarcoSburlino/Koinkat/releases/latest).)
+
+**Still running 0.1.0?** That build predates code signing and was Apple
+Silicon only, so macOS refuses it with "Koinkat is damaged and can't be
+opened" or an unidentified-developer block. Updating to 0.1.1 or later
+resolves both.
 
 #### Linux
 
@@ -272,26 +232,26 @@ cd ~/Downloads
   once, then run it:
 
 ```bash
-chmod +x Koinkat_0.1.0_amd64.AppImage
-./Koinkat_0.1.0_amd64.AppImage
+chmod +x Koinkat_0.1.1_amd64.AppImage
+./Koinkat_0.1.1_amd64.AppImage
 ```
 
   If it refuses to start with a FUSE error ("AppImages require FUSE to
   run"), install the FUSE 2 compatibility library, which recent
   Ubuntu/Debian releases no longer preinstall (`sudo apt install
   libfuse2`), or run it once without installing anything:
-  `./Koinkat_0.1.0_amd64.AppImage --appimage-extract-and-run`
+  `./Koinkat_0.1.1_amd64.AppImage --appimage-extract-and-run`
 
 - **Debian / Ubuntu** (`Koinkat_<version>_amd64.deb`):
 
 ```bash
-sudo apt install ./Koinkat_0.1.0_amd64.deb
+sudo apt install ./Koinkat_0.1.1_amd64.deb
 ```
 
 - **Fedora / openSUSE** (`Koinkat-<version>-1.x86_64.rpm`):
 
 ```bash
-sudo rpm -i Koinkat-0.1.0-1.x86_64.rpm
+sudo rpm -i Koinkat-0.1.1-1.x86_64.rpm
 ```
 
 After the deb or rpm install, Koinkat appears in your application menu.
@@ -736,12 +696,14 @@ installed, or the terminal was open during installation - close and
 reopen it. Verify with the version commands above; Node must be v22.x
 (older versions fail the build).
 
-**Windows SmartScreen or macOS Gatekeeper blocks the app.** Expected
-for unsigned builds - the exact clicks are in
+**Windows SmartScreen blocks the installer.** Expected for unsigned
+Windows builds - the exact clicks are in
 [Path A](#path-a-install-the-released-app), and the background is
-explained there under "Why the installers show a security warning".
-macOS "damaged" messages are the quarantine flag; the `xattr -cr`
-command there clears it.
+explained there under "Why the Windows installer shows a security
+warning".
+macOS builds are signed and notarized from 0.1.1 onward, so Gatekeeper
+does not block them; if you see a "damaged" message you are running
+0.1.0 or earlier and should update.
 
 **Bank linking fails immediately with a redirect URL error
 (`REDIRECT_URI_NOT_ALLOWED`).** The redirect URL in Koinkat does not
