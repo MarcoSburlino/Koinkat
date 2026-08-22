@@ -816,7 +816,8 @@ all money math · `jose` for Enable Banking RS256 JWTs.
 
 ## Security model
 
-Koinkat is local-first; the trust boundary is your machine.
+Koinkat is local-first; the trust boundary is your machine. The full
+privacy policy is in [docs/privacy-policy.md](docs/privacy-policy.md).
 
 - **All data is stored locally** in a SQLite database under your OS
   app-config directory. The database is **not encrypted at rest** - rely
