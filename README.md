@@ -108,12 +108,39 @@ Koinkat is free, open-source software with no revenue, so that money is
 deliberately not spent on Windows signing. Signing changes the label the
 operating system puts on an app, not what the app does: the full source
 code is public, and Path B below builds the identical app from it. The
-Windows warning is therefore expected, and the steps below show exactly
-how to proceed past it. Downloading with PowerShell instead of a browser
-avoids the warning entirely, because Windows only warns about files a
-browser marked as downloaded from the internet.
+Windows warning is therefore expected, and there are two ways to deal
+with it: installing through **winget**, the package manager built into
+Windows, shows no warning at all and is the recommended path; the
+classic download steps show how to proceed past the warning if you
+prefer the installer file.
 
 #### Windows
+
+##### The recommended way: install with winget, no warning
+
+Koinkat is published in the Windows Package Manager community
+repository. The `winget` tool comes preinstalled on Windows 11 and on
+current Windows 10, and installing this way shows no security warning:
+winget downloads the installer from the official GitHub release and
+verifies it against the hash Microsoft has on record before running it.
+
+1. Open **PowerShell**: press the **Start** key, type `powershell`,
+   press Enter.
+2. Run this command and wait for it to finish:
+
+   ```powershell
+   winget install MarcoSburlino.Koinkat
+   ```
+
+3. Start the app: press the **Start** key, type `Koinkat`, press
+   Enter. Koinkat is now in your Start menu like any other program.
+
+If PowerShell answers that `winget` is not recognized, install the free
+**App Installer** from the Microsoft Store, close PowerShell, reopen
+it, and run the command again. Updating to a newer Koinkat later is one
+command too: `winget upgrade MarcoSburlino.Koinkat`.
+
+##### The classic way: download the installer file
 
 1. In your browser, open the latest release page:
    [github.com/MarcoSburlino/Koinkat/releases/latest](https://github.com/MarcoSburlino/Koinkat/releases/latest).
@@ -700,7 +727,8 @@ reopen it. Verify with the version commands above; Node must be v22.x
 Windows builds - the exact clicks are in
 [Path A](#path-a-install-the-released-app), and the background is
 explained there under "Why the Windows installer shows a security
-warning".
+warning". Installing with `winget install MarcoSburlino.Koinkat`
+instead shows no warning at all.
 macOS builds are signed and notarized from 0.1.1 onward, so Gatekeeper
 does not block them; if you see a "damaged" message you are running
 0.1.0 or earlier and should update.
