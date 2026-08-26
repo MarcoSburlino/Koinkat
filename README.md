@@ -477,9 +477,20 @@ setup, including how to test the real Enable Banking client in dev.
 <!-- SCREENSHOT: docs/images/02-workspace-hub.png - workspace hub with the creation cards -->
 
 3. **Workspace basics.** The creation form asks for a workspace name,
-   your preferred currency (what totals are converted into), the decimal
-   separator you are used to (comma or point), and a light or dark
-   theme.
+   your preferred currency (what mixed-currency totals are converted
+   into for display), the decimal separator you are used to (comma or
+   point), and a light or dark theme. None of these are permanent
+   choices: all four live in **Settings** afterwards and can be changed
+   per workspace at any time.
+
+   One related thing that *is* permanent, so it is worth knowing early:
+   the currency of an **individual account** is fixed when you create
+   that account, and the same goes for a transaction. This is
+   deliberate. Koinkat stores each amount in the currency it actually
+   happened in, so historical balances stay reproducible instead of
+   silently shifting whenever exchange rates move. Changing your
+   workspace's preferred currency re-displays those stored amounts; it
+   never rewrites them.
 4. **Dashboard.** After creation you land on the Dashboard. The database
    file now exists at the path listed in
    [How Koinkat handles your data](#how-koinkat-handles-your-data).
@@ -510,11 +521,36 @@ guide"**.
 ### What Enable Banking is
 
 [Enable Banking](https://enablebanking.com/) is a regulated European
-open-banking (PSD2) provider. PSD2 is the EU rule that lets you grant a
-third-party app read access to your bank accounts, always with your
-explicit consent given on the bank's own website. Koinkat uses Enable
-Banking read-only: it can see balances and transactions you authorize,
-and it can never move money.
+open-banking provider. Some background, because this is the part people
+find most confusing.
+
+**PSD2** is the EU rule that obliges banks to let you grant a
+third-party app read access to your own accounts, always with your
+explicit consent given on the bank's own website. The specific
+permission Koinkat uses is called **AIS**, for Account Information
+Service: the right to *read* balances and transactions. There is a
+separate permission for moving money, and Koinkat neither requests nor
+implements it, so the app is incapable of initiating a payment or a
+transfer even if someone wanted it to.
+
+**Why a provider in the middle?** Every bank exposes a slightly
+different PSD2 interface, and connecting to them directly requires a
+regulatory licence and a bank-issued certificate. Enable Banking holds
+that licence and normalizes its stated coverage of 2,700 banks across
+30 European countries behind a single API. Koinkat talks to Enable
+Banking; Enable Banking talks to your bank.
+
+**Why you register your own application** rather than using one that
+ships with Koinkat: credentials that could read bank data for any user
+would be exactly the kind of secret that must never sit inside an app
+distributed to the public. Instead each person holds their own, so
+nothing about your bank access is shared with other Koinkat users or
+with the project. The free tier covers personal use; see Step 6 for the
+exact terms.
+
+**Consents expire.** PSD2 caps them at just under 180 days, after which
+you re-approve at your bank. That is the regulation, not a Koinkat
+limitation, and every open-banking app works this way.
 
 ### Step 1: create an Enable Banking account
 
@@ -529,24 +565,47 @@ and it can never move money.
 
 ### Step 2: create an API application
 
+An "application" here is simply the container for your credentials: its
+ID plus your key are what identify Koinkat to the Enable Banking API.
+Registration is a single form, and it also asks for the redirect URL and
+the key, which Steps 3 and 4 cover. Read those two steps before you
+submit the form, because everything is filled in one pass.
+
 1. After signing in you are in the Enable Banking **Control Panel**
    (address: `enablebanking.com/cp/`).
-2. In the top menu, open the **API applications** page.
-3. Start registering a new application. The registration is one form;
-   the next three steps describe the choices it asks for.
-4. **Name:** anything you like; it is only a label. Example:
-   `Koinkat personal`.
-5. **Environment:** choose **Production**. Production means real banks.
-   (The other option, Sandbox, is Enable Banking's test environment
-   with imitation banks and fake data; its credentials cannot see real
-   accounts.)
-6. **Other fields:** the form may also ask for an application
-   description, a data protection email, and terms-of-service and
-   privacy-policy links. These exist for applications offered to the
-   public; for a personal application activated by linking your own
-   accounts, Enable Banking
-   [does not check them](https://enablebanking.com/docs/faq/). Enter
-   your own email and fill the rest plainly.
+2. In the top menu, open the **API applications** page, then start
+   registering a new application.
+3. **Application name:** anything you like; it is only a label.
+   Example: `Koinkat personal`.
+4. **"Choose Environment:"** select **Production**. Production means
+   real banks and real data. (**Sandbox** is Enable Banking's test
+   environment: imitation banks with invented data. Sandbox credentials
+   cannot see real accounts, so pick it only if you want to try Koinkat
+   without connecting anything real.)
+5. **"Choose Infrastructure:"** most people never see this. It appears
+   only if dedicated infrastructure has been made available to your
+   account; if it is absent, there is nothing to decide, and if it is
+   present, leave the default.
+6. **The remaining fields.** A Sandbox application asks only for a name
+   and redirect URLs. A **Production** application also requires an
+   application description, a data protection email, a privacy policy
+   URL, and a terms of service URL. Two things worth knowing:
+   - The **application description is not merely paperwork**: Enable
+     Banking shows it to end users during the consent step, so it can
+     appear on the screen where you approve access at your own bank.
+     Write something you would be happy to read there, for example
+     "Personal finance tracking with Koinkat".
+   - The email and the two URLs exist for applications offered to the
+     general public. Nobody reviews them for an application you
+     activate in restricted mode with your own accounts (Step 6), but
+     the form still requires values before it will submit. Use your own
+     email address, and for the two URLs any real page you control is
+     fine; Koinkat's own
+     [privacy policy](https://github.com/MarcoSburlino/Koinkat/blob/main/docs/privacy-policy.md)
+     and [license](https://github.com/MarcoSburlino/Koinkat/blob/main/LICENSE)
+     are reasonable stand-ins for a personal setup.
+7. Do not press **Register** yet. Fill in the redirect URL (Step 3) and
+   choose how the key is handled (Step 4) first, then submit.
 
 ### Step 3: set the redirect URL
 
@@ -566,21 +625,40 @@ character - a missing slash counts as a different address and the
 process stops with an error.
 
 The page at that address is a single static file whose only job is to
-hand the code to the Koinkat app on your computer. It stores nothing,
-sends nothing anywhere, and its full source is public:
+hand the code to the Koinkat app on your computer. It does that by
+opening a `koinkat://auth-callback` link, a "deep link" that your
+operating system routes to the installed app; this is what produces the
+**"Open Koinkat?"** prompt you will see in Step 8. The page stores
+nothing, sends nothing anywhere, and its full source is public:
 [github.com/MarcoSburlino/koinkat-callback](https://github.com/MarcoSburlino/koinkat-callback).
-(If you prefer not to rely on it, you can host your own copy of that
-page and register your own address instead; the corresponding field in
-Koinkat is editable.)
+
+Everyone can safely share one callback page because it holds no secrets.
+The authorization code it passes along is single-use, expires quickly,
+and is worthless without your application ID and private key, which
+never leave your machine. (If you prefer full independence anyway, host
+your own copy of that page, register that address instead, and paste it
+into the matching field in Koinkat, which is editable.)
 
 ### Step 4: generate and download your private key
 
-1. The same form asks how to handle the application's **key**. Choose
-   the option to **generate** it in the browser.
-2. Your browser creates the key locally and downloads the private half
-   to your **Downloads** folder. The file is named after your
-   application's ID, so it looks like `<your-app-id>.pem` (a long name
-   ending in `.pem`).
+Requests to Enable Banking are signed with an RSA key pair (RS256).
+Enable Banking keeps the public half; you keep the private half and give
+it to Koinkat. The form offers two ways to arrange that, and Koinkat
+works with either.
+
+**The simple way, recommended: let the browser generate the key.**
+
+1. On the same registration form, choose the option to let the browser
+   **generate** the private key for your application. The key is
+   created locally on your machine and is never transmitted to Enable
+   Banking; only the public half is registered.
+2. Submit the form with **Register**. Your browser downloads the
+   private key to your **Downloads** folder. It is named after the
+   application's ID, so it looks like
+   `aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee.pem` (yours will differ).
+   This download happens once and cannot be repeated: Enable Banking
+   never has your private key, so it cannot re-send it. Lose the file
+   and you must register a new application.
 3. This file is a **private key**: whoever has it, together with your
    application ID, can request your bank data. Treat it like a spare
    house key, calmly but seriously:
@@ -593,6 +671,23 @@ Koinkat is editable.)
      operating system's protected credential storage. Keep the file
      anyway as a backup, for example for setting up a new computer.
 
+**The advanced way: supply your own public key.** If you would rather
+generate the key pair yourself and never have a private key travel
+through a browser's download folder, choose the option to provide a
+public key instead, and paste the contents of `public.pem` produced by
+these two commands:
+
+```bash
+openssl genpkey -algorithm RSA -out private.pem -pkeyopt rsa_keygen_bits:2048
+openssl rsa -in private.pem -pubout -out public.pem
+```
+
+`private.pem` stays on your machine and is the file you later hand to
+Koinkat; `public.pem` is the one you paste into Enable Banking. The
+in-app setup guide documents this route as well. Everything after this
+step is identical, so if you are unsure, use the browser-generated key
+above.
+
 ### Step 5: note your application ID
 
 After registration the Control Panel shows your application's page,
@@ -604,10 +699,11 @@ first part of your downloaded key's filename.)
 
 ### Step 6: activate the application by linking your accounts
 
-A newly registered Production application starts **inactive**, and
+A newly registered **Production** application starts **inactive**, and
 activation also fixes its scope: only the accounts you link here will
 ever be visible to Koinkat. Link every account, at every bank, that you
-plan to use:
+plan to use. (A **Sandbox** application activates automatically, so if
+you chose Sandbox in Step 2 you can skip straight to Step 7.)
 
 1. On your application's page in the Control Panel, click
    **Activate by linking accounts**.
@@ -640,11 +736,23 @@ Now switch to the Koinkat app:
 1. In the workspace hub, choose the **Connect a bank** card.
 2. Give the workspace a name and pick your preferred currency, decimal
    separator, and theme, as with any workspace.
-3. In the **Application ID** field, paste the ID from Step 5.
-4. Click **Choose .pem file...** and, in the file dialog, navigate to
-   where you moved your key in Step 4 (for example
-   Documents > Koinkat) and select the `.pem` file.
-5. The **Redirect URL** field is already filled in with the same
+3. The credentials section carries a link reading **"Need help getting
+   these? Open the setup guide"**, which opens the same eight steps
+   inside the app if you want them side by side with the fields.
+4. In the **Application ID** field, paste the ID from Step 5. The field
+   shows the expected shape as a placeholder
+   (`xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx`), so a stray space or a
+   half-copied value is easy to spot.
+5. Under **Private Key**, click **Choose .pem file...** and, in the
+   file dialog, navigate to where you moved your key in Step 4 (for
+   example Documents > Koinkat) and select the `.pem` file. The chosen
+   filename then appears next to the button, which is your confirmation
+   that the right file was picked. Koinkat reads the whole file, so it
+   must still contain its delimiter lines,
+   `-----BEGIN PRIVATE KEY-----` and `-----END PRIVATE KEY-----`. If
+   you ever opened the key in an editor and saved only the middle
+   portion, it will be rejected.
+6. The **Redirect URL** field is already filled in with the same
    callback address you registered in Step 3:
 
 ```text
@@ -652,46 +760,78 @@ https://marcosburlino.github.io/koinkat-callback/
 ```
 
    **Leave it as it is.** (Only change it if you registered a
-   self-hosted page instead.)
-6. Confirm. Koinkat immediately checks the credentials against the
-   Enable Banking API, so a typo in the ID or a wrong file is caught
-   right here - if you get an error, see
-   [Troubleshooting](#troubleshooting). On success the workspace is
-   created, your key is stored in the operating system's credential
-   store (Windows Credential Manager, macOS Keychain, or the Linux
-   secret service), and the app takes you straight to the bank-linking
+   self-hosted page instead. The field only accepts an address starting
+   with `https://`, because Enable Banking rejects anything else.)
+7. Click **Create & verify**. This is not a blind save: Koinkat
+   immediately signs a real request to the Enable Banking API with your
+   key, so a typo in the ID, the wrong `.pem`, or an application that
+   is not activated yet is caught here rather than later. If you get an
+   error, see [Troubleshooting](#troubleshooting).
+8. On success the workspace is created, your key moves into the
+   operating system's credential store (Windows Credential Manager,
+   macOS Keychain, or the Linux secret service) rather than staying in
+   the database, and the app takes you straight to the bank-linking
    screen.
+
+If you would rather add credentials to a workspace that already exists,
+the same three fields live in **Settings > Bank credentials**, where the
+file button reads **Replace .pem file...** instead.
 
 ### Step 8: link your bank
 
-1. At the top of the Bank Link screen, choose how much history to
-   import: the last 30 days, the last 90 days, the maximum (180 days,
-   the default), or everything from a specific date.
-2. Pick your country from the dropdown, find your bank in the list (a
-   search box helps), and click **Connect** next to it.
-3. Your regular web browser opens on your bank's authorization page.
-   Log in **on your bank's own website** - Koinkat never sees these
-   credentials - and approve read access to the accounts you want.
-   Most banks confirm with a second factor (an app confirmation or a
-   code).
-4. After you approve, the bank sends the browser to the callback page,
+The screen is headed "Select your country and bank to connect via open
+banking."
+
+1. First choose how much history to import. The options are **Last 30
+   days**, **Last 90 days**, **Maximum history (180 days)**, which is
+   the recommended default, or everything from a date you pick. This
+   choice matters more than it looks: 180 days is the furthest back
+   PSD2 lets a bank go, so history older than your chosen window will
+   not appear in Koinkat. If you are unsure, take the maximum. You can
+   also import less now and pull older history later from Settings.
+2. Pick your country from the **Country** dropdown. The bank list
+   reloads for that country each time you change it.
+3. Find your bank. The **Search banks** box (placeholder "Type to
+   filter...") narrows a long list quickly. Click **Connect** next to
+   your bank; the button changes to **Connecting...** while Koinkat
+   opens the session.
+4. Your regular web browser opens on your bank's authorization page,
+   and Koinkat switches to a screen headed **Complete authorization**
+   that walks through the two remaining steps. Log in **on your bank's
+   own website** - Koinkat never sees these credentials, and cannot -
+   then approve read access to the accounts you want. Most banks
+   confirm with a second factor, such as an app confirmation or an SMS
+   code.
+5. After you approve, the bank sends your browser to the callback page,
    which immediately tries to hand the authorization code to the app.
    Your browser asks something along the lines of **"Open Koinkat?"**.
-   Click **Allow** / **Open**, and Koinkat finishes the connection by
+   Click **Allow** or **Open**, and Koinkat finishes the connection by
    itself.
-5. **If no prompt appears, or you dismissed it:** that is just as
-   normal. The callback page also shows the code with a **Copy Code**
-   button. Click it, return to Koinkat, and paste the code into the
-   field labeled "Paste authorization code here...", then confirm.
-   Both paths end in exactly the same place.
+6. **If no prompt appears, or you dismissed it, nothing has gone
+   wrong.** The callback page also shows the code with a **Copy Code**
+   button. Click it, return to Koinkat, paste the code into the field
+   labeled "Paste authorization code here...", and click **Connect &
+   Sync**. This path is fully supported and ends in exactly the same
+   place as the automatic one; some browsers simply refuse to hand off
+   to a desktop app without being asked.
 
 <!-- SCREENSHOT: docs/images/05-consent-flow.png - bank consent page or the callback page with the Open Koinkat prompt -->
 
-6. Koinkat exchanges the code, creates one account in the app per bank
-   account you approved, imports the chosen history, and runs its
-   categorization engine. **Success looks like:** a "Connected!"
-   screen, your accounts with balances on the Dashboard, and imported
-   transactions waiting in the Review inbox to be categorized.
+7. Koinkat now shows **Syncing...** ("Creating accounts and importing
+   transactions..."). Behind that screen it exchanges the code for
+   access, creates one account in the app per bank account you
+   approved, imports the history window you chose, and runs its
+   categorization engine over the results. On a long window this can
+   take a minute or two.
+8. **Success looks like** a screen headed **Connected!** with a summary
+   of what was imported, offering **Go to Dashboard** and **Link
+   another bank**. Your accounts appear with balances on the Dashboard,
+   and the imported transactions are waiting in the **Review** inbox to
+   be categorized rather than sitting directly in Transactions.
+
+Repeat the whole step for each additional bank, using **Link another
+bank**. Every bank is a separate consent, so a second bank means a
+second trip through its own login and approval screens.
 
 ### Consent expiry
 
