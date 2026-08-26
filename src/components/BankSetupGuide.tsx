@@ -50,12 +50,40 @@ function CodeBlock({ code }: { code: string }) {
   );
 }
 
+// ── Internal: inline monospace fragment (field values, filenames, URLs) ───
+
+function Mono({ children }: { children: React.ReactNode }) {
+  return (
+    <span
+      style={{
+        fontFamily: 'var(--font-mono)',
+        fontSize: 'var(--fs-caption)',
+        color: 'var(--text)',
+      }}
+    >
+      {children}
+    </span>
+  );
+}
+
+// ── Internal: bold label matching the app's text colour ───────────────────
+
+function Label({ children }: { children: React.ReactNode }) {
+  return <strong style={{ color: 'var(--text)' }}>{children}</strong>;
+}
+
 // ── Step definitions ──────────────────────────────────────────────────────
+//
+// Step order mirrors the "Connecting a bank" chapter in README.md so the two
+// can be followed side by side. Keep them in sync when either changes.
 
 interface Step {
   title: string;
   content: React.ReactNode;
 }
+
+const BODY = 'text-sm mb-3';
+const LIST = 'list-decimal list-inside flex flex-col gap-2 text-sm';
 
 const STEPS: Step[] = [
   // ── Step 1 ────────────────────────────────────────────────────────────
@@ -63,22 +91,21 @@ const STEPS: Step[] = [
     title: 'Create an Enable Banking account',
     content: (
       <>
-        <p className="text-sm mb-3" style={{ color: 'var(--text-muted)' }}>
-          Enable Banking is the PSD2 service Koinkat uses to connect to European banks. You
-          need a free account before you can register an application.
+        <p className={BODY} style={{ color: 'var(--text-muted)' }}>
+          Enable Banking is the PSD2 service Koinkat uses to connect to European banks. It
+          holds the licence that lets an app read your accounts, and it normalises thousands
+          of European banks behind one API. You need a free account before you can register
+          an application.
         </p>
-        <ol className="list-decimal list-inside flex flex-col gap-2 text-sm" style={{ color: 'var(--text-muted)' }}>
+        <ol className={LIST} style={{ color: 'var(--text-muted)' }}>
           <li>
-            Go to{' '}
-            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--fs-caption)', color: 'var(--text)' }}>
-              enablebanking.com/sign-in/
-            </span>{' '}
-            and enter your email address.
+            Go to <Mono>enablebanking.com/sign-in/</Mono> and enter your email address.
           </li>
           <li>
             Open the one-time authentication link Enable Banking emails you - there is no
-            password. Your account is created automatically on first sign-in.
+            password. Check your spam folder if nothing arrives within a few minutes.
           </li>
+          <li>Your account is created automatically on first sign-in.</li>
         </ol>
       </>
     ),
@@ -89,84 +116,106 @@ const STEPS: Step[] = [
     title: 'Register an application in the Control Panel',
     content: (
       <>
-        <p className="text-sm mb-3" style={{ color: 'var(--text-muted)' }}>
+        <p className={BODY} style={{ color: 'var(--text-muted)' }}>
           An "application" in Enable Banking is the container for your credentials: its ID and
           your key identify Koinkat to the API. Registration is a single form that also asks
-          for the key and the redirect URL - the next steps cover what to put in each field.
+          for the redirect URL and the key, so read steps 3 and 4 before you submit it.
         </p>
-        <ol className="list-decimal list-inside flex flex-col gap-2 text-sm" style={{ color: 'var(--text-muted)' }}>
+        <ol className={LIST} style={{ color: 'var(--text-muted)' }}>
           <li>
-            Open the <strong style={{ color: 'var(--text)' }}>Control Panel</strong> at{' '}
-            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--fs-caption)', color: 'var(--text)' }}>
-              enablebanking.com/cp/
-            </span>{' '}
-            and go to the <strong style={{ color: 'var(--text)' }}>API applications</strong> page.
+            Open the <Label>Control Panel</Label> at <Mono>enablebanking.com/cp/</Mono> and go
+            to the <Label>API applications</Label> page.
           </li>
           <li>Register a new application and give it a name - e.g. "Koinkat personal".</li>
           <li>
-            Choose the <strong style={{ color: 'var(--text)' }}>Production</strong> environment
-            for real banks. (Sandbox is Enable Banking's test environment with mock banks - pick
-            it only to try Koinkat without real accounts.)
+            Under <Label>Choose Environment</Label> pick <Label>Production</Label> for real
+            banks. (Sandbox is Enable Banking's test environment with mock banks and invented
+            data - pick it only to try Koinkat without real accounts. Sandbox applications
+            also skip step 6.)
           </li>
           <li>
-            The form may also ask for an application description, a data protection email, and
-            terms-of-service and privacy-policy links. These exist for applications offered to
-            the public; for a personal application activated by linking your own accounts,
-            Enable Banking does not check them. Enter your own email and fill the rest plainly.
+            <Label>Choose Infrastructure</Label> appears only if dedicated infrastructure is
+            available on your account. If you see it, leave the default.
+          </li>
+          <li>
+            A Production application also requires a description, a data protection email, and
+            privacy policy and terms of service URLs. The <Label>description is shown to end
+            users during consent</Label>, so it can appear on your own bank's approval screen -
+            write something you would be happy to read there. The email and URLs are not
+            reviewed for a restricted-mode application, but the form still requires values.
+          </li>
+          <li>
+            Do not press <Label>Register</Label> yet - set the redirect URL and the key first.
           </li>
         </ol>
       </>
     ),
   },
 
-  // ── Step 3 - exact OpenSSL commands verified ──────────────────────────
+  // ── Step 3 ────────────────────────────────────────────────────────────
   {
-    title: 'Generate the RS256 key pair',
+    title: 'Set the redirect URL',
     content: (
       <>
-        <p className="text-sm mb-3" style={{ color: 'var(--text-muted)' }}>
-          Enable Banking uses RS256 to authenticate your API requests. Run these two commands in a
-          terminal to generate a 2048-bit private key and the matching public key.
+        <p className={BODY} style={{ color: 'var(--text-muted)' }}>
+          After you approve access on your bank's website, Enable Banking sends the browser to
+          a redirect URL registered on your application. Register Koinkat's shared callback
+          page - the match is exact, trailing slash included:
+        </p>
+        <CodeBlock code="https://marcosburlino.github.io/koinkat-callback/" />
+        <p className="text-sm mt-3" style={{ color: 'var(--text-muted)' }}>
+          That page's only job is to bounce the authorization code back into Koinkat via the{' '}
+          <Mono>koinkat://auth-callback</Mono> deep link, which is what produces the "Open
+          Koinkat?" prompt later. Everyone can share one page because it holds no secrets: the
+          code is single-use, expires quickly, and is worthless without your application ID and
+          private key, which never leave your machine. Koinkat pre-fills this same URL in the{' '}
+          <Label>Redirect URL</Label> field, so there is nothing else to do. Prefer full
+          independence? Host your own copy (source at{' '}
+          <Mono>github.com/MarcoSburlino/koinkat-callback</Mono>), register that URL instead,
+          and paste it into the field.
+        </p>
+      </>
+    ),
+  },
+
+  // ── Step 4 - browser-generated key is the primary path ────────────────
+  {
+    title: 'Generate and download your private key',
+    content: (
+      <>
+        <p className={BODY} style={{ color: 'var(--text-muted)' }}>
+          Requests are signed with an RSA key pair (RS256). Enable Banking keeps the public
+          half; you keep the private half and give it to Koinkat. Both routes below work.
+        </p>
+        <p className="text-sm mb-2" style={{ color: 'var(--text)' }}>
+          <Label>Recommended: let the browser generate it</Label>
+        </p>
+        <ol className={LIST} style={{ color: 'var(--text-muted)' }}>
+          <li>
+            Choose the option to let the browser generate the private key. It is created
+            locally and never transmitted; only the public half is registered.
+          </li>
+          <li>
+            Submit the form with <Label>Register</Label>. The private key downloads to your
+            Downloads folder, named after the application ID:{' '}
+            <Mono>{'<application-id>'}.pem</Mono>. This happens once and cannot be repeated -
+            Enable Banking never has your private key, so it cannot re-send it. Move the file
+            somewhere you will remember, and never share or upload it.
+          </li>
+        </ol>
+        <p className="text-sm mt-4 mb-2" style={{ color: 'var(--text)' }}>
+          <Label>Advanced: supply your own public key</Label>
+        </p>
+        <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
+          To keep a private key out of a browser download folder entirely, pick the option to
+          provide a public key and paste the contents of <Mono>public.pem</Mono> from:
         </p>
         <CodeBlock code="openssl genpkey -algorithm RSA -out private.pem -pkeyopt rsa_keygen_bits:2048" />
         <CodeBlock code="openssl rsa -in private.pem -pubout -out public.pem" />
-        <p className="text-sm mt-4" style={{ color: 'var(--text-muted)' }}>
-          <strong style={{ color: 'var(--text)' }}>private.pem</strong> stays on your machine
-          - never share or upload it.{' '}
-          <strong style={{ color: 'var(--text)' }}>public.pem</strong> is what you upload to
-          Enable Banking in the next step.
+        <p className="text-sm mt-3" style={{ color: 'var(--text-muted)' }}>
+          <Mono>private.pem</Mono> stays on your machine and is the file you hand to Koinkat in
+          step 7. Everything after this is identical either way.
         </p>
-      </>
-    ),
-  },
-
-  // ── Step 4 ────────────────────────────────────────────────────────────
-  {
-    title: 'Upload the public key to Enable Banking',
-    content: (
-      <>
-        <p className="text-sm mb-3" style={{ color: 'var(--text-muted)' }}>
-          The registration form asks how to handle the application's key. Both options work
-          with Koinkat:
-        </p>
-        <ol className="list-decimal list-inside flex flex-col gap-2 text-sm" style={{ color: 'var(--text-muted)' }}>
-          <li>
-            <strong style={{ color: 'var(--text)' }}>Provide your own key</strong>: pick the
-            option to supply a public key and paste the full contents of the{' '}
-            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--fs-caption)', color: 'var(--text)' }}>
-              public.pem
-            </span>{' '}
-            you generated in the previous step.
-          </li>
-          <li>
-            <strong style={{ color: 'var(--text)' }}>Or let the browser generate one</strong>:
-            the private key is created locally (it is not transmitted) and downloads as{' '}
-            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--fs-caption)', color: 'var(--text)' }}>
-              {'<application-id>'}.pem
-            </span>{' '}
-            - keep that file; you will hand it to Koinkat instead of private.pem.
-          </li>
-        </ol>
       </>
     ),
   },
@@ -176,23 +225,22 @@ const STEPS: Step[] = [
     title: 'Locate your application ID',
     content: (
       <>
-        <p className="text-sm mb-3" style={{ color: 'var(--text-muted)' }}>
+        <p className={BODY} style={{ color: 'var(--text-muted)' }}>
           Koinkat needs your application ID - a UUID assigned at registration - to identify
           your app when making API requests.
         </p>
-        <ol className="list-decimal list-inside flex flex-col gap-2 text-sm" style={{ color: 'var(--text-muted)' }}>
+        <ol className={LIST} style={{ color: 'var(--text-muted)' }}>
           <li>
-            In the Control Panel, go to <strong style={{ color: 'var(--text)' }}>Applications</strong> and
-            open your app.
+            In the Control Panel, go to <Label>API applications</Label> and open your app.
           </li>
           <li>
-            Look for a field labelled <strong style={{ color: 'var(--text)' }}>Application ID</strong> or{' '}
-            <strong style={{ color: 'var(--text)' }}>App ID</strong>. It's a UUID in the format:{' '}
-            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--fs-caption)', color: 'var(--text)' }}>
-              xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
-            </span>
+            Look for a field labelled <Label>Application ID</Label> or <Label>App ID</Label>.
+            It is a UUID in the format <Mono>xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx</Mono>.
           </li>
-          <li>Copy this value - you'll paste it into Koinkat in step 7.</li>
+          <li>
+            Copy this value - you will paste it into Koinkat in step 7. It is also the first
+            part of your downloaded key's filename.
+          </li>
         </ol>
       </>
     ),
@@ -203,25 +251,22 @@ const STEPS: Step[] = [
     title: 'Activate your application',
     content: (
       <>
-        <p className="text-sm mb-3" style={{ color: 'var(--text-muted)' }}>
+        <p className={BODY} style={{ color: 'var(--text-muted)' }}>
           Activation turns a new application on and also fixes its scope: only the bank
           accounts you link in the Control Panel will ever be visible to Koinkat. Link every
           account, at every bank, you plan to use.
         </p>
-        <ol className="list-decimal list-inside flex flex-col gap-2 text-sm" style={{ color: 'var(--text-muted)' }}>
+        <ol className={LIST} style={{ color: 'var(--text-muted)' }}>
           <li>
-            <strong style={{ color: 'var(--text)' }}>Sandbox</strong> applications activate
-            automatically - nothing to do.
+            <Label>Sandbox</Label> applications activate automatically - nothing to do.
           </li>
           <li>
-            <strong style={{ color: 'var(--text)' }}>Production</strong> applications start
-            inactive. On the application's page, click{' '}
-            <strong style={{ color: 'var(--text)' }}>Activate by linking accounts</strong> and
-            link every account you plan to use - the list is a whitelist, and you will still
-            authorize each bank again inside Koinkat. You can link more accounts later from
-            the same page; Enable Banking may cap how many one application can link. The
-            result is an application active in restricted mode, for exactly the accounts you
-            linked.
+            <Label>Production</Label> applications start inactive. On the application's page,
+            click <Label>Activate by linking accounts</Label> and link every account you plan
+            to use - the list is a whitelist, and you will still authorize each bank again
+            inside Koinkat. You can link more accounts later from the same page; Enable Banking
+            may cap how many one application can link. The result is an application active in
+            restricted mode, for exactly the accounts you linked.
           </li>
           <li>
             Full activation (manual review by Enable Banking, contract and KYC) is only needed
@@ -234,75 +279,72 @@ const STEPS: Step[] = [
     ),
   },
 
-  // ── Step 7 ────────────────────────────────────────────────────────────
-  {
-    title: 'Register the redirect URL on your application',
-    content: (
-      <>
-        <p className="text-sm mb-3" style={{ color: 'var(--text-muted)' }}>
-          After you approve access in your bank's website, Enable Banking sends the browser to a
-          redirect URL registered on your application. That page's only job is to bounce the
-          authorization code back into Koinkat via the{' '}
-          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--fs-caption)', color: 'var(--text)' }}>
-            koinkat://auth-callback
-          </span>{' '}
-          deep link - it holds no secrets and nothing personal, so everyone can share one page.
-        </p>
-        <ol className="list-decimal list-inside flex flex-col gap-2 text-sm" style={{ color: 'var(--text-muted)' }}>
-          <li>
-            On your Enable Banking application page, register Koinkat's shared callback page as
-            the redirect URL - the match is exact, trailing slash included:
-          </li>
-        </ol>
-        <CodeBlock code="https://marcosburlino.github.io/koinkat-callback/" />
-        <p className="text-sm mt-3" style={{ color: 'var(--text-muted)' }}>
-          Koinkat pre-fills this same URL in the <strong style={{ color: 'var(--text)' }}>Redirect URL</strong>{' '}
-          field, so there's nothing else to do. Prefer full independence? Host your own copy
-          (the page source is at{' '}
-          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--fs-caption)', color: 'var(--text)' }}>
-            github.com/MarcoSburlino/koinkat-callback
-          </span>
-          ), register that URL instead, and paste it into the field.
-        </p>
-      </>
-    ),
-  },
-  // ── Step 8 - PEM content note verified ───────────────────────────────
+  // ── Step 7 - PEM content note verified ────────────────────────────────
   {
     title: 'Paste your credentials into Koinkat',
     content: (
       <>
-        <p className="text-sm mb-3" style={{ color: 'var(--text-muted)' }}>
-          You now have everything you need. Head back to Koinkat's workspace creation screen (or
-          Settings if you're updating an existing workspace).
+        <p className={BODY} style={{ color: 'var(--text-muted)' }}>
+          You now have everything you need. Head back to Koinkat's workspace creation screen
+          (or Settings if you are updating an existing workspace).
         </p>
-        <ol className="list-decimal list-inside flex flex-col gap-2 text-sm" style={{ color: 'var(--text-muted)' }}>
+        <ol className={LIST} style={{ color: 'var(--text-muted)' }}>
           <li>
-            In the <strong style={{ color: 'var(--text)' }}>Application ID</strong> field, paste
-            the UUID you copied in step 5.
+            In the <Label>Application ID</Label> field, paste the UUID you copied in step 5.
           </li>
           <li>
-            In the <strong style={{ color: 'var(--text)' }}>Redirect URL</strong> field, paste the
-            https:// callback URL you registered in step 7.
-          </li>
-          <li>
-            Click <strong style={{ color: 'var(--text)' }}>Choose .pem file...</strong> and select
-            your{' '}
-            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--fs-caption)', color: 'var(--text)' }}>
-              private.pem
-            </span>. Koinkat reads the full file - make sure it includes both the{' '}
-            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--fs-caption)', color: 'var(--text)' }}>
-              -----BEGIN PRIVATE KEY-----
-            </span>{' '}
-            and{' '}
-            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--fs-caption)', color: 'var(--text)' }}>
-              -----END PRIVATE KEY-----
-            </span>{' '}
+            Under <Label>Private Key</Label>, click <Label>Choose .pem file...</Label> and
+            select your key. The filename appears next to the button once it is picked. Koinkat
+            reads the full file, so it must still include both the{' '}
+            <Mono>-----BEGIN PRIVATE KEY-----</Mono> and <Mono>-----END PRIVATE KEY-----</Mono>{' '}
             delimiter lines.
           </li>
           <li>
-            Click <strong style={{ color: 'var(--text)' }}>Create & verify</strong>. Koinkat will
-            test the credentials against Enable Banking and report any errors.
+            The <Label>Redirect URL</Label> field is pre-filled with the callback URL from
+            step 3 - leave it as it is unless you registered a page you host yourself.
+          </li>
+          <li>
+            Click <Label>Create & verify</Label>. Koinkat signs a real request to Enable
+            Banking with your key, so a wrong ID, the wrong .pem, or an application that is not
+            activated yet is caught here rather than later.
+          </li>
+        </ol>
+      </>
+    ),
+  },
+
+  // ── Step 8 ────────────────────────────────────────────────────────────
+  {
+    title: 'Link your bank',
+    content: (
+      <>
+        <p className={BODY} style={{ color: 'var(--text-muted)' }}>
+          Credentials done. Koinkat takes you straight to the bank-linking screen, and this is
+          what happens there.
+        </p>
+        <ol className={LIST} style={{ color: 'var(--text-muted)' }}>
+          <li>
+            Choose how much history to import. 180 days is the maximum PSD2 allows and the
+            recommended default; anything older will not appear.
+          </li>
+          <li>
+            Pick your <Label>Country</Label>, find your bank with <Label>Search banks</Label>,
+            and click <Label>Connect</Label>.
+          </li>
+          <li>
+            Your browser opens your bank's own login. Koinkat never sees those credentials.
+            Approve read access, and confirm with your second factor if asked.
+          </li>
+          <li>
+            The callback page then hands the code back and your browser asks "Open Koinkat?" -
+            click Allow. If no prompt appears, use the <Label>Copy Code</Label> button on that
+            page, paste the code into Koinkat, and click <Label>Connect & Sync</Label>. Both
+            paths end in the same place.
+          </li>
+          <li>
+            Koinkat imports your accounts and transactions, then shows the{' '}
+            <Label>Connected!</Label> screen. New transactions land in the{' '}
+            <Label>Review</Label> inbox to be categorized.
           </li>
         </ol>
       </>
