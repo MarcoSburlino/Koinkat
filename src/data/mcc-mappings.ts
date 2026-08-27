@@ -5,7 +5,8 @@
  * return. Each code maps to a macro category NAME (not id - ids differ
  * per workspace and are resolved at seed time).
  *
- * Source: github.com/greggles/mcc-codes (public domain). The raw CSV
+ * Source: github.com/greggles/mcc-codes, released under the Unlicense
+ * (a public-domain dedication). The raw CSV
  * has ~900 codes; this list focuses on the ones actually used by
  * consumer-facing card/POS transactions.
  *

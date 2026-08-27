@@ -1,4 +1,5 @@
-/** ISO 4217 fiat currency codes and names. Source: Koinkat Demo/app/models/exchange_rate.py */
+/** ISO 4217 fiat currency codes and names, derived from the list used in an
+ *  earlier project by the same author. */
 export const ISO_4217_CURRENCIES: Record<string, string> = {
   AED: 'United Arab Emirates Dirham',
   AFN: 'Afghan Afghani',
