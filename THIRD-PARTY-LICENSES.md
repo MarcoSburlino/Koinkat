@@ -1726,7 +1726,7 @@ This project is released under the MIT license, but the vendor'ed in libraries i
 
 ## Rust dependencies
 
-- Apache License 2.0 (302)
+- Apache License 2.0 (310)
 - MIT License (130)
 - Unicode License v3 (19)
 - ISC License (18)
@@ -2961,16 +2961,24 @@ Applies to:
 - `windows-result` 0.4.1 - https://github.com/microsoft/windows-rs
 - `windows-strings` 0.4.2 - https://github.com/microsoft/windows-rs
 - `windows-strings` 0.5.1 - https://github.com/microsoft/windows-rs
+- `windows-sys` 0.45.0 - https://github.com/microsoft/windows-rs
+- `windows-sys` 0.48.0 - https://github.com/microsoft/windows-rs
+- `windows-sys` 0.52.0 - https://github.com/microsoft/windows-rs
 - `windows-sys` 0.59.0 - https://github.com/microsoft/windows-rs
 - `windows-sys` 0.60.2 - https://github.com/microsoft/windows-rs
 - `windows-sys` 0.61.2 - https://github.com/microsoft/windows-rs
+- `windows-targets` 0.42.2 - https://github.com/microsoft/windows-rs
+- `windows-targets` 0.48.5 - https://github.com/microsoft/windows-rs
 - `windows-targets` 0.52.6 - https://github.com/microsoft/windows-rs
 - `windows-targets` 0.53.5 - https://github.com/microsoft/windows-rs
 - `windows-threading` 0.1.0 - https://github.com/microsoft/windows-rs
 - `windows-version` 0.1.7 - https://github.com/microsoft/windows-rs
 - `windows` 0.61.3 - https://github.com/microsoft/windows-rs
+- `windows_x86_64_gnu` 0.48.5 - https://github.com/microsoft/windows-rs
 - `windows_x86_64_gnu` 0.52.6 - https://github.com/microsoft/windows-rs
 - `windows_x86_64_gnu` 0.53.1 - https://github.com/microsoft/windows-rs
+- `windows_x86_64_msvc` 0.42.2 - https://github.com/microsoft/windows-rs
+- `windows_x86_64_msvc` 0.48.5 - https://github.com/microsoft/windows-rs
 - `windows_x86_64_msvc` 0.52.6 - https://github.com/microsoft/windows-rs
 - `windows_x86_64_msvc` 0.53.1 - https://github.com/microsoft/windows-rs
 
@@ -12635,7 +12643,7 @@ SOFTWARE.
 
 Applies to:
 
-- `h2` 0.4.15 - https://github.com/hyperium/h2
+- `h2` 0.4.19 - https://github.com/hyperium/h2
 
 <details>
 <summary>Licence text</summary>
