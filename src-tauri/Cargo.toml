@@ -2,6 +2,10 @@
 name = "koinkat"
 version = "0.1.1"
 edition = "2021"
+license = "GPL-3.0-or-later"
+authors = ["Marco Sburlino"]
+description = "Local-first multi-currency personal finance manager"
+repository = "https://github.com/MarcoSburlino/Koinkat"
 
 [lib]
 name = "koinkat_lib"

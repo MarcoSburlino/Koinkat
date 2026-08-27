@@ -7,7 +7,9 @@ Please report vulnerabilities **privately** via
 ("Report a vulnerability"). Do not open a public issue for security reports.
 
 Include what you can: affected version or commit, reproduction steps, and
-impact. You should get an initial response within 7 days.
+impact. Koinkat is maintained by one person in their spare time - I aim to
+acknowledge reports within 7 days, and I will tell you if a fix is going to
+take longer than that.
 
 ## Coordinated disclosure
 
