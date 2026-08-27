@@ -26,7 +26,7 @@ answered" and "this was accepted".
 | 6 | Setup guide vs EB's documentation | **Resolved.** Low risk; disclaimer added. |
 | 7 | CDLA-Permissive-2.0 vs GPL-3.0 | **Resolved.** Compatible. |
 | 8 | GitHub Pages request logs | **Resolved**, and it corrected an error in the review. |
-| 9 | Trademark | **Closed by decision.** No registration for now. |
+| 9 | Trademark | **Closed by decision.** No registration; registers searched and clear. |
 
 Net position: one email outstanding to Enable Banking, one optional email to
 GitHub Support, and no lawyer engaged. Two of the nine turned out to point
@@ -330,9 +330,16 @@ it imposes no obligations on results obtained from computational use
 (<https://cdla.dev/permissive-2-0/>).
 
 Nothing there conflicts with distributing a larger work under
-GPL-3.0-or-later. The absence of an FSF compatibility opinion, which the
-review noted, reflects the licence's youth and its data-rather-than-code
-subject matter rather than a known problem.
+GPL-3.0-or-later. Confirmed 2026-08-27 that the FSF licence list does not
+mention CDLA-Permissive-2.0 at all, so there is genuinely no opinion to cite
+either way - the silence reflects the licence's youth and its
+data-rather-than-code subject matter, not a known problem.
+
+Checked at the same time, because these were the ones that could have forced
+a change: the FSF treats **MPL 2.0** as GPL-compatible through its section
+3.3, and **Apache-2.0** as incompatible with GPLv2 but compatible with
+GPLv3. Koinkat is GPL-3.0-or-later, so both are fine. The Apache point does
+mean GPLv3 is an effective floor for the combined work.
 
 **Its one obligation is a notice obligation**, so the answer folds into
 question 5: the CDLA text is included in `THIRD-PARTY-LICENSES.md`.
@@ -407,9 +414,16 @@ Recorded for whenever it is revisited:
 `UNVERIFIED`: registrability and opposition practice are specialist
 judgements and nothing above should be relied on.
 
-**Outstanding, free, and not yet done:** the review's own stated gap - WIPO's
-Global Brand Database and EUIPO eSearch were never searched separately from
-TMview. Worth twenty minutes before any future decision.
+**Gap now closed.** The review noted that WIPO's Global Brand Database had
+never been searched separately from TMview. Searched 2026-08-27 for a brand
+name containing "koinkat" across 76,490,305 records from 89 data sources:
+**no results found**. Combined with TMview's zero EU hits, nothing in either
+register resembles the name. EUIPO eSearch was not driven separately, but
+EUIPO's register is covered by both tools.
+
+That is a name-availability check, not a registrability clearance. If a
+registration is ever pursued, a trademark attorney's phonetic and conceptual
+search is the thing to buy, and "Koink" is the name to raise with them.
 
 ---
 

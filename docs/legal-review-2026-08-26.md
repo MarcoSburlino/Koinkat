@@ -756,24 +756,34 @@ Non-default licences, identified and assessed:
 | Zlib / ISC / BSL-1.0 / 0BSD / CC0-1.0 / MIT-0 / BSD-2-Clause combinations | 20 |
 | CDLA-Permissive-2.0 | 1 |
 
-**Nothing GPL-incompatible was found in the resolved set.** Items worth
-naming:
+**Nothing GPL-incompatible was found in the resolved set.** The two that
+could have forced a change - Apache-2.0 and MPL-2.0 - were checked against
+the FSF's stated positions on 2026-08-27 and are compatible. Note on
+sourcing: `gnu.org` refused connections from the review machine, so those
+positions were read from FSF-domain search results rather than from the
+licence list page directly. The conclusions are the FSF's; the retrieval
+route was second-hand.
+
+Items worth naming:
 
 - **Apache-2.0 with no MIT alternative** - `tao 0.35.3` (Tauri's windowing
-  layer), `sync_wrapper 1.0.2`, `borsh-derive 1.7.0`. `UNVERIFIED`, but
-  materially: Apache-2.0 is generally understood to be compatible with
-  GPLv3 and *not* with GPLv2. Since the outbound licence is
-  GPL-3.0-**or-later**, this is fine - but it means **GPLv3 is an effective
-  floor**. Nobody could redistribute the combined work under GPLv2, whatever
-  the "or later" text might otherwise suggest. Worth knowing before any
-  future relicensing conversation.
-- **CDLA-Permissive-2.0** - `webpki-roots 1.0.8`, the bundled CA root
-  store. This is a data licence rather than a code licence. `UNVERIFIED`:
-  no FSF compatibility opinion on CDLA-Permissive-2.0 was located in this
-  review. Risk appears low (permissive terms, data not code), but it is the
-  single least-standard licence in the tree. Open question 7.
+  layer), `sync_wrapper 1.0.2`, `borsh-derive 1.7.0`. **Checked 2026-08-27
+  against the FSF's position:** Apache-2.0's patent clauses are incompatible
+  with GPLv2, and GPLv3 was written to be compatible with them. Since the
+  outbound licence is GPL-3.0-**or-later**, this is fine - but it means
+  **GPLv3 is an effective floor**. Nobody could redistribute the combined
+  work under GPLv2, whatever the "or later" text might otherwise suggest.
+  Worth knowing before any future relicensing conversation.
 - **MPL-2.0** - `cssparser`, `cssparser-macros`, `selectors`, `dtoa-short`,
-  `option-ext`. Same note as the npm MPL packages.
+  `option-ext`, plus `lightningcss` on the npm side. **Checked 2026-08-27:**
+  the FSF's position is that MPL 2.0 section 3.3 provides compatibility with
+  the GNU GPL v2 and later, so this is settled rather than assumed.
+- **CDLA-Permissive-2.0** - `webpki-roots 1.0.8`, the bundled CA root
+  store. This is a data licence rather than a code licence. Still
+  `UNVERIFIED`: the FSF licence list does not address CDLA-Permissive-2.0
+  at all, so there is no opinion to cite either way. Risk appears low
+  (permissive terms, no copyleft, data not code), but it remains the single
+  least-standard licence in the tree. Open question 7.
 - **Unicode-3.0** - the 18 ICU crates. Permissive.
 
 ### The third-party licence notice gap
@@ -893,14 +903,19 @@ That is the finding that matters: as far as TMview shows, the mark is not
 registered in the EU in any class, and Japanese registrations for different
 words have no effect in the EU.
 
+**WIPO Global Brand Database**, searched 2026-08-27 for a brand name
+containing "koinkat", across 76,490,305 records from 89 data sources:
+**"No results found!"** This closes the gap the first pass left open.
+
 Caveats, stated plainly:
-- TMview's own disclaimer is that it is not an official register and its
-  contents have no legal effect.
-- This was a "contains" search on the word mark only. No figurative search,
-  no phonetic-similarity search in EU offices, and no separate class-9 or
-  class-36 similarity analysis was run.
-- **WIPO Global Brand Database was not searched separately.** TMview covers
-  many of the same records but the two are not identical. Gap.
+- Neither TMview nor the Global Brand Database is an official register;
+  TMview's own disclaimer says its contents have no legal effect.
+- Both were "contains" searches on the word mark. No figurative search, no
+  phonetic-similarity search in EU offices, and no class-9 or class-36
+  similarity analysis was run. A registrability clearance is a different and
+  more expensive exercise.
+- EUIPO eSearch was not driven separately, but EUIPO's register is covered
+  by both tools searched.
 
 ### Common-law and web presence
 
