@@ -1,0 +1,32 @@
+# cargo-audit configuration.
+#
+# `ignore` here means "this advisory is real, but the affected code is not in
+# any binary we ship". Every entry must say why, and must be re-checked when
+# dependencies move. It is not a place to park inconvenient findings.
+#
+# Verify a claim below with, from src-tauri/:
+#   cargo tree -i <crate> --target all --edges normal
+# "nothing to print" means the crate is in Cargo.lock but in no build graph -
+# Cargo.lock is the union of all platforms and all optional features, so it
+# lists crates that are never compiled.
+
+[advisories]
+ignore = [
+    # rsa <- sqlx-mysql. tauri-plugin-sql is built with features = ["sqlite"]
+    # only, so the MySQL driver is never compiled. Confirmed: `cargo tree -i
+    # rsa --target all` reports nothing to print. No fix is available upstream
+    # for this advisory, so if a MySQL driver is ever enabled this has to be
+    # reconsidered rather than re-ignored.
+    "RUSTSEC-2023-0071",
+
+    # rkyv <- rust_decimal, reached only through the same unused sqlx drivers.
+    # Confirmed absent from every build graph.
+    "RUSTSEC-2026-0235",
+
+    # quick-xml <- plist <- tauri-utils <- tauri-codegen <- tauri-macros.
+    # That is a proc-macro path: plist is parsed at build time to generate the
+    # macOS Info.plist. Both advisories are denial-of-service on parsing
+    # hostile XML, and the only XML parsed is our own build input.
+    "RUSTSEC-2026-0194",
+    "RUSTSEC-2026-0195",
+]

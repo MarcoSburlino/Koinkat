@@ -6,6 +6,10 @@ license = "GPL-3.0-or-later"
 authors = ["Marco Sburlino"]
 description = "Local-first multi-currency personal finance manager"
 repository = "https://github.com/MarcoSburlino/Koinkat"
+# This crate is the app shell, never a library for anyone else. Marking it
+# unpublished also lets cargo-about skip it when collecting THIRD-PARTY
+# licences - it is the work being licensed, not a dependency of it.
+publish = false
 
 [lib]
 name = "koinkat_lib"

@@ -35,6 +35,76 @@ jobs:
       - name: Production bundle (includes mock-leak scanner)
         run: npm run build
 
+  # THIRD-PARTY-LICENSES.md must never drift from the lockfiles. Regenerate it
+  # and fail if the result differs from what is committed. Needs both
+  # toolchains: the file is npm dependencies plus Rust crates.
+  licenses:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+      # cargo-about is a compile-from-source install, so cache the binary
+      # rather than rebuilding it on every run. Bump the key to force a
+      # refresh.
+      - name: Cache cargo-about
+        id: cache-cargo-about
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/bin/cargo-about
+          key: cargo-about-0.9.2-${{ runner.os }}
+      - name: Install cargo-about
+        if: steps.cache-cargo-about.outputs.cache-hit != 'true'
+        run: cargo install cargo-about --locked --features cli
+      - run: npm ci
+      - name: THIRD-PARTY-LICENSES.md matches the lockfiles
+        run: npm run licenses:check
+
+  # Dependency vulnerability scanning. The gate is deliberately scoped to what
+  # actually ships:
+  #   - npm: --omit=dev, because build-only packages (vite, postcss, vitest and
+  #     friends) are not in the installer. Their advisories are still printed,
+  #     just not fatal.
+  #   - cargo: RustSec splits findings into "vulnerabilities" (fatal here) and
+  #     "warnings" for unmaintained/unsound/yanked crates (printed, not fatal).
+  #     Advisories for crates that are in Cargo.lock but in no build graph are
+  #     listed with reasons in src-tauri/.cargo/audit.toml.
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+      - run: npm ci
+      - name: npm audit (full report, non-blocking)
+        run: npm audit || true
+      - name: npm audit (shipped dependencies - blocks on high and critical)
+        run: npm audit --omit=dev --audit-level=high
+      - name: Cache cargo-audit
+        id: cache-cargo-audit
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/bin/cargo-audit
+          key: cargo-audit-0.22.2-${{ runner.os }}
+      - name: Install cargo-audit
+        if: steps.cache-cargo-audit.outputs.cache-hit != 'true'
+        run: cargo install cargo-audit --locked
+      - name: cargo audit
+        working-directory: src-tauri
+        run: cargo audit
+
   # Compile-check the Rust shell on every OS we ship to. The app has
   # platform-conditional code (keychain backends, single-instance,
   # deep-link registration), so a Windows-only check is not enough.

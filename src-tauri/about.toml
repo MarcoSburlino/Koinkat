@@ -1,0 +1,49 @@
+# cargo-about configuration for the Rust half of THIRD-PARTY-LICENSES.md.
+#
+# Run via `npm run licenses` from the repo root, not directly - the script
+# stitches this output together with the npm dependency licences.
+#
+# Every target the release workflow builds for is listed. Cargo.lock is the
+# union of all platforms but `cargo` only ever fetches crates for the host, so
+# a local-cache scan on one machine silently misses the other platforms'
+# dependencies. cargo-about reads the crates.io index instead, so one run here
+# covers all three.
+targets = [
+    "x86_64-pc-windows-msvc",
+    "x86_64-apple-darwin",
+    "aarch64-apple-darwin",
+    "x86_64-unknown-linux-gnu",
+]
+
+# Koinkat ships under GPL-3.0-or-later, so the question for every dependency is
+# inbound compatibility. These are the permissive licences present in the tree.
+# Adding to this list is a deliberate act: check the new licence is compatible
+# with GPL-3.0 outbound distribution before you do it.
+accepted = [
+    "0BSD",
+    "Apache-2.0",
+    "Apache-2.0 WITH LLVM-exception",
+    "BSD-2-Clause",
+    "BSD-3-Clause",
+    "BSL-1.0",
+    "CC0-1.0",
+    "CDLA-Permissive-2.0",
+    "ISC",
+    "MIT",
+    "MIT-0",
+    "MPL-2.0",
+    "Unicode-3.0",
+    "Unlicense",
+    "Zlib",
+]
+
+# Dev-dependencies do not ship; build-dependencies can contribute generated
+# code, so they stay in scope.
+ignore-build-dependencies = false
+ignore-dev-dependencies = true
+ignore-transitive-dependencies = false
+
+# Skip crates that are not published to a registry - that is the koinkat crate
+# itself, which is the work being licensed rather than a dependency of it.
+[private]
+ignore = true

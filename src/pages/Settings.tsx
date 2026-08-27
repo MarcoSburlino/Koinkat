@@ -82,6 +82,22 @@ export function Settings() {
   // session did not. The modal stays open on this so the warning cannot be
   // missed - the consent at the bank may still be live.
   const [revocationWarning, setRevocationWarning] = useState<string | null>(null);
+  const [licensesOpen, setLicensesOpen] = useState(false);
+  const [licensesText, setLicensesText] = useState<string | null>(null);
+
+  /**
+   * The notice file is ~740 kB, so it is a lazy chunk rather than part of the
+   * main bundle - inlining it statically nearly doubled the entry chunk for a
+   * screen almost nobody opens. Vite still inlines the text at build time, so
+   * what is shown here is exactly what shipped; no filesystem access needed.
+   */
+  const openLicenses = useCallback(async () => {
+    setLicensesOpen(true);
+    if (licensesText === null) {
+      const mod = await import('../../THIRD-PARTY-LICENSES.md?raw');
+      setLicensesText(mod.default);
+    }
+  }, [licensesText]);
 
   /** Dismiss the remove-connection modal, clearing both failure states. */
   const closeDisconnectModal = useCallback(() => {
@@ -497,6 +513,25 @@ export function Settings() {
         </div>
       </Card>
 
+      {/* About & licences */}
+      <Card className="mt-6">
+        <p className="uppercase mb-3" style={UPPERCASE_LABEL}>
+          About
+        </p>
+        <p
+          className="mb-4"
+          style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-rate)' }}
+        >
+          Koinkat {__APP_VERSION__}. Free software under GPL-3.0-or-later,
+          provided with no warranty. It bundles third-party code and typefaces
+          under their own licences; the same notice ships as a file alongside
+          the application.
+        </p>
+        <Button variant="secondary" onClick={openLicenses}>
+          Third-party licences
+        </Button>
+      </Card>
+
       {/* Leave this workspace */}
       <div className="mt-8 flex flex-col items-start gap-1.5">
         <Button variant="ghost" onClick={() => exitWorkspace()}>
@@ -507,6 +542,31 @@ export function Settings() {
           nothing is deleted.
         </p>
       </div>
+
+      {/* Third-party licences, loaded on demand - see openLicenses. */}
+      <Modal
+        open={licensesOpen}
+        onClose={() => setLicensesOpen(false)}
+        size="lg"
+        title="Third-party licences"
+      >
+        <pre
+          className="text-xs overflow-auto whitespace-pre-wrap"
+          style={{
+            color: 'var(--text-muted)',
+            fontFamily: 'var(--font-mono)',
+            maxHeight: '60vh',
+            lineHeight: '1.6',
+          }}
+        >
+          {licensesText ?? 'Loading licences...'}
+        </pre>
+        <div className="flex justify-end pt-4">
+          <Button variant="primary" onClick={() => setLicensesOpen(false)}>
+            Close
+          </Button>
+        </div>
+      </Modal>
 
       {/* Pull older history modal */}
       <PullOlderHistoryModal
