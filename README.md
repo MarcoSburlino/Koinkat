@@ -79,9 +79,10 @@ you run; `Cargo.lock` and `package-lock.json` are in this repository so
 the set can be audited.
 
 Separately, Koinkat can ask your operating system to open a link in your
-normal browser: your bank's authorization page, Enable Banking's control
-panel, and the "report an issue" link on the crash screen. Those are
-ordinary browser visits, subject to whatever those sites do.
+normal browser: your bank's authorization page, pages on Enable Banking's
+site (the control panel, and their consent list if a disconnect cannot
+reach them), and the "report an issue" link on the crash screen. Those
+are ordinary browser visits, subject to whatever those sites do.
 
 **About the callback page.** It is served from GitHub Pages, so GitHub
 records the request URL - including the authorization code - the same way
