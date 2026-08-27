@@ -35,8 +35,8 @@ of your machine.
 
 ## Network connections the app makes
 
-Koinkat connects to exactly two services, plus your own bank through
-your browser:
+Koinkat itself connects to two services. Your bank, and the pages listed
+below, are reached through your own browser rather than by the app:
 
 1. **Enable Banking API** (`api.enablebanking.com`), only when you
    connect a bank. Koinkat uses read-only account information access
