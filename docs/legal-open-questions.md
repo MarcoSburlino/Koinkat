@@ -1,6 +1,8 @@
 # Koinkat - legal questions and how they were closed
 
 Companion to [`legal-review-2026-08-26.md`](legal-review-2026-08-26.md).
+Working notes behind the 2026-08-27 pass are in
+[`legal-open-questions-answered-2026-08-27.md`](legal-open-questions-answered-2026-08-27.md).
 
 Opened 2026-08-26 with nine unresolved questions. Worked through on
 2026-08-27. This file now records the outcome of each rather than a to-do

@@ -24,7 +24,9 @@ is compliant, safe, or protected. Where the evidence is good, the evidence
 is stated; where it is absent, its absence is stated.
 
 Open items are collected separately in
-[`legal-open-questions.md`](legal-open-questions.md).
+[`legal-open-questions.md`](legal-open-questions.md), with the working notes
+behind the 2026-08-27 pass in
+[`legal-open-questions-answered-2026-08-27.md`](legal-open-questions-answered-2026-08-27.md).
 
 ### Method and coverage limits
 
