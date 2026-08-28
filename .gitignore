@@ -90,7 +90,13 @@ junk/
 KoinkatDemo/
 .playwright-mcp/
 personal/
-scripts/
+# scripts/ is local tooling by default (generate_mock.py and friends). The
+# licence generator is the exception: CI and the release workflow run it, so
+# it has to be committed. Note the trailing /* - git cannot re-include a file
+# whose parent DIRECTORY is excluded, so `scripts/` would make the negation
+# below silently do nothing.
+scripts/*
+!scripts/generate-third-party-licenses.mjs
 
 # ── Internal planning + agent tooling (kept on disk, never committed) ────
 .agent/
