@@ -266,8 +266,26 @@ if (checkOnly) {
   if (current.trim() !== document.trim()) {
     console.error(
       'THIRD-PARTY-LICENSES.md is out of date with the lockfiles.\n' +
-        'Regenerate it with `npm run licenses` and commit the result.',
+        'Regenerate it with `npm run licenses` and commit the result.\n',
     );
+    // Print what actually differs. Without this a CI failure says only "it
+    // drifted", which is useless when the drift is environmental rather than
+    // a real dependency change.
+    const a = current.trim().split('\n');
+    const b = document.trim().split('\n');
+    const onlyCommitted = new Set(a);
+    const onlyGenerated = new Set(b);
+    for (const line of b) onlyCommitted.delete(line);
+    for (const line of a) onlyGenerated.delete(line);
+    const show = (label, set) => {
+      const list = [...set].filter((l) => l.trim());
+      console.error(`${label} (${list.length} lines)`);
+      for (const l of list.slice(0, 40)) console.error(`  ${l}`);
+      if (list.length > 40) console.error(`  ... and ${list.length - 40} more`);
+      console.error('');
+    };
+    show('Only in the committed file:', onlyCommitted);
+    show('Only in the freshly generated file:', onlyGenerated);
     process.exit(1);
   }
   console.log('THIRD-PARTY-LICENSES.md is up to date.');
