@@ -20,7 +20,7 @@ answered" and "this was accepted".
 |---|---|---|
 | 1 | Callback page and GDPR controllership | **Closed by decision.** Narrowed substantially; no lawyer engaged. |
 | 2 | Donations and the Cyber Resilience Act | **Resolved.** Recital 15. Donations without profit intent are fine. |
-| 3 | Do EB's terms permit distributing this? | **Closed by decision**, pending a reply from Enable Banking. |
+| 3 | Do EB's terms permit distributing this? | **Closed by decision.** EB asked; they did not object, and did not address it. |
 | 4 | Controller/processor in the user-EB leg | **Resolved** as far as it affects Koinkat. |
 | 5 | What must ship with the binaries | **Resolved and implemented.** |
 | 6 | Setup guide vs EB's documentation | **Resolved.** Low risk; disclaimer added. |
@@ -74,15 +74,38 @@ proportionate for a non-commercial project with no revenue. Instead:
 2. Self-hosting the callback page is documented as an equal option rather
    than an afterthought, so the maintainer-registered default stops being
    the path everyone takes by default reasoning.
-3. Enable Banking has been asked whether they accept an RFC 8252 redirect -
-   a private-use URI scheme (`koinkat://auth-callback`) or a loopback
-   redirect (`http://127.0.0.1:<port>/`). Either would remove the hosted
-   page from the flow entirely and dissolve this question rather than
-   answering it. See question 3 for the email.
+3. Enable Banking was asked whether they accept an RFC 8252 redirect. See
+   the outcome below - the answer removes the easy exit from this question.
 
-**If EB says yes to either redirect scheme, revisit this and delete the
-hosted hop.** That is a three-line change and it is worth more than any
-opinion this question could have bought.
+### The redirect-scheme exit is closed (2026-08-28)
+
+Removing the hosted page entirely would have dissolved this question. It is
+not available:
+
+- **Private-use scheme (`koinkat://auth-callback`): empirically rejected.**
+  This was established before the review, in Koinkat's own code. Settings
+  warns, in terms: "Enable Banking rejects koinkat:// redirect URLs at
+  runtime." The shared callback page exists precisely because of that.
+- **Loopback redirect (`http://127.0.0.1:<port>/`): unknown, untested.**
+  Enable Banking's support reply of 2026-08-28 does not confirm or deny it.
+  Their position is that the application-registration documentation lists
+  `redirect_urls` without specifying accepted URI schemes, that the example
+  uses an HTTPS URL, and that the documented behaviour therefore does not
+  confirm support for either native-app pattern. They advise testing the
+  exact URI before changing a production flow.
+
+That reply is silence rather than refusal, and it restates their public
+documentation rather than stating policy. It does not move the analysis.
+
+**Consequence for this question:** it stays closed by decision, on the
+mitigations already shipped - the logging is disclosed, and self-hosting is
+documented as an equal option. The hosted hop stays.
+
+**Cheap way to settle the remaining half:** register a Sandbox application
+with a loopback redirect URL and see whether registration and authorisation
+accept it. Sandbox is free and carries no real account data. If loopback
+works, the hosted page can be dropped and this question dissolves after
+all. This is an optimisation, not a compliance need.
 
 **Best guess, clearly marked as a guess:** not a controller. **Confidence:
 moderate**, up from low-to-moderate before question 8 was answered.
@@ -163,6 +186,14 @@ EB, and EB's answer would.
 
 **Decision taken.** Ask EB directly rather than buy an opinion. Proceed on
 the current reading unless they object.
+
+**Outcome (2026-08-28).** Enable Banking's support replied to the redirect
+question only and did not address the distribution model at all - it was not
+put to them in the version sent, which asked the technical question alone.
+No objection was raised. The position stands as reasoned above: proceed, and
+note that their remedy if they ever disagreed would be contractual and would
+run against a user's application, not against GPL-licensed software they
+have no interest in.
 
 ### The email
 
