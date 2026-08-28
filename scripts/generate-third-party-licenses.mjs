@@ -73,6 +73,49 @@ function npmSection() {
     if (key.startsWith(`${rootName}@`)) delete packages[key];
   }
 
+  // The licence TEXT only exists in node_modules, so this half is generated
+  // from the installed tree rather than from package-lock.json directly. That
+  // makes a stale install produce a stale notice - `npm audit fix` updates the
+  // lockfile without necessarily reinstalling, which is exactly how a wrong
+  // version reached a committed notice once. Catch it here, with a message
+  // that names the fix, rather than letting it surface in CI as vague drift.
+  // Compare against EVERY lock entry, not just the hoisted one. A package can
+  // legitimately appear at several versions - recharts pins its own react-is,
+  // nested under itself - so "matches the hoisted entry" is the wrong test and
+  // reports those nested copies as stale.
+  const lock = JSON.parse(readFileSync(resolve(repoRoot, 'package-lock.json'), 'utf8'));
+  const lockedPairs = new Set();
+  const lockedVersionsByName = new Map();
+  for (const [path, meta] of Object.entries(lock.packages ?? {})) {
+    const at = path.lastIndexOf('node_modules/');
+    if (at === -1 || !meta.version) continue;
+    const name = path.slice(at + 'node_modules/'.length);
+    lockedPairs.add(`${name}@${meta.version}`);
+    if (!lockedVersionsByName.has(name)) lockedVersionsByName.set(name, new Set());
+    lockedVersionsByName.get(name).add(meta.version);
+  }
+
+  const stale = [];
+  for (const nameVersion of Object.keys(packages)) {
+    const at = nameVersion.lastIndexOf('@');
+    const name = nameVersion.slice(0, at);
+    const installed = nameVersion.slice(at + 1);
+    const known = lockedVersionsByName.get(name);
+    if (known && !lockedPairs.has(nameVersion)) {
+      stale.push(
+        `${name}: installed ${installed}, lockfile has ${[...known].join(', ')}`,
+      );
+    }
+  }
+  if (stale.length) {
+    throw new Error(
+      'node_modules does not match package-lock.json, so the generated notice ' +
+        'would be wrong:\n' +
+        stale.map((s) => `  ${s}`).join('\n') +
+        '\n\nRun `npm ci` and regenerate.',
+    );
+  }
+
   const byLicence = new Map();
   for (const [nameVersion, meta] of Object.entries(packages)) {
     const licence = meta.licenses ?? 'UNKNOWN';

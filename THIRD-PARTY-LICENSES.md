@@ -170,8 +170,8 @@ SOFTWARE.
 
 Applies to:
 
-- `react-router-dom@7.18.1` (Remix Software) - https://github.com/remix-run/react-router
-- `react-router@7.18.1` (Remix Software) - https://github.com/remix-run/react-router
+- `react-router-dom@7.18.2` (Remix Software) - https://github.com/remix-run/react-router
+- `react-router@7.18.2` (Remix Software) - https://github.com/remix-run/react-router
 
 <details>
 <summary>Licence text</summary>
