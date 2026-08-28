@@ -56,40 +56,29 @@ All contributions from outside this list arrive as pull requests and are
 reviewed before merge. Multi-factor authentication is enforced on the
 maintainer's GitHub account.
 
-## Privacy policy
+## Privacy
 
-Koinkat is a local-first application. All financial data, meaning
-accounts, transactions, balances, budgets and categorization rules, is
-stored in a SQLite database on the user's own machine. Credentials are
-held in the operating system keychain. There is no Koinkat server, no
-account system, and no telemetry, analytics or crash reporting of any
-kind. Error reports are composed locally and never transmitted. No usage
-data is ever collected or sent anywhere.
+The privacy policy lives in one place:
+[docs/privacy-policy.md](privacy-policy.md). It is not restated here,
+because this file and that one drifted apart once already and a second
+copy will drift again.
 
-The application makes network requests to exactly two categories of
-endpoint:
+Two points are repeated only because signing and distribution
+paperwork tends to ask for them directly:
 
-1. Enable Banking (`api.enablebanking.com`), contacted only after the
-   user supplies their own Enable Banking application credentials and
-   explicitly initiates a bank connection. Bank data flows directly
-   between the user's machine and Enable Banking. It does not pass
-   through any infrastructure operated by this project. Users who
-   connect a bank are subject to
-   [Enable Banking's privacy policy](https://enablebanking.com/privacy/).
-   Users who do not connect a bank, and instead enter transactions
-   manually, never contact this endpoint at all.
-2. Public foreign-exchange rate data (`cdn.jsdelivr.net`, with
-   `*.currency-api.pages.dev` as a fallback), fetched automatically
-   to convert between currencies. These are read-only requests for
-   public rate tables. They carry no user data, no identifiers and no
-   account information. The request reveals nothing beyond the fact that
-   some client asked for a rate file.
-
-These restrictions are enforced at build time by the application's
-Content Security Policy: outbound data connections are limited to the
-hosts listed above, and any other destination is blocked by the runtime
-rather than by convention. Fonts are bundled with the application, so no
-external font or asset host is contacted.
+- **Publisher identity.** Release artifacts are published by Marco
+  Sburlino, an individual, from
+  <https://github.com/MarcoSburlino/Koinkat>. There is no company behind
+  the project and no legal entity to name on a certificate.
+- **What the signed binary does on a network.** It contacts Enable
+  Banking only if the user has supplied their own credentials and asked
+  to link a bank, and a public exchange-rate CDN for currency
+  conversion. It can also ask the operating system to open links in the
+  user's browser. There is no update mechanism, no telemetry endpoint
+  and no crash reporting, so a signed build phones nothing home on its
+  own. The full inventory, including what the content-security policy
+  does and does not constrain, is in the README under
+  [How Koinkat handles your data](../README.md#how-koinkat-handles-your-data).
 
 ## Uninstallation
 

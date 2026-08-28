@@ -19,6 +19,8 @@
     "tauri:build": "tauri build",
     "tauri:build:demo": "tauri build --config src-tauri/tauri.conf.demo.json",
     "typecheck": "tsc --noEmit",
+    "licenses": "node scripts/generate-third-party-licenses.mjs",
+    "licenses:check": "node scripts/generate-third-party-licenses.mjs --check",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:ui": "vitest --ui"
@@ -52,6 +54,7 @@
     "@types/react-dom": "^19",
     "@vitejs/plugin-react": "^4",
     "@vitest/ui": "^4.1.5",
+    "license-checker-rseidelsohn": "^4.4.2",
     "tailwindcss": "^4",
     "typescript": "^5.7",
     "vite": "^6",

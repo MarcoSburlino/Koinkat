@@ -13,6 +13,7 @@ import {
   AlertCircle,
 } from 'lucide-react';
 import { save, open as openDialog } from '@tauri-apps/plugin-dialog';
+import { open as openUrl } from '@tauri-apps/plugin-shell';
 import {
   writeTextFile,
   writeFile,
@@ -25,6 +26,7 @@ import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Select } from '../components/ui/Select';
 import { Modal } from '../components/ui/Modal';
+import { InfoBanner } from '../components/ui/InfoBanner';
 import { BankSetupGuide } from '../components/BankSetupGuide';
 import { CurrencyPicker } from '../components/ui/CurrencyPicker';
 import { PageHeader } from '../components/layout/PageHeader';
@@ -76,6 +78,33 @@ export function Settings() {
   const [disconnectTarget, setDisconnectTarget] = useState<BankConnection | null>(null);
   const [disconnecting, setDisconnecting] = useState(false);
   const [disconnectError, setDisconnectError] = useState<string | null>(null);
+  // Set when the local unlink succeeded but revoking the Enable Banking
+  // session did not. The modal stays open on this so the warning cannot be
+  // missed - the consent at the bank may still be live.
+  const [revocationWarning, setRevocationWarning] = useState<string | null>(null);
+  const [licensesOpen, setLicensesOpen] = useState(false);
+  const [licensesText, setLicensesText] = useState<string | null>(null);
+
+  /**
+   * The notice file is ~740 kB, so it is a lazy chunk rather than part of the
+   * main bundle - inlining it statically nearly doubled the entry chunk for a
+   * screen almost nobody opens. Vite still inlines the text at build time, so
+   * what is shown here is exactly what shipped; no filesystem access needed.
+   */
+  const openLicenses = useCallback(async () => {
+    setLicensesOpen(true);
+    if (licensesText === null) {
+      const mod = await import('../../THIRD-PARTY-LICENSES.md?raw');
+      setLicensesText(mod.default);
+    }
+  }, [licensesText]);
+
+  /** Dismiss the remove-connection modal, clearing both failure states. */
+  const closeDisconnectModal = useCallback(() => {
+    setDisconnectTarget(null);
+    setDisconnectError(null);
+    setRevocationWarning(null);
+  }, []);
   const [guideOpen, setGuideOpen] = useState(false);
 
   const [isExportingJson, setIsExportingJson] = useState(false);
@@ -484,6 +513,25 @@ export function Settings() {
         </div>
       </Card>
 
+      {/* About & licences */}
+      <Card className="mt-6">
+        <p className="uppercase mb-3" style={UPPERCASE_LABEL}>
+          About
+        </p>
+        <p
+          className="mb-4"
+          style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-rate)' }}
+        >
+          Koinkat {__APP_VERSION__}. Free software under GPL-3.0-or-later,
+          provided with no warranty. It bundles third-party code and typefaces
+          under their own licences; the same notice ships as a file alongside
+          the application.
+        </p>
+        <Button variant="secondary" onClick={openLicenses}>
+          Third-party licences
+        </Button>
+      </Card>
+
       {/* Leave this workspace */}
       <div className="mt-8 flex flex-col items-start gap-1.5">
         <Button variant="ghost" onClick={() => exitWorkspace()}>
@@ -494,6 +542,31 @@ export function Settings() {
           nothing is deleted.
         </p>
       </div>
+
+      {/* Third-party licences, loaded on demand - see openLicenses. */}
+      <Modal
+        open={licensesOpen}
+        onClose={() => setLicensesOpen(false)}
+        size="lg"
+        title="Third-party licences"
+      >
+        <pre
+          className="text-xs overflow-auto whitespace-pre-wrap"
+          style={{
+            color: 'var(--text-muted)',
+            fontFamily: 'var(--font-mono)',
+            maxHeight: '60vh',
+            lineHeight: '1.6',
+          }}
+        >
+          {licensesText ?? 'Loading licences...'}
+        </pre>
+        <div className="flex justify-end pt-4">
+          <Button variant="primary" onClick={() => setLicensesOpen(false)}>
+            Close
+          </Button>
+        </div>
+      </Modal>
 
       {/* Pull older history modal */}
       <PullOlderHistoryModal
@@ -525,56 +598,102 @@ export function Settings() {
       {/* Remove-connection confirmation */}
       <Modal
         open={disconnectTarget !== null}
-        onClose={() => setDisconnectTarget(null)}
-        title="Remove bank connection?"
+        onClose={closeDisconnectModal}
+        title={revocationWarning ? 'Connection removed' : 'Remove bank connection?'}
       >
-        <p className="text-sm mb-4" style={{ color: 'var(--text-muted)' }}>
-          Removing{' '}
-          <strong style={{ color: 'var(--text)' }}>
-            {disconnectTarget?.aspspName}
-          </strong>{' '}
-          stops syncing and revokes the bank session. Its accounts stay in
-          Koinkat as manual accounts, and every imported transaction is kept.
-          You can re-link the same bank later - history is matched back up
-          automatically.
-        </p>
-        {disconnectError && (
-          <p className="text-sm mb-4" style={{ color: 'var(--danger)' }}>
-            {disconnectError}
-          </p>
+        {revocationWarning ? (
+          <>
+            <InfoBanner
+              variant="warning"
+              title="Your consent at the bank may still be active"
+              className="mb-4"
+            >
+              <p className="mb-2">
+                <strong>{disconnectTarget?.aspspName}</strong> has been removed from
+                Koinkat and its accounts are now manual accounts. But Koinkat could
+                not reach Enable Banking to revoke the consent, so your bank may
+                still treat it as live.
+              </p>
+              <p className="mb-2">
+                Revoke it yourself from your bank's own consent dashboard, or at
+                Enable Banking. Revoking at your bank is the one that always works,
+                because it does not depend on any other service being reachable.
+              </p>
+              <p className="mb-2">
+                <Button
+                  variant="secondary"
+                  onClick={() => openUrl('https://enablebanking.com/data-sharing-consents/')}
+                >
+                  Open Enable Banking consents
+                </Button>
+              </p>
+              <p style={{ color: 'var(--text-muted)' }}>Reason: {revocationWarning}</p>
+            </InfoBanner>
+            <div className="flex justify-end">
+              <Button variant="primary" onClick={closeDisconnectModal}>
+                Done
+              </Button>
+            </div>
+          </>
+        ) : (
+          <>
+            <p className="text-sm mb-4" style={{ color: 'var(--text-muted)' }}>
+              Removing{' '}
+              <strong style={{ color: 'var(--text)' }}>
+                {disconnectTarget?.aspspName}
+              </strong>{' '}
+              stops syncing and revokes the bank session. Its accounts stay in
+              Koinkat as manual accounts, and every imported transaction is kept.
+              You can re-link the same bank later - history is matched back up
+              automatically.
+            </p>
+            {disconnectError && (
+              <p className="text-sm mb-4" style={{ color: 'var(--danger)' }}>
+                {disconnectError}
+              </p>
+            )}
+            <div className="flex justify-end gap-3">
+              <Button
+                variant="ghost"
+                onClick={closeDisconnectModal}
+                disabled={disconnecting}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="danger"
+                disabled={disconnecting}
+                onClick={async () => {
+                  if (!disconnectTarget) return;
+                  setDisconnecting(true);
+                  setDisconnectError(null);
+                  try {
+                    const result = await disconnectBank(disconnectTarget.id);
+                    await loadConnections();
+                    await loadFloors();
+                    if (result.sessionRevoked) {
+                      setDisconnectTarget(null);
+                    } else {
+                      // Local teardown succeeded; hold the modal open on the
+                      // warning so the live-consent caveat cannot be missed.
+                      setRevocationWarning(
+                        result.revocationError ?? 'Enable Banking could not be reached.',
+                      );
+                    }
+                  } catch (err) {
+                    setDisconnectError(
+                      err instanceof Error ? err.message : 'Failed to remove the connection',
+                    );
+                  } finally {
+                    setDisconnecting(false);
+                  }
+                }}
+              >
+                {disconnecting ? 'Removing...' : 'Remove connection'}
+              </Button>
+            </div>
+          </>
         )}
-        <div className="flex justify-end gap-3">
-          <Button
-            variant="ghost"
-            onClick={() => setDisconnectTarget(null)}
-            disabled={disconnecting}
-          >
-            Cancel
-          </Button>
-          <Button
-            variant="danger"
-            disabled={disconnecting}
-            onClick={async () => {
-              if (!disconnectTarget) return;
-              setDisconnecting(true);
-              setDisconnectError(null);
-              try {
-                await disconnectBank(disconnectTarget.id);
-                setDisconnectTarget(null);
-                await loadConnections();
-                await loadFloors();
-              } catch (err) {
-                setDisconnectError(
-                  err instanceof Error ? err.message : 'Failed to remove the connection',
-                );
-              } finally {
-                setDisconnecting(false);
-              }
-            }}
-          >
-            {disconnecting ? 'Removing...' : 'Remove connection'}
-          </Button>
-        </div>
       </Modal>
 
       {/* Full resync override confirmation */}

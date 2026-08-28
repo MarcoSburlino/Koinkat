@@ -35,8 +35,8 @@ of your machine.
 
 ## Network connections the app makes
 
-Koinkat connects to exactly two services, plus your own bank through
-your browser:
+Koinkat itself connects to two services. Your bank, and the pages listed
+below, are reached through your own browser rather than by the app:
 
 1. **Enable Banking API** (`api.enablebanking.com`), only when you
    connect a bank. Koinkat uses read-only account information access
@@ -44,9 +44,20 @@ your browser:
    with Enable Banking. Requests are signed with your own private key.
    The app cannot initiate payments or transfers. Account, balance,
    and transaction data returned by the API is written only to your
-   local database. Enable Banking processes this traffic as a
-   regulated PSD2 provider under its own privacy notice:
-   <https://enablebanking.com/privacy/>
+   local database.
+
+   Enable Banking publishes two relevant documents, and it is worth
+   knowing which covers what. Their
+   [privacy notice](https://enablebanking.com/privacy/) covers their
+   website and Control Panel - the account you create with them. Their
+   [End User terms](https://tilisy.enablebanking.com/terms) cover the
+   account and transaction data itself, and state that this data passes
+   through their API rather than being stored there, while your
+   authentication tokens and consent ID are retained. Enable Banking is
+   an authorised Account Information Service Provider supervised by the
+   Finnish Financial Supervisory Authority and is responsible for that
+   processing in its own right; Koinkat is not a party to it and
+   receives none of it.
 2. **Exchange rates**, from a public CDN (`cdn.jsdelivr.net`, package
    `@fawazahmed0/currency-api`, with `*.currency-api.pages.dev` as a
    fallback). These requests download currency rate tables and contain
@@ -61,7 +72,9 @@ your browser:
    The page is a single static file; it makes no network requests and
    stores nothing.
 
-There are no other outbound connections.
+The app makes no other outbound connections of its own. It can also ask
+your browser to open your bank's site, Enable Banking's control panel, or
+this project's issue tracker.
 
 ## What the developer receives
 
@@ -80,8 +93,13 @@ Everything lives in files on your device, under your control:
   the service name `koinkat` (one entry per workspace, named
   `eb-pem-<workspace-id>`). The README section "Uninstalling" walks
   through this per operating system.
-- Bank consents expire on their own after just under 180 days and can
-  be revoked earlier through your bank or through Enable Banking.
+- Bank consents expire on their own after just under 180 days. You can
+  revoke one earlier in three places: disconnect the bank inside Koinkat,
+  terminate the consent at
+  <https://enablebanking.com/data-sharing-consents/>, or withdraw it from
+  your bank's own consent or third-party-access dashboard. Revoking at
+  your bank is the one that always works, because it does not depend on
+  any other service being reachable.
 
 ## Changes to this policy
 

@@ -87,8 +87,9 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
               Something went wrong.
             </h1>
             <p style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-body)' }}>
-              Koinkat hit an unexpected error. Your data is safe - it lives on
-              your device, not in this crashed window.
+              Koinkat hit an unexpected error. Your database is a file on your
+              device and nothing was sent anywhere. Anything you were part-way
+              through entering may not have been saved.
             </p>
 
             <details>

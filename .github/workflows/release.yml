@@ -62,6 +62,15 @@ jobs:
         with:
           workspaces: src-tauri
       - run: npm ci
+      # The notice file ships inside the installer as a bundle resource, so a
+      # stale one is a defect in the released artifact, not just in the repo.
+      # Only the Linux leg checks it: the result is platform-independent and
+      # installing cargo-about on all three legs is wasted minutes.
+      - name: THIRD-PARTY-LICENSES.md matches the lockfiles
+        if: runner.os == 'Linux'
+        run: |
+          cargo install cargo-about --locked --features cli
+          npm run licenses:check
       - name: Enable macOS signing when secrets are configured
         if: matrix.platform == 'macos-latest'
         shell: bash

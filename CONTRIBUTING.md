@@ -72,6 +72,16 @@ codebase is layered.
 - Bugs: use the issue template. Sanitize any pasted error text.
 - Security vulnerabilities: **privately**, per [SECURITY.md](SECURITY.md).
 
+## Licensing of contributions
+
+Koinkat is licensed under GPL-3.0-or-later. By submitting a pull request,
+you agree that your contribution is licensed inbound under the same terms -
+GPL-3.0-or-later - and that you have the right to license it that way.
+
+If your contribution includes code you did not write, say so in the PR and
+name its licence. Anything that cannot be distributed under
+GPL-3.0-or-later cannot be merged.
+
 ## Release process (maintainer)
 
 1. Bump the version in `package.json`, `src-tauri/Cargo.toml`, and

@@ -159,20 +159,34 @@ const STEPS: Step[] = [
       <>
         <p className={BODY} style={{ color: 'var(--text-muted)' }}>
           After you approve access on your bank's website, Enable Banking sends the browser to
-          a redirect URL registered on your application. Register Koinkat's shared callback
-          page - the match is exact, trailing slash included:
+          a redirect URL registered on your application. That page's only job is to bounce the
+          authorization code back into Koinkat via the{' '}
+          <Mono>koinkat://auth-callback</Mono> deep link, which is what produces the "Open
+          Koinkat?" prompt later. Two options, both fine - the difference is whose
+          infrastructure the code passes through on its way back to you.
+        </p>
+        <p className="text-sm mb-2" style={{ color: 'var(--text)' }}>
+          <Label>Koinkat's shared page: less setup</Label>
+        </p>
+        <p className="text-sm mb-3" style={{ color: 'var(--text-muted)' }}>
+          Register this URL - the match is exact, trailing slash included. Koinkat pre-fills it
+          in the <Label>Redirect URL</Label> field, so there is nothing else to do.
         </p>
         <CodeBlock code="https://marcosburlino.github.io/koinkat-callback/" />
-        <p className="text-sm mt-3" style={{ color: 'var(--text-muted)' }}>
-          That page's only job is to bounce the authorization code back into Koinkat via the{' '}
-          <Mono>koinkat://auth-callback</Mono> deep link, which is what produces the "Open
-          Koinkat?" prompt later. Everyone can share one page because it holds no secrets: the
-          code is single-use, expires quickly, and is worthless without your application ID and
-          private key, which never leave your machine. Koinkat pre-fills this same URL in the{' '}
-          <Label>Redirect URL</Label> field, so there is nothing else to do. Prefer full
-          independence? Host your own copy (source at{' '}
-          <Mono>github.com/MarcoSburlino/koinkat-callback</Mono>), register that URL instead,
-          and paste it into the field.
+        <p className="text-sm mt-3 mb-3" style={{ color: 'var(--text-muted)' }}>
+          Everyone can share one page because it holds no secrets: the code is single-use,
+          expires quickly, and is worthless without your application ID and private key, which
+          never leave your machine. It is served from GitHub Pages, so GitHub records the
+          request URL the way it does for any page it hosts.
+        </p>
+        <p className="text-sm mb-2" style={{ color: 'var(--text)' }}>
+          <Label>Your own copy: the code touches nobody else's host</Label>
+        </p>
+        <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
+          Host the page yourself (source at{' '}
+          <Mono>github.com/MarcoSburlino/koinkat-callback</Mono>), register that URL on your
+          application instead, and paste it into the <Label>Redirect URL</Label> field. It is a
+          single static file, so any static host works.
         </p>
       </>
     ),
@@ -389,6 +403,19 @@ export function BankSetupGuide({ open, onClose }: BankSetupGuideProps) {
           }}
         />
       </div>
+
+      {/* Affiliation + accuracy note. Applies to the whole guide, which walks
+          through a third party's web interface, so it sits above the step
+          chrome rather than inside any one step. */}
+      <p
+        className="mb-4 text-xs"
+        style={{ color: 'var(--text-muted)', lineHeight: '1.5' }}
+      >
+        Koinkat is not affiliated with, endorsed by, or sponsored by Enable Banking Oy.
+        "Enable Banking" is a trademark of Enable Banking Oy. This guide describes their
+        Control Panel as it appeared in August 2026; their own documentation at{' '}
+        <Mono>enablebanking.com/docs</Mono> is authoritative and may have changed.
+      </p>
 
       {/* Step indicator + title */}
       <div className="mb-5">

@@ -1359,20 +1359,49 @@ export async function recleanImportedNotes(): Promise<number> {
 
 // ── Disconnect bank ─────────────────────────────────────────────────────
 
-export async function disconnectBank(connectionId: string): Promise<void> {
+export interface DisconnectResult {
+  /**
+   * Whether the consent at Enable Banking is known to be gone - either the
+   * session was revoked now, or there was nothing to revoke (demo connection,
+   * no session id, or EB already returned 404, which `deleteSession` treats as
+   * success).
+   *
+   * `false` means the revocation call genuinely failed. The local link is
+   * removed regardless, because the user asked for that, but the consent at
+   * the bank may still be live and they need to be told.
+   */
+  sessionRevoked: boolean;
+  /** Why revocation failed. Set only when `sessionRevoked` is false. */
+  revocationError?: string;
+}
+
+export async function disconnectBank(
+  connectionId: string,
+): Promise<DisconnectResult> {
   const koinkatAccountId = requireActiveKoinkatAccountId();
   const db = await getDb();
   const connRows = await db.select<BankConnectionRow[]>(
     'SELECT * FROM bank_connections WHERE id = ? AND koinkat_account_id = ?',
     [connectionId, koinkatAccountId],
   );
-  if (connRows.length === 0) return;
+  if (connRows.length === 0) return { sessionRevoked: true };
   const conn = connRows[0];
+
+  // Revocation is best-effort for the LOCAL teardown - we unlink either way -
+  // but the outcome is reported so the caller can tell the user their consent
+  // at the bank may still be live. An already-expired session is not an error
+  // here: `deleteSession` accepts EB's 404 and returns normally, so anything
+  // that throws is a real failure (network down, bad credentials, EB 5xx).
+  let sessionRevoked = true;
+  let revocationError: string | undefined;
 
   if (conn.session_id && !conn.is_demo) {
     try {
       await ebService.deleteSession(conn.session_id);
-    } catch { /* session may already be expired */ }
+    } catch (err) {
+      sessionRevoked = false;
+      revocationError = err instanceof Error ? err.message : String(err);
+    }
   }
 
   // Convert linked accounts to manual (keep accounts + transactions), then
@@ -1401,4 +1430,8 @@ export async function disconnectBank(connectionId: string): Promise<void> {
       [connectionId, koinkatAccountId],
     );
   });
+
+  return sessionRevoked
+    ? { sessionRevoked: true }
+    : { sessionRevoked: false, revocationError };
 }

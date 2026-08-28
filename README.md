@@ -3,8 +3,9 @@
 [![CI](https://github.com/MarcoSburlino/Koinkat/actions/workflows/ci.yml/badge.svg)](https://github.com/MarcoSburlino/Koinkat/actions/workflows/ci.yml)
 
 Local-first multi-currency personal finance manager. Built as a Tauri 2
-desktop app. All data stays on your device - no cloud, no telemetry, no
-accounts system.
+desktop app. Your data lives on your device - no cloud sync, no telemetry,
+no accounts system. The only data that leaves is what your bank sends you,
+when you ask it to.
 
 > **Status:** v0.1.1 is the current release. If something does not
 > behave as this guide describes, please
@@ -54,20 +55,45 @@ sign-up, no telemetry, and no analytics. Nobody involved in this project
 can see your data.
 
 That said, "local-first" does not mean the app never touches the
-internet. Here is the complete list of outbound connections the app
-makes, verified from the source code:
+internet. Here is every connection the app itself makes, verified from
+the source code:
 
 | Connection | When | What is sent | What is not sent |
 |---|---|---|---|
 | `api.enablebanking.com` | Only if you link a bank, during linking and syncs | Requests signed with your own Enable Banking application ID, the bank you picked, and session identifiers; the API returns your balances and transactions | Your online-banking username and password - you enter those on your bank's own website, never in Koinkat |
 | `cdn.jsdelivr.net` (fallback: `*.currency-api.pages.dev`) | On app start and before syncs | A request for the day's public exchange-rate table (`.../currency-api@<date>/v1/currencies/usd.json`) | Anything about you - the URL contains only the date; not even your chosen currency |
-| Your bank's authorization page, then `marcosburlino.github.io/koinkat-callback/` | Only during bank linking, in your regular browser (not inside the app) | The bank redirects your browser to the callback page with a one-time authorization code; the page is a single static file that makes zero further network requests and hands the code back to the app locally | The code is never sent anywhere by the page, and it is useless without the private key that exists only on your machine |
+| Your bank's authorization page, then `marcosburlino.github.io/koinkat-callback/` | Only during bank linking, in your regular browser (not inside the app) | The bank redirects your browser to the callback page with a one-time authorization code; the page is a single static file that makes zero further network requests and hands the code back to the app locally. GitHub Pages serves that page - see the note below | The code is never sent anywhere by the page, and it is useless without the private key that exists only on your machine |
 
-Like every internet request, these servers technically see your IP
-address. Beyond the list above there is nothing: no update pings, no
-crash reporting, no tracking. The app's content-security policy blocks
-requests to any other host, so a bug or a compromised dependency could
-not quietly phone home.
+Like every internet request, these servers see your IP address. Beyond
+the list above the app contacts nothing: there are no update pings, no
+crash reporting and no tracking - there is no telemetry endpoint to
+disable because none was ever built.
+
+Two independent controls keep the app's own traffic to the hosts above:
+the webview's content-security policy, and the Tauri capability
+allowlist, which scopes the Rust HTTP client to the same three hosts.
+Neither control applies to the Rust dependency tree itself - as in any
+native application, a compromised crate could open a socket directly.
+That is the trust you extend to the dependency set of any desktop app
+you run; `Cargo.lock` and `package-lock.json` are in this repository so
+the set can be audited.
+
+Separately, Koinkat can ask your operating system to open a link in your
+normal browser: your bank's authorization page, pages on Enable Banking's
+site (the control panel, and their consent list if a disconnect cannot
+reach them), and the "report an issue" link on the crash screen. Those
+are ordinary browser visits, subject to whatever those sites do.
+
+**About the callback page.** It is served from GitHub Pages, so GitHub
+records the request URL - including the authorization code - the same way
+it records a request for any page it hosts. GitHub's own documentation
+says a visitor's IP address is logged and stored for security purposes;
+it provides no request logs to the owner of a Pages site, so nobody on
+this project can read them. The code itself is single-use, expires
+quickly, and cannot be exchanged for anything without the private key
+that never leaves your machine. If you would rather not rely on any of
+that, host your own copy of the page and put its URL in the Redirect URL
+field - see [Step 3](#step-3-set-the-redirect-url).
 
 Where things physically live:
 
@@ -632,12 +658,25 @@ operating system routes to the installed app; this is what produces the
 nothing, sends nothing anywhere, and its full source is public:
 [github.com/MarcoSburlino/koinkat-callback](https://github.com/MarcoSburlino/koinkat-callback).
 
-Everyone can safely share one callback page because it holds no secrets.
-The authorization code it passes along is single-use, expires quickly,
-and is worthless without your application ID and private key, which
-never leave your machine. (If you prefer full independence anyway, host
-your own copy of that page, register that address instead, and paste it
-into the matching field in Koinkat, which is editable.)
+You have two options here and both are fine. The difference is whose
+infrastructure the authorization code passes through on its way back to
+you.
+
+**Koinkat's shared page - less setup.** Use the address above; Koinkat
+pre-fills it, so there is nothing else to do. Everyone can safely share
+one callback page because it holds no secrets: the authorization code it
+passes along is single-use, expires quickly, and is worthless without
+your application ID and private key, which never leave your machine. It
+is served from GitHub Pages, so GitHub records the request URL the way it
+does for any page it hosts - see
+[How Koinkat handles your data](#how-koinkat-handles-your-data).
+
+**Your own copy - the code touches nobody else's host.** Host the page
+yourself from the
+[public source](https://github.com/MarcoSburlino/koinkat-callback),
+register that address on your application instead, and paste it into the
+Redirect URL field in Koinkat, which is editable. It is a single static
+file, so any static host will do.
 
 ### Step 4: generate and download your private key
 
@@ -841,6 +880,13 @@ bank stops syncing and Settings flags the connection - renew it by
 linking the bank again from the Bank Link screen (the same Step 8).
 Relinking recognizes the same underlying accounts, so your history and
 categorizations are preserved.
+
+You can revoke a bank consent at any time without waiting for it to
+expire, in three places: disconnect the bank inside Koinkat, terminate
+the consent at <https://enablebanking.com/data-sharing-consents/>, or
+withdraw it from your bank's own consent or third-party-access dashboard.
+Revoking at your bank is the one that always works, because it does not
+depend on any other service being reachable.
 
 ## Troubleshooting
 
@@ -1062,4 +1108,23 @@ any later version (GPL-3.0-or-later).
 
 Copyright (C) 2026 Marco Sburlino
 
-See [LICENSE](LICENSE) for the full text.
+See [LICENSE](LICENSE) for the full text. Licences for the third-party
+code and typefaces bundled with the app are in
+[THIRD-PARTY-LICENSES.md](THIRD-PARTY-LICENSES.md), which also ships
+inside the installer.
+
+### No warranty, and not financial advice
+
+Koinkat is provided as-is. Sections 15 and 16 of the GPL-3.0 disclaim all
+warranty and limit liability - please read them; they are short and they
+mean what they say.
+
+Two things follow that are worth stating plainly:
+
+- **Check your own numbers.** Koinkat reads data from your bank through a
+  third party and does arithmetic on it. Bugs, failed syncs, stale exchange
+  rates and bank-side quirks are all possible. Your bank's own statements
+  are the authoritative record, not this app.
+- **Nothing here is financial advice.** Koinkat shows you your money. It
+  does not advise you about it, and no output of this app is a
+  recommendation to do anything.
