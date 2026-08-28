@@ -39,6 +39,15 @@ jobs:
   # and fail if the result differs from what is committed. Needs both
   # toolchains: the file is npm dependencies plus Rust crates.
   licenses:
+    # Skipped for Dependabot. It updates lockfiles but cannot regenerate the
+    # notice, so this would fail on every bump for something the bot has no way
+    # to do, and burn a cargo-about build doing it.
+    #
+    # Not a hole: the same check runs on pushes to main and again in the release
+    # workflow. A bump that lands a stale notice turns main red immediately -
+    # run `npm ci && npm run licenses` and commit - and a stale notice cannot
+    # reach a release either way.
+    if: github.actor != 'dependabot[bot]'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

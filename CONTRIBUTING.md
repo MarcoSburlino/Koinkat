@@ -82,6 +82,23 @@ If your contribution includes code you did not write, say so in the PR and
 name its licence. Anything that cannot be distributed under
 GPL-3.0-or-later cannot be merged.
 
+## Dependency updates (maintainer)
+
+`THIRD-PARTY-LICENSES.md` is generated from both lockfiles and ships inside
+the installer, so it has to move whenever a dependency does.
+
+Dependabot cannot regenerate it, so CI skips that check on its PRs. After
+merging one, main will go red on the `licenses` job. The fix is two commands:
+
+```bash
+npm ci          # the generator reads node_modules, so it must match the lockfile
+npm run licenses
+```
+
+Commit the result. `npm ci` matters: `npm audit fix` updates the lockfile
+without necessarily reinstalling, and generating from a stale `node_modules`
+produces a notice with the wrong versions in it.
+
 ## Release process (maintainer)
 
 1. Bump the version in `package.json`, `src-tauri/Cargo.toml`, and
