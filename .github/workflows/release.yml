@@ -109,13 +109,17 @@ jobs:
           tagName: ${{ github.event_name == 'push' && github.ref_name || '' }}
           releaseName: ${{ github.event_name == 'push' && format('Koinkat {0}', github.ref_name) || '' }}
           uploadWorkflowArtifacts: ${{ github.event_name == 'workflow_dispatch' }}
+          # Keep this in step with docs/code-signing-policy.md. It said "builds
+          # are unsigned" long after macOS signing was set up in 0.1.1, and told
+          # macOS users to strip quarantine from an app that is in fact signed
+          # and notarized - unnecessary, and a bad habit to teach.
           releaseBody: |
             See CHANGELOG.md for what changed.
 
-            Install notes - builds are unsigned; the full guide is in the README:
+            Install notes - the full guide is in the README:
 
-            - Windows: SmartScreen shows "Windows protected your PC". Click "More info", then "Run anyway".
-            - macOS (universal, Apple Silicon and Intel): if macOS says Koinkat "is damaged and can't be opened", it is not damaged - that is the quarantine block on unsigned apps. Run `xattr -cr /Applications/Koinkat.app` in Terminal and open the app again. If you instead get an "unidentified developer" block, use System Settings > Privacy & Security > Open Anyway.
+            - Windows: the installer is not code-signed, so SmartScreen shows "Windows protected your PC". Click "More info", then "Run anyway". Installing with `winget install MarcoSburlino.Koinkat` avoids the warning entirely.
+            - macOS (universal, Apple Silicon and Intel): signed with an Apple Developer ID certificate and notarized, so it should open normally. If you do get an "unidentified developer" block, use System Settings > Privacy & Security > Open Anyway.
             - Linux: the AppImage needs `chmod +x` before it runs; if it reports a FUSE error, install libfuse2 (`sudo apt install libfuse2`) or run it with `--appimage-extract-and-run`. deb and rpm install normally.
           releaseDraft: true
           prerelease: false
