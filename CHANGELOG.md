@@ -6,6 +6,52 @@ uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.1.2] - 2026-08-28
+
+Mostly the outcome of a legal and compliance review. The user-visible
+changes are corrected wording and one bug fix; the substantive change is
+that the licences of the bundled code and typefaces now travel with the
+installer, which they previously did not.
+
+### Added
+- `THIRD-PARTY-LICENSES.md` covering every shipped npm package and Rust
+  crate, generated from the lockfiles and bundled inside the installer.
+  Settings gains a "Third-party licences" viewer for the same file. MIT,
+  BSD, Apache-2.0 and the SIL OFL all require their notices to accompany
+  a distributed binary, and the three bundled typefaces are compiled into
+  the app.
+- A note in the bank setup guide stating that Koinkat is not affiliated
+  with, endorsed by or sponsored by Enable Banking Oy, and dating the
+  Control Panel walkthrough.
+- Guidance on revoking a bank consent early, naming your bank's own
+  consent dashboard and Enable Banking's consents page. Neither was
+  documented before.
+
+### Changed
+- Corrected the privacy and network claims in the README, the privacy
+  policy and the installer metadata. The content-security policy
+  constrains the webview; it does not constrain the Rust dependency tree,
+  and the previous wording implied otherwise. The outbound-connection
+  list now also covers links opened in your browser.
+- The callback page is now presented as two equal options, Koinkat's
+  shared page or your own copy, with the trade-off stated: whose
+  infrastructure the authorization code passes through. The page is
+  served from GitHub Pages, which records the request URL; GitHub exposes
+  no request logs to the owner of a Pages site.
+- The crash screen no longer claims your data is safe, which it cannot
+  know. It says what it does know: the database is a file on your device,
+  nothing was sent anywhere, and unsaved input may be lost.
+- `CONTRIBUTING.md` states that contributions are licensed inbound under
+  GPL-3.0-or-later.
+
+### Fixed
+- Disconnecting a bank no longer reports success when revoking the
+  Enable Banking session failed. The local link is still removed, because
+  that is what you asked for, but you are now told the consent at your
+  bank may still be live and where to revoke it. Previously every failure
+  was discarded, so disconnecting while offline looked identical to
+  disconnecting successfully.
+
 ## [0.1.1] - 2026-08-03
 
 ### Added

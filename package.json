@@ -1,6 +1,6 @@
 {
   "name": "koinkat",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "private": true,
   "description": "Local-first multi-currency personal finance manager (Tauri 2 desktop app)",
   "repository": {
