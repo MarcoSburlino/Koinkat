@@ -64,7 +64,7 @@ jobs:
       # refresh.
       - name: Cache cargo-about
         id: cache-cargo-about
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ~/.cargo/bin/cargo-about
           key: cargo-about-0.9.2-${{ runner.os }}
@@ -103,7 +103,7 @@ jobs:
         run: npm audit --omit=dev --audit-level=high
       - name: Cache cargo-audit
         id: cache-cargo-audit
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ~/.cargo/bin/cargo-audit
           key: cargo-audit-0.22.2-${{ runner.os }}
