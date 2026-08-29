@@ -1,6 +1,6 @@
 # yaml-language-server: $schema=https://aka.ms/winget-manifest.defaultLocale.1.6.0.schema.json
 PackageIdentifier: MarcoSburlino.Koinkat
-PackageVersion: 0.1.1
+PackageVersion: 0.1.2
 PackageLocale: en-US
 Publisher: Marco Sburlino
 PublisherUrl: https://github.com/MarcoSburlino
@@ -26,6 +26,6 @@ Tags:
 - sqlite
 - tauri
 - typescript
-ReleaseNotesUrl: https://github.com/MarcoSburlino/Koinkat/releases/tag/v0.1.1
+ReleaseNotesUrl: https://github.com/MarcoSburlino/Koinkat/releases/tag/v0.1.2
 ManifestType: defaultLocale
 ManifestVersion: 1.6.0
