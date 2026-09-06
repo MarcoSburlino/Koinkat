@@ -7,11 +7,20 @@ desktop app. Your data lives on your device - no cloud sync, no telemetry,
 no accounts system. The only data that leaves is what your bank sends you,
 when you ask it to.
 
-> **Status:** v0.1.1 is the current release. If something does not
+> **Status:** v0.1.2 is the current release. If something does not
 > behave as this guide describes, please
 > [open an issue](https://github.com/MarcoSburlino/Koinkat/issues).
 
-<!-- SCREENSHOT: docs/images/06-dashboard.png - Dashboard with accounts and the month pulse card -->
+**To see what the app looks like**, go to
+[marcosburlino.com/koinkat](https://www.marcosburlino.com/koinkat) - every
+screen, what each one is for, and a walkthrough of a transaction from bank
+to budget.
+
+**This file is the setup manual.** It covers installing the app and, in
+detail, getting Enable Banking working, which is the only genuinely fiddly
+part. If you only want to try Koinkat without a bank, you can skip straight
+to [First run](#first-run-setting-up-inside-the-app) and use manual
+accounts.
 
 ## Contents
 
@@ -34,18 +43,21 @@ when you ask it to.
 
 ## What it does
 
-- Track multiple bank accounts across currencies. Net worth converted to
-  your preferred currency at today's rates; balances stay reproducible
-  because every transaction stores the FX rate it was recorded at.
-- Connect European banks via PSD2 through [Enable Banking](https://enablebanking.com/),
-  or use manual accounts only.
-- Categorize transactions with a learning rule engine (user rules + MCC
-  fallback + a Review inbox for anything unmatched).
-- Track split expenses, including repayments via PayPal / cash / channels
-  outside your bank accounts.
-- Recurring budgets + one-off "envelope" events with multi-currency math.
-- Multi-workspace: each workspace is fully isolated (its own accounts,
-  categories, budgets, bank links).
+Accounts in several currencies, with net worth converted to the one you
+prefer. Budgets, split expenses, and a categorizer that learns from your
+corrections. European banks over PSD2 through
+[Enable Banking](https://enablebanking.com/), or manual accounts if you
+would rather not connect anything.
+
+The one design decision worth knowing before you start: every transaction
+stores the exchange rate it was recorded at. Balances you looked at last
+March still read the same today, because history is never re-converted at
+today's rate.
+
+For what each screen does, and a walkthrough of a transaction going from
+bank to budget, see
+[marcosburlino.com/koinkat](https://www.marcosburlino.com/koinkat). The
+rest of this file is setup.
 
 ## How Koinkat handles your data
 
@@ -173,7 +185,7 @@ command too: `winget upgrade MarcoSburlino.Koinkat`.
 2. Scroll past the release description to the **Assets** section. If
    you only see the word "Assets" with a number next to it, click it -
    the list of downloadable files unfolds.
-3. Click the file named `Koinkat_0.1.1_x64-setup.exe`. In newer
+3. Click the file named `Koinkat_0.1.2_x64-setup.exe`. In newer
    releases the version number in the middle changes; the file you want
    is the one ending in `_x64-setup.exe`. Ignore the two "Source code"
    entries at the bottom of the list - they contain the program's
@@ -184,7 +196,7 @@ command too: `winget upgrade MarcoSburlino.Koinkat`.
    open **File Explorer** (the folder icon in the taskbar) and click
    **Downloads** in the left sidebar - or press Ctrl+J in the browser
    and open the file from its download list.
-5. Double-click `Koinkat_0.1.1_x64-setup.exe`.
+5. Double-click `Koinkat_0.1.2_x64-setup.exe`.
 6. A blue dialog titled **"Windows protected your PC"** appears, saying
    Microsoft Defender SmartScreen prevented an unrecognized app from
    starting. This is the unsigned-app warning explained above.
@@ -205,7 +217,7 @@ blue SmartScreen dialog. Open **PowerShell** (Start key, type
 
 ```powershell
 cd ~\Downloads
-curl.exe -L -o Koinkat-setup.exe https://github.com/MarcoSburlino/Koinkat/releases/download/v0.1.1/Koinkat_0.1.1_x64-setup.exe
+curl.exe -L -o Koinkat-setup.exe https://github.com/MarcoSburlino/Koinkat/releases/download/v0.1.2/Koinkat_0.1.2_x64-setup.exe
 ```
 
 Then run `.\Koinkat-setup.exe` (or double-click it in Downloads) and
@@ -227,8 +239,8 @@ Macs: the download is a universal build containing both architectures.
 2. Scroll past the release description to the **Assets** section. If
    you only see the word "Assets" with a number next to it, click it -
    the list of downloadable files unfolds.
-3. Click the file ending in `.dmg` (for version 0.1.1:
-   `Koinkat_0.1.1_universal.dmg`). Ignore the "Source code" entries -
+3. Click the file ending in `.dmg` (for version 0.1.2:
+   `Koinkat_0.1.2_universal.dmg`). Ignore the "Source code" entries -
    they are not installers.
 4. Open your Downloads folder (the **Downloads** stack at the right end
    of the Dock, or **Finder** and then **Downloads** in the sidebar) and
@@ -248,7 +260,7 @@ application, for anyone who prefers the command line. Open **Terminal**
 
 ```bash
 cd ~/Downloads
-curl -L -o Koinkat.app.tar.gz https://github.com/MarcoSburlino/Koinkat/releases/download/v0.1.1/Koinkat_0.1.1_universal.app.tar.gz
+curl -L -o Koinkat.app.tar.gz https://github.com/MarcoSburlino/Koinkat/releases/download/v0.1.2/Koinkat_0.1.2_universal.app.tar.gz
 tar -xzf Koinkat.app.tar.gz
 mv Koinkat.app /Applications/
 ```
@@ -285,26 +297,26 @@ cd ~/Downloads
   once, then run it:
 
 ```bash
-chmod +x Koinkat_0.1.1_amd64.AppImage
-./Koinkat_0.1.1_amd64.AppImage
+chmod +x Koinkat_0.1.2_amd64.AppImage
+./Koinkat_0.1.2_amd64.AppImage
 ```
 
   If it refuses to start with a FUSE error ("AppImages require FUSE to
   run"), install the FUSE 2 compatibility library, which recent
   Ubuntu/Debian releases no longer preinstall (`sudo apt install
   libfuse2`), or run it once without installing anything:
-  `./Koinkat_0.1.1_amd64.AppImage --appimage-extract-and-run`
+  `./Koinkat_0.1.2_amd64.AppImage --appimage-extract-and-run`
 
 - **Debian / Ubuntu** (`Koinkat_<version>_amd64.deb`):
 
 ```bash
-sudo apt install ./Koinkat_0.1.1_amd64.deb
+sudo apt install ./Koinkat_0.1.2_amd64.deb
 ```
 
 - **Fedora / openSUSE** (`Koinkat-<version>-1.x86_64.rpm`):
 
 ```bash
-sudo rpm -i Koinkat-0.1.1-1.x86_64.rpm
+sudo rpm -i Koinkat-0.1.2-1.x86_64.rpm
 ```
 
 After the deb or rpm install, Koinkat appears in your application menu.
@@ -478,7 +490,6 @@ setup, including how to test the real Enable Banking client in dev.
 
 ## First run: setting up inside the app
 
-<!-- SCREENSHOT: docs/images/01-first-launch.png - first launch: the user profile (name) step -->
 
 1. **User profile.** On first launch the app shows a single field asking
    for your name. That is the whole "account": no password, no email, no
@@ -500,7 +511,6 @@ setup, including how to test the real Enable Banking client in dev.
    workspace and adding a bank-linked one once your Enable Banking
    application is ready is a perfectly good path.
 
-<!-- SCREENSHOT: docs/images/02-workspace-hub.png - workspace hub with the creation cards -->
 
 3. **Workspace basics.** The creation form asks for a workspace name,
    your preferred currency (what mixed-currency totals are converted
@@ -542,7 +552,7 @@ The same steps are also available inside the app: the workspace creation
 form has a link named **"Need help getting these? Open the setup
 guide"**.
 
-<!-- SCREENSHOT: docs/images/04-bank-setup-guide.png - the in-app Enable Banking setup guide -->
+![The in-app Enable Banking setup guide, open at step 1 of 8](docs/images/04-bank-setup-guide.png)
 
 ### What Enable Banking is
 
@@ -768,7 +778,7 @@ needs their own Enable Banking account and application.
 
 ### Step 7: enter the credentials in Koinkat
 
-<!-- SCREENSHOT: docs/images/03-bank-credentials.png - bank-linked workspace wizard credential fields -->
+![The bank-linked workspace form: application ID, private key and redirect URL](docs/images/03-bank-credentials.png)
 
 Now switch to the Koinkat app:
 
@@ -854,7 +864,9 @@ banking."
    place as the automatic one; some browsers simply refuse to hand off
    to a desktop app without being asked.
 
-<!-- SCREENSHOT: docs/images/05-consent-flow.png - bank consent page or the callback page with the Open Koinkat prompt -->
+<!-- SCREENSHOT (todo): docs/images/05-consent-flow.png - your bank's consent screen,
+     or the callback page showing "Open Koinkat?". Must be captured against a real
+     bank, so it cannot come from a demo build. -->
 
 7. Koinkat now shows **Syncing...** ("Creating accounts and importing
    transactions..."). Behind that screen it exchanges the code for
