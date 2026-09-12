@@ -36,7 +36,7 @@ export function UserRegister({ onComplete, onCancel }: UserRegisterProps) {
         name: name.trim(),
         email: email.trim(),
       });
-      setActiveUserId(user.id);
+      await setActiveUserId(user.id);
       await loadUsers();
       await loadActiveUser();
       onComplete();

@@ -21,6 +21,7 @@ import {
   readTextFile,
 } from '@tauri-apps/plugin-fs';
 import { appConfigDir, join } from '@tauri-apps/api/path';
+import { checkpointWal } from '../db/database';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
@@ -155,6 +156,11 @@ export function Settings() {
         filters: [{ name: 'SQLite database', extensions: ['db'] }],
       });
       if (!path) return;
+      // Fold the WAL back into koinkat.db BEFORE copying it. We copy only the
+      // main file, so any commits still sitting in koinkat.db-wal would be
+      // silently missing from the backup - the newest transactions being
+      // exactly the ones most likely to be uncheckpointed.
+      await checkpointWal();
       const bytes = await readFile(src);
       await writeFile(path, bytes);
       flashSuccess('Database exported.');
@@ -534,7 +540,7 @@ export function Settings() {
 
       {/* Leave this workspace */}
       <div className="mt-8 flex flex-col items-start gap-1.5">
-        <Button variant="ghost" onClick={() => exitWorkspace()}>
+        <Button variant="ghost" onClick={() => void exitWorkspace()}>
           <LogOut size={14} /> Leave this workspace
         </Button>
         <p className="text-xs" style={{ color: 'var(--text-muted)' }}>

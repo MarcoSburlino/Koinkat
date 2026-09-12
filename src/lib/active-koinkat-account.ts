@@ -1,33 +1,95 @@
 // Active koinkat account - the workspace the user is currently inside.
-// Every domain service scopes its queries on this id. "Logging out" from
-// the app header clears this key but leaves the active user untouched,
-// returning the user to the account hub where they can pick another
-// workspace or create a new one.
+// Every domain service scopes its queries on this id. "Leaving" a workspace
+// from Settings clears this pointer but leaves the active user untouched,
+// returning the user to the account hub where they can pick another workspace
+// or create a new one.
+//
+// SOURCE OF TRUTH is the `app_state` table (migration v12), mirrored into
+// localStorage. See the header of `active-user.ts` for why it moved out of
+// localStorage alone.
+//
+// requireActiveKoinkatAccountId() MUST stay synchronous - roughly 150 service
+// functions call it as their first statement. The one database read happens in
+// hydrate(), which bootstrap() awaits before any of those run.
 
-const KEY = 'koinkat_active_koinkat_account_id';
+import {
+  ACTIVE_KOINKAT_ACCOUNT_KEY,
+  getAppState,
+  setAppState,
+  clearAppState,
+} from '../services/app-state-service';
+import { markDeviceProvisioned } from './device-provisioned';
 
-export function getActiveKoinkatAccountId(): string | null {
+const MIRROR_KEY = 'koinkat_active_koinkat_account_id';
+
+let cached: string | null = null;
+let hydrated = false;
+
+function readMirror(): string | null {
   try {
-    return localStorage.getItem(KEY);
+    return localStorage.getItem(MIRROR_KEY);
   } catch {
     return null;
   }
 }
 
-export function setActiveKoinkatAccountId(id: string): void {
+function writeMirror(id: string): void {
   try {
-    localStorage.setItem(KEY, id);
+    localStorage.setItem(MIRROR_KEY, id);
   } catch {
     /* ignore */
   }
 }
 
-export function clearActiveKoinkatAccountId(): void {
+function clearMirror(): void {
   try {
-    localStorage.removeItem(KEY);
+    localStorage.removeItem(MIRROR_KEY);
   } catch {
     /* ignore */
   }
+}
+
+/**
+ * Resolve the active workspace id from the database, adopting a pre-v12
+ * localStorage value when the table has nothing yet. Awaited by bootstrap()
+ * before any workspace-scoped service call runs.
+ */
+export async function hydrateActiveKoinkatAccountId(): Promise<string | null> {
+  let id = await getAppState(ACTIVE_KOINKAT_ACCOUNT_KEY);
+  if (!id) {
+    const legacy = readMirror();
+    if (legacy) {
+      id = legacy;
+      await setAppState(ACTIVE_KOINKAT_ACCOUNT_KEY, legacy);
+    }
+  }
+  cached = id;
+  hydrated = true;
+  if (id) {
+    writeMirror(id);
+    markDeviceProvisioned();
+  }
+  return id;
+}
+
+export function getActiveKoinkatAccountId(): string | null {
+  if (!hydrated) return readMirror();
+  return cached;
+}
+
+export async function setActiveKoinkatAccountId(id: string): Promise<void> {
+  cached = id;
+  hydrated = true;
+  writeMirror(id);
+  markDeviceProvisioned();
+  await setAppState(ACTIVE_KOINKAT_ACCOUNT_KEY, id);
+}
+
+export async function clearActiveKoinkatAccountId(): Promise<void> {
+  cached = null;
+  hydrated = true;
+  clearMirror();
+  await clearAppState(ACTIVE_KOINKAT_ACCOUNT_KEY);
 }
 
 /**

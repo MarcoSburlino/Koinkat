@@ -1,6 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
 import { Outlet } from 'react-router-dom';
-import { AlertCircle } from 'lucide-react';
 import { useAppStore } from '../../stores/app-store';
 import { useUiStore } from '../../stores/ui-store';
 import { useBankStore, FX_UNAVAILABLE_MSG } from '../../stores/bank-store';
@@ -14,6 +13,11 @@ import markWhite from '../../assets/koinkat-mark-white.png';
 import { UserRegister } from '../../pages/UserRegister';
 import { UserLogin } from '../../pages/UserLogin';
 import { Connection } from '../../pages/Connection';
+import { BootError } from './BootError';
+import {
+  isDeviceProvisioned,
+  markDeviceProvisioned,
+} from '../../lib/device-provisioned';
 
 function applyTheme(theme: string) {
   const html = document.documentElement;
@@ -25,7 +29,12 @@ function applyTheme(theme: string) {
   }
 }
 
-type View = 'userRegister' | 'userLogin' | 'accountHub' | 'app';
+type View =
+  | 'userRegister'
+  | 'userLogin'
+  | 'accountHub'
+  | 'app'
+  | 'bootError';
 
 export function Shell() {
   const setSettings = useAppStore((s) => s.setSettings);
@@ -57,6 +66,7 @@ export function Shell() {
   // console.error while `view` stayed at the initial 'app' default and
   // the Header (gated on `activeUser`) hid every escape hatch.
   const [bootstrapError, setBootstrapError] = useState<string | null>(null);
+  const [retrying, setRetrying] = useState(false);
 
   // Apply theme whenever it changes
   useEffect(() => {
@@ -65,15 +75,48 @@ export function Shell() {
 
   /**
    * Bootstrap resolves the four-state hierarchy:
-   *   no users               → userRegister
+   *   no users, never set up → userRegister
+   *   no users, BUT set up before → bootError (the read is lying)
    *   users, no active user  → userLogin
    *   active user, no active koinkat account → accountHub
    *   active user + active koinkat account   → app
+   *   anything threw         → bootError
    */
   const bootstrap = useCallback(async () => {
     try {
+      setBootstrapError(null);
       await loadUsers();
-      await loadActiveUser();
+
+      const usersAfterLoad = useUserStore.getState().users;
+
+      // TRIPWIRE. An empty `users` table means one of two very different
+      // things, and they must not render the same screen:
+      //   * this device has never been set up  -> genuinely new, register
+      //   * this device HAS been set up before -> the read is lying to us
+      // The second case used to fall through to the first-run form, which
+      // invited the user to create a second user row that would have orphaned
+      // their real workspace. Refuse, and show the recoverable error instead.
+      if (usersAfterLoad.length === 0) {
+        if (isDeviceProvisioned()) {
+          resetKoinkatAccountStore();
+          setBootstrapError(
+            'The database opened but reported no users, even though this ' +
+              'device has been set up before. Your data has not been deleted.',
+          );
+          setView('bootError');
+          return;
+        }
+        resetKoinkatAccountStore();
+        setView('userRegister');
+        return;
+      }
+
+      // At least one real user exists - arm the tripwire for future boots.
+      markDeviceProvisioned();
+
+      // Cold start: allow the single-user / single-workspace self-heal, so a
+      // lost pointer does not strand the user at a picker with one option.
+      await loadActiveUser({ autoSelectSingle: true });
 
       const freshUsers = useUserStore.getState().users;
       const freshActiveUser = useUserStore.getState().activeUser;
@@ -92,7 +135,7 @@ export function Shell() {
 
       // User is logged in - load their koinkat accounts.
       await loadAccounts(freshActiveUser.id);
-      await loadActiveKoinkatAccount();
+      await loadActiveKoinkatAccount({ autoSelectSingle: true });
       const freshActiveAccount =
         useKoinkatAccountStore.getState().activeKoinkatAccount;
 
@@ -108,26 +151,39 @@ export function Shell() {
         theme: freshActiveAccount.theme,
       });
       applyTheme(freshActiveAccount.theme);
-      const fxOk = await ensureTodayRates();
-      useBankStore.getState().setFxError(fxOk ? null : FX_UNAVAILABLE_MSG);
-      await bankLoadConfig();
-      await bankLoadConnections();
-      // Route through the store so failures populate `lastSyncError` and
-      // surface in the UI banner, instead of being lost to console.warn.
-      void useBankStore.getState().startSync();
+
+      // Everything below is NON-FATAL. The user and workspace are already
+      // resolved, so the app is usable. FX rates need the network - which is
+      // routinely still down in the seconds after a laptop restart, exactly
+      // when this runs - and bank config/connections have their own in-app
+      // error surfaces. Letting these reach the outer catch would strand a
+      // user with perfectly good data behind the boot-error screen.
+      try {
+        const fxOk = await ensureTodayRates();
+        useBankStore.getState().setFxError(fxOk ? null : FX_UNAVAILABLE_MSG);
+        await bankLoadConfig();
+        await bankLoadConnections();
+        // Route through the store so failures populate `lastSyncError` and
+        // surface in the UI banner, instead of being lost to console.warn.
+        void useBankStore.getState().startSync();
+      } catch (err) {
+        console.warn('Non-fatal boot step failed:', err);
+        useBankStore.getState().setFxError(FX_UNAVAILABLE_MSG);
+      }
+
       setView('app');
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       console.error('Init failed:', err);
       setBootstrapError(msg);
-      // Pick a fallback view the user can actually navigate from. Without
-      // this the catch would leave `view` at its initial 'app' default,
-      // which renders Dashboard with no underlying state and a Header
-      // that hides every profile control because `activeUser` is null -
-      // i.e. the "empty dashboard" trap.
-      const fallbackUsers = useUserStore.getState().users;
+      // ALWAYS the dedicated error view. This used to guess between
+      // 'userLogin' and 'userRegister' based on `users`, which is still the
+      // initial [] whenever `loadUsers()` is what threw - so a transient
+      // database lock after a Windows restart rendered the first-run "create
+      // a user" form on top of a perfectly intact database. A failed read and
+      // an empty read are not the same thing; never let them share a screen.
       resetKoinkatAccountStore();
-      setView(fallbackUsers.length > 0 ? 'userLogin' : 'userRegister');
+      setView('bootError');
     } finally {
       markInitialized();
     }
@@ -154,18 +210,43 @@ export function Shell() {
    */
   useEffect(() => {
     if (!initialized) return;
+    // Never navigate away from the boot-error screen. bootstrap() sets it and
+    // marks the app initialized in the same batch, so without this guard this
+    // effect would immediately fire with a null activeUser and replace it with
+    // the very registration form the error screen exists to prevent.
+    if (view === 'bootError') return;
     let cancelled = false;
     (async () => {
       if (!activeUser) {
         resetKoinkatAccountStore();
         if (cancelled) return;
+        // Same tripwire as bootstrap(): zero users on a device that has been
+        // set up before is a failure, not a fresh install.
+        if (users.length === 0 && isDeviceProvisioned()) {
+          setBootstrapError(
+            'The database reported no users, even though this device has ' +
+              'been set up before. Your data has not been deleted.',
+          );
+          setView('bootError');
+          return;
+        }
         setView(users.length > 0 ? 'userLogin' : 'userRegister');
         return;
       }
       // User logged in → load their koinkat accounts and decide between
       // the hub and the app based on the active koinkat account.
-      await loadAccounts(activeUser.id);
-      await loadActiveKoinkatAccount();
+      try {
+        await loadAccounts(activeUser.id);
+        await loadActiveKoinkatAccount();
+      } catch (err) {
+        // Previously an unhandled rejection: the view stayed on whatever it
+        // was and the failure only reached the console.
+        if (cancelled) return;
+        console.error('Workspace resolution failed:', err);
+        setBootstrapError(err instanceof Error ? err.message : String(err));
+        setView('bootError');
+        return;
+      }
       if (cancelled) return;
       const ka = useKoinkatAccountStore.getState().activeKoinkatAccount;
       setView(ka ? 'app' : 'accountHub');
@@ -186,6 +267,7 @@ export function Shell() {
    */
   useEffect(() => {
     if (!initialized) return;
+    if (view === 'bootError') return; // never navigate away from the error
     if (!activeUser) return; // handled by the user effect above
 
     if (!activeKoinkatAccount) {
@@ -246,6 +328,18 @@ export function Shell() {
     setView('userRegister');
   }, []);
 
+  // Re-runs the whole bootstrap in place. This only works because getDb() no
+  // longer caches a rejected promise - before that fix, every retry replayed
+  // the original failure and the only way out was restarting the app.
+  const handleRetry = useCallback(async () => {
+    setRetrying(true);
+    try {
+      await bootstrap();
+    } finally {
+      setRetrying(false);
+    }
+  }, [bootstrap]);
+
   const handleCancelRegister = useCallback(() => {
     if (users.length > 0) setView('userLogin');
   }, [users.length]);
@@ -268,6 +362,22 @@ export function Shell() {
     );
   }
 
+  // The boot-error screen stands alone: no Header, no sidebar, and crucially
+  // no route into registration. Rendering it before the normal shell means
+  // there is no chrome through which the user can reach a "create user" form
+  // while the app cannot read the database.
+  if (view === 'bootError') {
+    return (
+      <BootError
+        message={bootstrapError ?? 'Unknown error while opening the database.'}
+        onRetry={() => {
+          void handleRetry();
+        }}
+        retrying={retrying}
+      />
+    );
+  }
+
   return (
     <div
       className={`min-h-screen ${privacyMode ? 'privacy-mode' : ''}`}
@@ -278,29 +388,6 @@ export function Shell() {
         showProfileControls={view === 'app' || view === 'accountHub'}
         showSidebarToggle={view === 'app'}
       />
-      {bootstrapError && (
-        <div
-          role="alert"
-          className="px-6 py-3 flex items-start gap-2 text-sm"
-          style={{ color: 'var(--danger)' }}
-        >
-          <AlertCircle size={16} className="mt-[2px]" />
-          <div className="flex flex-col gap-1">
-            <strong>App failed to initialize</strong>
-            <span style={{ color: 'var(--text-muted)' }}>{bootstrapError}</span>
-            <button
-              type="button"
-              onClick={() => {
-                setBootstrapError(null);
-                window.location.reload();
-              }}
-              className="self-start underline text-xs cursor-pointer"
-            >
-              Reload
-            </button>
-          </div>
-        </div>
-      )}
       {view === 'userRegister' && (
         <UserRegister
           onComplete={handleRegistered}

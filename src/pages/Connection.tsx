@@ -119,7 +119,7 @@ export function Connection() {
   }
 
   async function handleSwitchUser() {
-    userLogout();
+    await userLogout();
     // Shell watches activeUser and flips to 'userLogin' automatically.
   }
 
@@ -171,7 +171,7 @@ export function Connection() {
       });
 
       // 2. Mark it active so downstream services scope correctly.
-      setActiveKoinkatAccountId(account.id);
+      await setActiveKoinkatAccountId(account.id);
 
       // 3. For sandbox/linked, save & verify credentials now. If the user
       //    bails here we roll back by clearing the api_configs row.

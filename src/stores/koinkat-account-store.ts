@@ -7,7 +7,7 @@ import {
   ensureKoinkatAccountSeeded,
 } from '../services/koinkat-account-service';
 import {
-  getActiveKoinkatAccountId,
+  hydrateActiveKoinkatAccountId,
   setActiveKoinkatAccountId,
   clearActiveKoinkatAccountId,
 } from '../lib/active-koinkat-account';
@@ -19,15 +19,24 @@ interface KoinkatAccountState {
 
   /** Load the list of koinkat accounts that belong to the given user. */
   loadAccounts: (userId: string) => Promise<void>;
-  /** Rehydrate the active koinkat account from localStorage. */
-  loadActiveKoinkatAccount: () => Promise<void>;
-  /** Enter a koinkat account (persists to localStorage). */
+  /**
+   * Rehydrate the active koinkat account from `app_state`.
+   *
+   * `autoSelectSingle` is passed ONLY by bootstrap(): on a cold start with
+   * exactly one workspace and no pointer, enter it silently. Off elsewhere,
+   * so "Leave this workspace" and "switch user" still land on the hub rather
+   * than bouncing the user straight back in.
+   */
+  loadActiveKoinkatAccount: (opts?: {
+    autoSelectSingle?: boolean;
+  }) => Promise<void>;
+  /** Enter a koinkat account (persists to `app_state`). */
   setActive: (id: string) => Promise<void>;
   /**
    * Leave the current koinkat account (returns user to the account hub).
    * Does NOT log out the user.
    */
-  exit: () => void;
+  exit: () => Promise<void>;
   /** Permanently delete a koinkat account and all of its data. */
   deleteKoinkatAccount: (id: string) => Promise<void>;
   /** Reset to empty state - used when the active user logs out. */
@@ -44,19 +53,30 @@ export const useKoinkatAccountStore = create<KoinkatAccountState>((set, get) => 
     set({ accounts, loaded: true });
   },
 
-  loadActiveKoinkatAccount: async () => {
-    const id = getActiveKoinkatAccountId();
+  loadActiveKoinkatAccount: async (opts) => {
+    let id = await hydrateActiveKoinkatAccountId();
+
     if (!id) {
-      set({ activeKoinkatAccount: null });
-      return;
+      // Self-heal: exactly one workspace means there is nothing to choose.
+      const accounts = get().accounts;
+      if (!opts?.autoSelectSingle || accounts.length !== 1) {
+        set({ activeKoinkatAccount: null });
+        return;
+      }
+      await setActiveKoinkatAccountId(accounts[0].id);
+      id = accounts[0].id;
     }
+
     const account = await getKoinkatAccountById(id);
     if (!account) {
-      // Stale id - clear it
-      clearActiveKoinkatAccountId();
+      // Confirmed absent by a read that SUCCEEDED, so the id really is stale.
+      // A read that throws propagates instead of landing here - a transient
+      // database failure must never silently discard the pointer.
+      await clearActiveKoinkatAccountId();
       set({ activeKoinkatAccount: null });
       return;
     }
+
     // Ensure the workspace has its categories + MCC mappings seeded.
     // Idempotent - pre-v4 workspaces get seeded here the first time the
     // user re-enters them after migrating to v4.
@@ -69,19 +89,19 @@ export const useKoinkatAccountStore = create<KoinkatAccountState>((set, get) => 
   },
 
   setActive: async (id: string) => {
-    setActiveKoinkatAccountId(id);
+    await setActiveKoinkatAccountId(id);
     await get().loadActiveKoinkatAccount();
   },
 
-  exit: () => {
-    clearActiveKoinkatAccountId();
+  exit: async () => {
+    await clearActiveKoinkatAccountId();
     set({ activeKoinkatAccount: null });
   },
 
   deleteKoinkatAccount: async (id: string) => {
     await deleteKoinkatAccountSvc(id);
     if (get().activeKoinkatAccount?.id === id) {
-      clearActiveKoinkatAccountId();
+      await clearActiveKoinkatAccountId();
       set({ activeKoinkatAccount: null });
     }
     // Reload the remaining accounts for whichever user still owns any.

@@ -6,6 +6,48 @@ uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.1.3] - 2026-09-12
+
+One bug, but an alarming one. After restarting Windows, Koinkat could open
+on the first-run "Create your Koinkat user" screen while the database sat
+on disk completely intact. Nothing was ever deleted, and no release has
+ever deleted anything here, but the app said otherwise and invited you to
+start over. This release makes that failure impossible to mistake for a
+fresh install, and moves the record of which user and workspace are active
+somewhere that survives.
+
+### Fixed
+- A database that cannot be read at startup no longer renders the
+  registration form. Startup used to pick its fallback screen from the list
+  of users, which is still empty when loading that very list is what
+  failed, so it concluded you were new. A restart leaves SQLite's
+  write-ahead log to recover, and Koinkat opened a second connection pool
+  on the same file while that was happening, which is what made the read
+  fail intermittently. The second pool is gone.
+- Retrying after a failed start now works. The database handle cached the
+  failed attempt and replayed it for the rest of the session, so nothing
+  could recover without quitting the app.
+- Exporting the database now flushes the write-ahead log first. The export
+  copied only the main file, so recent transactions could be missing from
+  the backup without any sign that anything was wrong.
+- Losing the active user or workspace no longer happens because of a read
+  that errored. Those pointers are now discarded only when a successful
+  read confirms the row is genuinely gone.
+
+### Added
+- A dedicated screen for a startup failure, stating plainly that nothing
+  has been deleted, naming the database file, and offering a retry. It has
+  no way to create a user, deliberately.
+
+### Changed
+- The active user and active workspace are stored in the database itself
+  (migration v12) rather than only in the webview's local storage, which
+  Windows can clear and which is not shared between builds. Your existing
+  selection is carried over on first launch.
+- If the pointer is missing at startup and there is only one user or only
+  one workspace, Koinkat now opens it instead of asking you to pick from a
+  list of one.
+
 ## [0.1.2] - 2026-08-28
 
 Mostly the outcome of a legal and compliance review. The user-visible

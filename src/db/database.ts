@@ -69,6 +69,65 @@ function toDbError(err: unknown): Error {
   }
 }
 
+const DB_URL = 'sqlite:koinkat.db';
+
+/** How many times to re-attempt a `Database.load` that failed on a lock. */
+const LOAD_ATTEMPTS = 5;
+
+/**
+ * Is this failure worth retrying? The cold-boot window right after a Windows
+ * restart is the case that matters: SQLite may still be recovering a WAL left
+ * behind by the previous process (which a restart kills without ever firing
+ * the plugin's `RunEvent::Exit` pool close), and an antivirus scan can hold
+ * the file for a moment longer. Both surface as transient lock/busy errors.
+ */
+function isTransientLockError(err: unknown): boolean {
+  const msg = (err instanceof Error ? err.message : String(err)).toLowerCase();
+  return (
+    msg.includes('database is locked') ||
+    msg.includes('database is busy') ||
+    msg.includes('unable to open database') ||
+    msg.includes('(code: 5)') || // SQLITE_BUSY
+    msg.includes('(code: 261)') // SQLITE_BUSY_SNAPSHOT
+  );
+}
+
+/**
+ * `Database.load` with bounded backoff on lock/busy failures only. Anything
+ * else (a corrupt file, a failed migration) fails fast - retrying those just
+ * delays an error the user needs to see.
+ */
+async function loadWithRetry(): Promise<Database> {
+  let lastErr: unknown;
+  for (let attempt = 0; attempt < LOAD_ATTEMPTS; attempt += 1) {
+    try {
+      return await Database.load(DB_URL);
+    } catch (err) {
+      lastErr = err;
+      if (!isTransientLockError(err) || attempt === LOAD_ATTEMPTS - 1) break;
+      const delayMs = 200 * 2 ** attempt; // 200, 400, 800, 1600
+      console.warn(
+        `[db] load attempt ${attempt + 1}/${LOAD_ATTEMPTS} failed, retrying in ${delayMs}ms:`,
+        err,
+      );
+      await new Promise((resolve) => setTimeout(resolve, delayMs));
+    }
+  }
+  throw toDbError(lastErr);
+}
+
+/**
+ * Force any WAL content back into the main `koinkat.db` file.
+ *
+ * Needed before copying the file (the export in Settings reads only
+ * `koinkat.db`, so uncheckpointed commits sitting in `koinkat.db-wal` would
+ * be silently missing from the backup).
+ */
+export async function checkpointWal(): Promise<void> {
+  const loaded = await getDb();
+  await loaded.execute('PRAGMA wal_checkpoint(TRUNCATE)');
+}
+
 /**
  * Open (or return the cached) database handle. The returned `Database`
  * has its `execute` and `select` methods transparently wrapped in the
@@ -90,7 +149,7 @@ function toDbError(err: unknown): Error {
 export async function getDb(): Promise<Database> {
   if (db) return db;
   if (!pending) {
-    pending = Database.load('sqlite:koinkat.db').then(async (loaded) => {
+    pending = loadWithRetry().then(async (loaded) => {
       // Wrap before running PRAGMAs so the PRAGMAs themselves queue
       // and pin the connection that subsequent calls will land on.
       const origExecute = loaded.execute.bind(loaded);
@@ -121,6 +180,15 @@ export async function getDb(): Promise<Database> {
       }
       db = loaded;
       return loaded;
+    });
+    // A rejected `pending` must NOT stay cached. It used to: one transient
+    // failure at boot then replayed itself for every later getDb() call, so
+    // nothing in the session could recover and the UI had no way back. Null
+    // it out so the next call - e.g. the Retry button on the boot-error
+    // screen - genuinely re-opens the file.
+    pending = pending.catch((err) => {
+      pending = null;
+      throw toDbError(err);
     });
   }
   return pending;

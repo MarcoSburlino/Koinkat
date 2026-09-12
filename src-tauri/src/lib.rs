@@ -82,6 +82,12 @@ pub fn run() {
             sql: include_str!("../../src/db/migration-v11.sql"),
             kind: MigrationKind::Up,
         },
+        Migration {
+            version: 12,
+            description: "Device-local app state (active user / workspace)",
+            sql: include_str!("../../src/db/migration-v12.sql"),
+            kind: MigrationKind::Up,
+        },
     ];
 
     let mut builder = tauri::Builder::default();
@@ -100,6 +106,19 @@ pub fn run() {
 
     builder
         .plugin(tauri_plugin_deep_link::init())
+        // NOTE: `plugins.sql.preload` is deliberately ABSENT from
+        // tauri.conf.json. With it set, the plugin's `setup` opened one
+        // connection pool on koinkat.db, and the webview's `Database.load`
+        // then opened a SECOND pool on the same file moments later
+        // (commands::load -> DbPool::connect). Two pools contending over one
+        // SQLite file while it recovers a WAL left behind by an unclean
+        // shutdown produced a transient "database is locked" on the very
+        // first query after a Windows restart - which the frontend used to
+        // render as the first-run "create a user" screen.
+        //
+        // Dropping preload is safe: commands::load runs any migrations still
+        // registered for that URL, so the migrations below still apply on the
+        // webview's own load. Do not re-add preload.
         .plugin(
             tauri_plugin_sql::Builder::default()
                 .add_migrations("sqlite:koinkat.db", migrations)
