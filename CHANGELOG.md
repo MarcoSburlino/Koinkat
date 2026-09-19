@@ -6,6 +6,53 @@ uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.1.4] - 2026-09-19
+
+The outcome of a full correctness audit. Eight classes of defect, each one
+able to give you a wrong number and none of them obvious from the screen.
+If you have been running Koinkat with more than one currency, with bank
+imports, or with split expenses, some of your stored figures may have been
+wrong; this release stops that happening again. Test coverage grew from 174
+to 249, on a harness that runs the real migrations against a real database.
+
+### Fixed
+- Two things happening at once could lose one of them. Every write now runs
+  inside a transaction that owns a single database connection from start to
+  finish. Two expenses of 10 recorded against a balance of 100 leave 80;
+  previously one could overwrite the other and leave 90.
+- Converted amounts could come out as zero. The exchange rate was rounded to
+  four decimal places before being applied, which flattens any rate below
+  0.0001 to nothing: 1,000,000 VND converted to 0.00 USD instead of 40.00.
+  Rates are now applied at full precision and stored to twelve decimal
+  places. Four decimal places remain what you see, not what is used.
+- Switching workspace while a conversion was in flight could write the
+  result into the workspace you switched to. Those writes now cancel
+  instead.
+- Deleting a pending bank transaction changed your balance, even though
+  adding it never had. Pending rows are balance-neutral in both directions
+  now, so deleting a pending expense of 10 from 100 leaves 100.
+- A pending transaction that settled could be counted twice, or deleted
+  outright by the cleanup that follows a sync. A settling row is now matched
+  and promoted in place. Two genuinely identical payments still stay two
+  separate rows.
+- Re-authorizing a bank created a second copy of each account and
+  double-counted its balance. Accounts are now recognized across sessions by
+  the bank's own stable identifier, falling back to IBAN and currency.
+- A split expense reimbursed for more than it cost was reported as spending
+  rather than as money back. Costing 100 and being reimbursed 120 now reads
+  as -20.
+- Entering a same-currency transaction no longer fails when exchange rates
+  are unavailable.
+- Exported database backups are taken as a single consistent snapshot, so a
+  backup can no longer miss recent changes or include abandoned ones.
+
+### Changed
+- The full licence text ships with the app and is readable under
+  Settings > About.
+- Line endings for migration files are pinned. The app identifies each
+  migration by an exact byte-for-byte hash, so a build made on a machine
+  configured differently could refuse to open an existing database.
+
 ## [0.1.3] - 2026-09-12
 
 One bug, but an alarming one. After restarting Windows, Koinkat could open
