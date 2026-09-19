@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { AlertCircle, RotateCcw, FolderOpen } from 'lucide-react';
+import { CircleAlert, RotateCcw, FolderOpen } from 'lucide-react';
 import { appConfigDir, join } from '@tauri-apps/api/path';
 import { open as openPath } from '@tauri-apps/plugin-shell';
 import { Card } from '../ui/Card';
@@ -55,7 +55,7 @@ export function BootError({
     >
       <Card className="w-full max-w-xl flex flex-col gap-4">
         <div className="flex items-start gap-2">
-          <AlertCircle
+          <CircleAlert
             size={18}
             className="mt-[2px] shrink-0"
             style={{ color: 'var(--danger)' }}

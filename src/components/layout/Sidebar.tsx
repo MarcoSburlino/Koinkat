@@ -2,12 +2,12 @@ import { NavLink } from 'react-router-dom';
 import {
   LayoutDashboard,
   ArrowLeftRight,
-  PieChart,
-  BarChart3,
+  ChartPie,
+  ChartColumn,
   Wallet,
   Layers,
   ListChecks,
-  SettingsIcon,
+  Settings,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useAppStore } from '../../stores/app-store';
@@ -30,8 +30,8 @@ const NAV_ITEMS: NavItem[] = [
   { to: '/', label: 'Dashboard', icon: LayoutDashboard },
   { to: '/review', label: 'Review', icon: ListChecks, badge: 'review' },
   { to: '/transactions', label: 'Transactions', icon: ArrowLeftRight },
-  { to: '/analysis', label: 'Analysis', icon: PieChart },
-  { to: '/summary', label: 'Summary', icon: BarChart3 },
+  { to: '/analysis', label: 'Analysis', icon: ChartPie },
+  { to: '/summary', label: 'Summary', icon: ChartColumn },
   { to: '/budgets', label: 'Budgets', icon: Wallet },
   { to: '/categories', label: 'Categories', icon: Layers },
 ];
@@ -41,7 +41,7 @@ const NAV_ITEMS: NavItem[] = [
 const FOOTER_ITEM: NavItem = {
   to: '/settings',
   label: 'Settings',
-  icon: SettingsIcon,
+  icon: Settings,
 };
 
 export function Sidebar() {

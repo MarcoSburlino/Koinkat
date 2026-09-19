@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Building2, ExternalLink, Plus, CheckCircle, Loader2, ArrowLeft } from 'lucide-react';
+import { Building2, ExternalLink, Plus, CircleCheckBig, LoaderCircle, ArrowLeft } from 'lucide-react';
 import { format, subDays } from 'date-fns';
 import { open } from '@tauri-apps/plugin-shell';
 import { Card } from '../components/ui/Card';
@@ -487,7 +487,7 @@ export function BankLink() {
         </div>
         <Card className="max-w-2xl">
           <div className="text-center py-8">
-            <Loader2 size={40} className="mx-auto mb-4 animate-spin" style={{ color: 'var(--primary)' }} />
+            <LoaderCircle size={40} className="mx-auto mb-4 animate-spin" style={{ color: 'var(--primary)' }} />
             <p className="text-sm" style={{ color: 'var(--text)' }}>
               Creating accounts and importing transactions...
             </p>
@@ -512,7 +512,7 @@ export function BankLink() {
         </div>
         <Card className="max-w-2xl">
           <div className="text-center py-8">
-            <CheckCircle size={40} className="mx-auto mb-4" style={{ color: 'var(--success)' }} />
+            <CircleCheckBig size={40} className="mx-auto mb-4" style={{ color: 'var(--success)' }} />
             <p className="text-sm mb-6" style={{ color: 'var(--text)' }}>{syncResult}</p>
             <div className="flex justify-center gap-3">
               <Button variant="primary" onClick={() => navigate('/')}>Go to Dashboard</Button>

@@ -1,7 +1,7 @@
 import { formatFullDate as formatDate } from '../lib/date-format';
 import { UPPERCASE_LABEL } from '../lib/label-styles';
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { Check, CheckCheck, Clock, MoreHorizontal, Repeat2, RefreshCw, RotateCcw, Sparkles, Users } from 'lucide-react';
+import { Check, CheckCheck, Clock, Ellipsis, Repeat2, RefreshCw, RotateCcw, Sparkles, Users } from 'lucide-react';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Modal } from '../components/ui/Modal';
@@ -658,7 +658,7 @@ export function Review() {
                 aria-label="More actions"
                 aria-expanded={maintenanceOpen}
               >
-                <MoreHorizontal size={16} />
+                <Ellipsis size={16} />
               </Button>
               {maintenanceOpen && (
                 <>

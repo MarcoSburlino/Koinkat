@@ -6,7 +6,7 @@ import {
   FlaskConical,
   Pencil,
   ArrowRight,
-  AlertCircle,
+  CircleAlert,
   Trash2,
 } from 'lucide-react';
 import { open as openDialog } from '@tauri-apps/plugin-dialog';
@@ -479,7 +479,7 @@ export function Connection() {
 
               {error && (
                 <p className="text-xs flex items-center gap-1.5" style={{ color: 'var(--danger)' }}>
-                  <AlertCircle size={14} />
+                  <CircleAlert size={14} />
                   {error}
                 </p>
               )}
@@ -533,7 +533,7 @@ export function Connection() {
             className="text-xs flex items-start gap-1.5 mb-4"
             style={{ color: 'var(--danger)' }}
           >
-            <AlertCircle size={14} className="mt-0.5 shrink-0" />
+            <CircleAlert size={14} className="mt-0.5 shrink-0" />
             <span className="break-words">{deleteError}</span>
           </p>
         )}

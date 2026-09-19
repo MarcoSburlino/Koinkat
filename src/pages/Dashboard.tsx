@@ -14,7 +14,7 @@ import {
   ArrowRight,
   ListChecks,
   Users,
-  AlertTriangle,
+  TriangleAlert,
   X,
   TrendingUp,
   TrendingDown,
@@ -360,7 +360,7 @@ export function Dashboard() {
               '1px solid color-mix(in srgb, var(--danger) 35%, var(--border))',
           }}
         >
-          <AlertTriangle
+          <TriangleAlert
             size={20}
             strokeWidth={1.75}
             style={{ color: 'var(--danger)', flexShrink: 0, marginTop: 2 }}
@@ -419,7 +419,7 @@ export function Dashboard() {
               '1px solid color-mix(in srgb, var(--warning) 35%, var(--border))',
           }}
         >
-          <AlertTriangle
+          <TriangleAlert
             size={20}
             strokeWidth={1.75}
             style={{ color: 'var(--warning)', flexShrink: 0, marginTop: 2 }}
@@ -459,7 +459,7 @@ export function Dashboard() {
               '1px solid color-mix(in srgb, var(--warning) 35%, var(--border))',
           }}
         >
-          <AlertTriangle
+          <TriangleAlert
             size={20}
             strokeWidth={1.75}
             style={{ color: 'var(--warning)', flexShrink: 0, marginTop: 2 }}

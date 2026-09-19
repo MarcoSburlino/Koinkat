@@ -10,7 +10,7 @@ import {
   Pencil,
   ChevronLeft,
   ChevronRight,
-  AlertTriangle,
+  TriangleAlert,
   ChevronDown,
   ChevronUp,
   Check,
@@ -588,7 +588,7 @@ export function TransactionList() {
             className="w-full flex items-center justify-between px-4 py-3 cursor-pointer"
           >
             <div className="flex items-center gap-3">
-              <AlertTriangle
+              <TriangleAlert
                 size={18}
                 style={{ color: 'var(--warning)' }}
               />

@@ -10,7 +10,7 @@ import {
   RotateCcw,
   LogOut,
   Download,
-  AlertCircle,
+  CircleAlert,
 } from 'lucide-react';
 import { save, open as openDialog } from '@tauri-apps/plugin-dialog';
 import { open as openUrl } from '@tauri-apps/plugin-shell';
@@ -1084,7 +1084,7 @@ function BankCredentialsCard({ onOpenGuide }: { onOpenGuide: () => void }) {
             className="text-xs flex items-start gap-1.5"
             style={{ color: 'var(--danger)' }}
           >
-            <AlertCircle size={14} className="mt-0.5 shrink-0" />
+            <CircleAlert size={14} className="mt-0.5 shrink-0" />
             <span>
               Enable Banking rejects koinkat:// redirect URLs at runtime. Use the
               https:// URL you registered on the Enable Banking application page.
@@ -1097,7 +1097,7 @@ function BankCredentialsCard({ onOpenGuide }: { onOpenGuide: () => void }) {
             className="text-xs flex items-start gap-1.5"
             style={{ color: 'var(--danger)' }}
           >
-            <AlertCircle size={14} className="mt-0.5 shrink-0" />
+            <CircleAlert size={14} className="mt-0.5 shrink-0" />
             <span className="break-words">{error}</span>
           </p>
         )}

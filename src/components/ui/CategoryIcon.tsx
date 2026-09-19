@@ -1,7 +1,7 @@
 import {
   Utensils,
   Car,
-  Home,
+  House,
   Zap,
   ShoppingBag,
   Heart,
@@ -16,7 +16,7 @@ import {
   Baby,
   PawPrint,
   Receipt,
-  MoreHorizontal,
+  Ellipsis,
   Briefcase,
   Laptop,
   TrendingUp,
@@ -29,11 +29,19 @@ import type { LucideIcon } from 'lucide-react';
  * String-name → Lucide component map for seeded + user-chosen category
  * icons. Unknown names fall back to a generic `Folder` glyph so the UI
  * never hard-crashes on a typo.
+ *
+ * The keys are a persisted contract, not just local identifiers: they are
+ * the exact strings stored in the `icon` column and seeded by
+ * `src/db/seed.ts`. Lucide renamed two of these components in v1
+ * (`Home` to `House`, `MoreHorizontal` to `Ellipsis`), so those entries are
+ * written out longhand. Letting the shorthand carry the new component name
+ * would rename the KEY too, and every database already on disk would miss
+ * the lookup and fall through to `Folder` with no error anywhere.
  */
 const ICON_MAP: Record<string, LucideIcon> = {
   Utensils,
   Car,
-  Home,
+  Home: House,
   Zap,
   ShoppingBag,
   Heart,
@@ -48,7 +56,7 @@ const ICON_MAP: Record<string, LucideIcon> = {
   Baby,
   PawPrint,
   Receipt,
-  MoreHorizontal,
+  MoreHorizontal: Ellipsis,
   Briefcase,
   Laptop,
   TrendingUp,

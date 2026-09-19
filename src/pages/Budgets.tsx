@@ -21,7 +21,7 @@ import {
   addMonths,
   eachMonthOfInterval,
 } from 'date-fns';
-import { Pencil, Trash2, Archive, ArchiveRestore, Plus, AlertCircle, Repeat2, Clock } from 'lucide-react';
+import { Pencil, Trash2, Archive, ArchiveRestore, Plus, CircleAlert, Repeat2, Clock } from 'lucide-react';
 
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
@@ -446,7 +446,7 @@ export function Budgets() {
             className="flex items-start gap-2 py-2"
             style={{ color: 'var(--danger)' }}
           >
-            <AlertCircle size={16} className="mt-[2px]" />
+            <CircleAlert size={16} className="mt-[2px]" />
             <div className="flex flex-col gap-1">
               <p className="text-sm font-medium">Couldn't load budget data</p>
               <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
@@ -463,7 +463,7 @@ export function Budgets() {
             className="flex items-start gap-2 py-2"
             style={{ color: 'var(--danger)' }}
           >
-            <AlertCircle size={16} className="mt-[2px]" />
+            <CircleAlert size={16} className="mt-[2px]" />
             <p className="text-sm">{actionError}</p>
           </div>
         </Card>

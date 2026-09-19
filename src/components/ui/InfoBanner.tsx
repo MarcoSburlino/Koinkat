@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from 'react';
-import { Info, AlertTriangle, X } from 'lucide-react';
+import { Info, TriangleAlert, X } from 'lucide-react';
 
 interface InfoBannerProps {
   /**
@@ -43,7 +43,7 @@ export function InfoBanner({
   }
 
   const isWarning = variant === 'warning';
-  const Icon = isWarning ? AlertTriangle : Info;
+  const Icon = isWarning ? TriangleAlert : Info;
 
   const style = isWarning
     ? {

@@ -7,7 +7,7 @@ import {
   ChevronDown,
   ChevronRight,
   ArrowRight,
-  AlertTriangle,
+  TriangleAlert,
   Pencil,
   TrendingUp,
   TrendingDown,
@@ -545,7 +545,7 @@ export function Analysis() {
                   '1px solid color-mix(in srgb, var(--warning) 30%, transparent)',
               }}
             >
-              <AlertTriangle
+              <TriangleAlert
                 size={16}
                 strokeWidth={1.75}
                 style={{ color: 'var(--warning)', flexShrink: 0, marginTop: 2 }}
@@ -854,7 +854,7 @@ function RecurringBreakdownCard({
           className="mb-3 inline-flex items-center gap-1.5"
           style={{ color: 'var(--warning)', fontSize: 'var(--fs-body-sm)' }}
         >
-          <AlertTriangle size={14} aria-hidden />
+          <TriangleAlert size={14} aria-hidden />
           Some {recurring.unconvertibleCurrencies.join(', ').toUpperCase()} rows were skipped
           (no exchange rate).
         </p>
