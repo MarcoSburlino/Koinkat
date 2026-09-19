@@ -7,8 +7,11 @@ desktop app. Your data lives on your device - no cloud sync, no telemetry,
 no accounts system. The only data that leaves is what your bank sends you,
 when you ask it to.
 
-> **Status:** v0.1.2 is the current release. If something does not
-> behave as this guide describes, please
+> **Status:** the current release is whatever is on the
+> [releases page](https://github.com/MarcoSburlino/Koinkat/releases/latest).
+> Filenames below are written as `Koinkat_<version>_...`; substitute the
+> version you downloaded. If something does not behave as this guide
+> describes, please
 > [open an issue](https://github.com/MarcoSburlino/Koinkat/issues).
 
 **To see what the app looks like**, go to
@@ -185,9 +188,9 @@ command too: `winget upgrade MarcoSburlino.Koinkat`.
 2. Scroll past the release description to the **Assets** section. If
    you only see the word "Assets" with a number next to it, click it -
    the list of downloadable files unfolds.
-3. Click the file named `Koinkat_0.1.2_x64-setup.exe`. In newer
-   releases the version number in the middle changes; the file you want
-   is the one ending in `_x64-setup.exe`. Ignore the two "Source code"
+3. Click the file named `Koinkat_<version>_x64-setup.exe`. The version
+   in the middle changes with every release; the file you want is the
+   one ending in `_x64-setup.exe`. Ignore the two "Source code"
    entries at the bottom of the list - they contain the program's
    source, not an installer. (If your organization prefers MSI
    packages, the file ending in `_x64_en-US.msi` installs the same
@@ -196,7 +199,7 @@ command too: `winget upgrade MarcoSburlino.Koinkat`.
    open **File Explorer** (the folder icon in the taskbar) and click
    **Downloads** in the left sidebar - or press Ctrl+J in the browser
    and open the file from its download list.
-5. Double-click `Koinkat_0.1.2_x64-setup.exe`.
+5. Double-click the installer you just downloaded.
 6. A blue dialog titled **"Windows protected your PC"** appears, saying
    Microsoft Defender SmartScreen prevented an unrecognized app from
    starting. This is the unsigned-app warning explained above.
@@ -213,11 +216,16 @@ The SmartScreen block is triggered by a "downloaded from the internet"
 marker that browsers attach to files. Windows' built-in `curl.exe` does
 not attach it, so an installer downloaded this way starts without the
 blue SmartScreen dialog. Open **PowerShell** (Start key, type
-`powershell`, Enter) and run the two commands one at a time:
+`powershell`, Enter) and run these, one block at a time. The first line
+asks GitHub which installer is current, so this always fetches the newest
+release rather than a version pinned in this document:
 
 ```powershell
 cd ~\Downloads
-curl.exe -L -o Koinkat-setup.exe https://github.com/MarcoSburlino/Koinkat/releases/download/v0.1.2/Koinkat_0.1.2_x64-setup.exe
+$url = (Invoke-RestMethod https://api.github.com/repos/MarcoSburlino/Koinkat/releases/latest).assets |
+  Where-Object { $_.name -like '*_x64-setup.exe' } |
+  Select-Object -First 1 -ExpandProperty browser_download_url
+curl.exe -L -o Koinkat-setup.exe $url
 ```
 
 Then run `.\Koinkat-setup.exe` (or double-click it in Downloads) and
@@ -239,8 +247,8 @@ Macs: the download is a universal build containing both architectures.
 2. Scroll past the release description to the **Assets** section. If
    you only see the word "Assets" with a number next to it, click it -
    the list of downloadable files unfolds.
-3. Click the file ending in `.dmg` (for version 0.1.2:
-   `Koinkat_0.1.2_universal.dmg`). Ignore the "Source code" entries -
+3. Click the file ending in `.dmg` (named
+   `Koinkat_<version>_universal.dmg`). Ignore the "Source code" entries -
    they are not installers.
 4. Open your Downloads folder (the **Downloads** stack at the right end
    of the Dock, or **Finder** and then **Downloads** in the sidebar) and
@@ -256,11 +264,15 @@ Macs: the download is a universal build containing both architectures.
 
 The releases page also carries a `.app.tar.gz` archive of the same
 application, for anyone who prefers the command line. Open **Terminal**
-(Cmd+Space, type `terminal`, Enter) and run these one at a time:
+(Cmd+Space, type `terminal`, Enter) and run these one at a time. The
+first command asks GitHub which archive is current, so this always
+fetches the newest release rather than a version pinned in this document:
 
 ```bash
 cd ~/Downloads
-curl -L -o Koinkat.app.tar.gz https://github.com/MarcoSburlino/Koinkat/releases/download/v0.1.2/Koinkat_0.1.2_universal.app.tar.gz
+url=$(curl -fsSL https://api.github.com/repos/MarcoSburlino/Koinkat/releases/latest \
+  | grep -o '"browser_download_url": *"[^"]*_universal\.app\.tar\.gz"' | cut -d'"' -f4)
+curl -L -o Koinkat.app.tar.gz "$url"
 tar -xzf Koinkat.app.tar.gz
 mv Koinkat.app /Applications/
 ```
@@ -297,26 +309,26 @@ cd ~/Downloads
   once, then run it:
 
 ```bash
-chmod +x Koinkat_0.1.2_amd64.AppImage
-./Koinkat_0.1.2_amd64.AppImage
+chmod +x Koinkat_<version>_amd64.AppImage
+./Koinkat_<version>_amd64.AppImage
 ```
 
   If it refuses to start with a FUSE error ("AppImages require FUSE to
   run"), install the FUSE 2 compatibility library, which recent
   Ubuntu/Debian releases no longer preinstall (`sudo apt install
   libfuse2`), or run it once without installing anything:
-  `./Koinkat_0.1.2_amd64.AppImage --appimage-extract-and-run`
+  `./Koinkat_<version>_amd64.AppImage --appimage-extract-and-run`
 
 - **Debian / Ubuntu** (`Koinkat_<version>_amd64.deb`):
 
 ```bash
-sudo apt install ./Koinkat_0.1.2_amd64.deb
+sudo apt install ./Koinkat_<version>_amd64.deb
 ```
 
 - **Fedora / openSUSE** (`Koinkat-<version>-1.x86_64.rpm`):
 
 ```bash
-sudo rpm -i Koinkat-0.1.2-1.x86_64.rpm
+sudo rpm -i Koinkat-<version>-1.x86_64.rpm
 ```
 
 After the deb or rpm install, Koinkat appears in your application menu.
