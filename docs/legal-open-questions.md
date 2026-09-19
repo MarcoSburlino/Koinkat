@@ -20,7 +20,7 @@ answered" and "this was accepted".
 |---|---|---|
 | 1 | Callback page and GDPR controllership | **Closed by decision.** Narrowed substantially; no lawyer engaged. |
 | 2 | Donations and the Cyber Resilience Act | **Resolved.** Recital 15. Donations without profit intent are fine. |
-| 3 | Do EB's terms permit distributing this? | **Closed by decision.** EB asked; they did not object, and did not address it. |
+| 3 | Do EB's terms permit distributing this? | **Open, proceeding on our own reading.** The question has NOT been put to Enable Banking. |
 | 4 | Controller/processor in the user-EB leg | **Resolved** as far as it affects Koinkat. |
 | 5 | What must ship with the binaries | **Resolved and implemented.** |
 | 6 | Setup guide vs EB's documentation | **Resolved.** Low risk; disclaimer added. |
@@ -156,7 +156,7 @@ channel until this is answered" - is retired. It is answered.
 
 ## 3. Do Enable Banking's terms permit distributing this software?
 
-**Closed by decision, pending a reply from Enable Banking.**
+**Open. Proceeding on our own reading; the question has not been asked.**
 
 Their Terms of Service permit the *user's* side squarely: production use
 "solely for evaluation purposes or for the personal use of private
@@ -187,13 +187,28 @@ EB, and EB's answer would.
 **Decision taken.** Ask EB directly rather than buy an opinion. Proceed on
 the current reading unless they object.
 
-**Outcome (2026-08-28).** Enable Banking's support replied to the redirect
-question only and did not address the distribution model at all - it was not
-put to them in the version sent, which asked the technical question alone.
-No objection was raised. The position stands as reasoned above: proceed, and
-note that their remedy if they ever disagreed would be contractual and would
-run against a user's application, not against GPL-licensed software they
-have no interest in.
+**Outcome (2026-08-28).** The 2026-08-28 support exchange covered the
+REDIRECT question only. The distribution model was never put to Enable
+Banking - the version actually sent asked the technical question alone.
+
+**Status.** During the 2026-09-12 repository audit the maintainer confirmed
+that no correspondence exists beyond what is recorded in this repository.
+The question remains unasked, and therefore unanswered.
+
+Do not read this as acquiescence. Silence on a question that was never
+asked is not non-objection, and an earlier version of this document said
+"EB asked; they did not object", which the record does not support.
+
+The position we are proceeding on is the reading reasoned above - not a
+confirmation from Enable Banking. A draft follow-up is held in
+`docs/legal-open-questions-answered-2026-08-27.md`; sending it needs the
+maintainer's explicit go-ahead, and any reply (or continued silence) should
+be recorded here with its date.
+
+On remedies: if Enable Banking ever did disagree, the contractual
+relationship runs against a user's own application. That is a
+characterisation of the current terms, not a claim that deactivation is the
+only possible consequence - re-read the primary terms before relying on it.
 
 ### The email
 
@@ -312,7 +327,19 @@ so clause 3 is not engaged, and the generated file says so.
 
 Also worth noting, since the review framed this purely as a third-party
 obligation: GPL-3.0 section 5 requires the work to carry appropriate legal
-notices, so the file serves the outbound licence too.
+notices.
+
+**Corrected 2026-09-13.** That obligation used to rest on the third-party
+notice file alone, which was an assumption rather than a verified position -
+a notice listing OTHER projects' licences is not obviously Koinkat's own
+licence notice. Koinkat's `LICENSE` (the full GPL-3.0 text) is now a bundle
+resource in its own right, and the Settings > About section offers it next
+to the third-party notices, with the corresponding source location named
+against the released version.
+
+Still to verify on the next release: extract the built installer on each
+supported platform and confirm BOTH files are present, the way
+`THIRD-PARTY-LICENSES.md` alone was verified from the MSI.
 
 **Related gap, now closed:** the review ran no vulnerability scan at all.
 `npm audit` and `cargo audit` now run in CI, scoped to what actually ships.

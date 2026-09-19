@@ -1,0 +1,28 @@
+# Pin line endings for files whose BYTES are load-bearing.
+#
+# `tauri-plugin-sql` embeds each migration with `include_str!` at build time
+# and sqlx stores a SHA-384 of that text in `_sqlx_migrations`. At boot it
+# re-hashes the embedded text and refuses to start if it differs:
+#
+#     migration 12 was previously applied but has been modified
+#
+# The hash is over raw bytes, so CRLF and LF are different migrations as far
+# as sqlx is concerned - without this file, whether a build embeds CRLF or LF
+# depends on the `core.autocrlf` setting of whichever machine checked the
+# repo out. That is how `migration-v12.sql` came to sit in a Windows working
+# tree as CRLF while the committed blob (and every database already in the
+# field) was LF, leaving locally built binaries unable to open an existing
+# database.
+#
+# Pinning to LF makes the embedded bytes identical on every developer machine
+# and on all three CI runners, and matches what is already applied.
+#
+# NOTE: normalising an ALREADY-APPLIED migration would break databases in the
+# field just as surely as editing one. These files are LF in git today, so
+# this pins the status quo rather than changing it. Verify before adding a
+# rule that would rewrite an existing migration.
+*.sql text eol=lf
+
+# Default handling for everything else: normalise text in the repo, leave the
+# working tree to the platform.
+* text=auto

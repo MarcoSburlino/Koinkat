@@ -14,14 +14,8 @@ import {
 } from 'lucide-react';
 import { save, open as openDialog } from '@tauri-apps/plugin-dialog';
 import { open as openUrl } from '@tauri-apps/plugin-shell';
-import {
-  writeTextFile,
-  writeFile,
-  readFile,
-  readTextFile,
-} from '@tauri-apps/plugin-fs';
-import { appConfigDir, join } from '@tauri-apps/api/path';
-import { checkpointWal } from '../db/database';
+import { writeTextFile, readTextFile } from '@tauri-apps/plugin-fs';
+import { exportDatabaseSnapshot } from '../db/database';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
@@ -85,6 +79,8 @@ export function Settings() {
   const [revocationWarning, setRevocationWarning] = useState<string | null>(null);
   const [licensesOpen, setLicensesOpen] = useState(false);
   const [licensesText, setLicensesText] = useState<string | null>(null);
+  const [gplOpen, setGplOpen] = useState(false);
+  const [gplText, setGplText] = useState<string | null>(null);
 
   /**
    * The notice file is ~740 kB, so it is a lazy chunk rather than part of the
@@ -99,6 +95,20 @@ export function Settings() {
       setLicensesText(mod.default);
     }
   }, [licensesText]);
+
+  /**
+   * Koinkat's OWN licence. GPL-3.0 section 5 requires the work to carry
+   * appropriate legal notices, so the text ships as a bundle resource
+   * (tauri.conf.json) and is reachable here, next to the third-party
+   * notices. Same lazy-chunk treatment: ~35 kB nobody needs at startup.
+   */
+  const openGpl = useCallback(async () => {
+    setGplOpen(true);
+    if (gplText === null) {
+      const mod = await import('../../LICENSE?raw');
+      setGplText(mod.default);
+    }
+  }, [gplText]);
 
   /** Dismiss the remove-connection modal, clearing both failure states. */
   const closeDisconnectModal = useCallback(() => {
@@ -149,20 +159,16 @@ export function Settings() {
     setExportError(null);
     setExportSuccess(null);
     try {
-      const src = await join(await appConfigDir(), 'koinkat.db');
       const today = format(new Date(), 'yyyy-MM-dd');
       const path = await save({
         defaultPath: `koinkat-database-${today}.db`,
         filters: [{ name: 'SQLite database', extensions: ['db'] }],
       });
       if (!path) return;
-      // Fold the WAL back into koinkat.db BEFORE copying it. We copy only the
-      // main file, so any commits still sitting in koinkat.db-wal would be
-      // silently missing from the backup - the newest transactions being
-      // exactly the ones most likely to be uncheckpointed.
-      await checkpointWal();
-      const bytes = await readFile(src);
-      await writeFile(path, bytes);
+      // One consistent snapshot, rather than checkpoint-then-copy. The old
+      // two-step could capture a torn mixture if a sync committed between
+      // the checkpoint and the read. See exportDatabaseSnapshot.
+      await exportDatabaseSnapshot(path);
       flashSuccess('Database exported.');
     } catch (err) {
       setExportError(err instanceof Error ? err.message : 'Export failed');
@@ -530,12 +536,18 @@ export function Settings() {
         >
           Koinkat {__APP_VERSION__}. Free software under GPL-3.0-or-later,
           provided with no warranty. It bundles third-party code and typefaces
-          under their own licences; the same notice ships as a file alongside
-          the application.
+          under their own licences. Both this licence and that notice ship as
+          files alongside the application. Source for this exact version is at
+          github.com/MarcoSburlino/Koinkat, tagged v{__APP_VERSION__}.
         </p>
-        <Button variant="secondary" onClick={openLicenses}>
-          Third-party licences
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button variant="secondary" onClick={openGpl}>
+            Licence (GPL-3.0)
+          </Button>
+          <Button variant="secondary" onClick={openLicenses}>
+            Third-party licences
+          </Button>
+        </div>
       </Card>
 
       {/* Leave this workspace */}
@@ -548,6 +560,31 @@ export function Settings() {
           nothing is deleted.
         </p>
       </div>
+
+      {/* Koinkat's own licence, loaded on demand - see openGpl. */}
+      <Modal
+        open={gplOpen}
+        onClose={() => setGplOpen(false)}
+        size="lg"
+        title="GNU General Public License v3.0"
+      >
+        <pre
+          className="text-xs overflow-auto whitespace-pre-wrap"
+          style={{
+            color: 'var(--text-muted)',
+            fontFamily: 'var(--font-mono)',
+            maxHeight: '60vh',
+            lineHeight: '1.6',
+          }}
+        >
+          {gplText ?? 'Loading licence...'}
+        </pre>
+        <div className="flex justify-end pt-4">
+          <Button variant="primary" onClick={() => setGplOpen(false)}>
+            Close
+          </Button>
+        </div>
+      </Modal>
 
       {/* Third-party licences, loaded on demand - see openLicenses. */}
       <Modal

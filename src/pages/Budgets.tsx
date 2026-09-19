@@ -772,7 +772,7 @@ function FocusedMonthCard({
   const monthIdx = getMonthIndex(period.periodStart);
   const year = period.periodStart.slice(0, 4);
   const pctColor = getPercentageColor(period.percentage);
-  const clampedPct = Math.min(period.percentage, 100);
+  const clampedPct = Math.min(Math.max(0, period.percentage), 100);
   // Money math in Big (invariant: no float arithmetic on amounts);
   // toNumber() only at the final CSS-width boundary.
   const baseLimitD = dec(period.baseLimit);
@@ -975,7 +975,7 @@ function FocusedMonthCard({
               const pct = limD.gt(0)
                 ? dec(sp.total).div(limD).times(100).toNumber()
                 : 0;
-              const clamped = Math.min(pct, 100);
+              const clamped = Math.min(Math.max(0, pct), 100);
               return (
                 <div key={ev.id} className="flex items-center gap-3">
                   <span
@@ -1196,7 +1196,7 @@ function EventCard({
   const pct = limitD.gt(0)
     ? dec(spent).div(limitD).times(100).toNumber()
     : 0;
-  const clampedPct = Math.min(pct, 100);
+  const clampedPct = Math.min(Math.max(0, pct), 100);
   const perCurrencyKeys = Object.keys(spending.perCurrency);
   const multiCurrency = perCurrencyKeys.length > 1;
   const mutedStyle: React.CSSProperties = event.isExpired ? { opacity: 0.55 } : {};
@@ -1467,10 +1467,13 @@ function EventCard({
                       className="flex-1 h-1 rounded-full overflow-hidden"
                       style={{ backgroundColor: 'var(--border)' }}
                     >
+                      {/* Clamped: an over-reimbursed split can net negative,
+                          which a bar cannot represent. The signed figure
+                          beside it carries the real value. */}
                       <div
                         className="h-full rounded-full"
                         style={{
-                          width: `${row.percentage}%`,
+                          width: `${Math.max(0, row.percentage)}%`,
                           backgroundColor: colorVar,
                         }}
                       />

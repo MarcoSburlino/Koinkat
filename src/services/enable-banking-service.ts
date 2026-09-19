@@ -113,6 +113,8 @@ export async function createSession(
         account_id?: { iban?: string };
         name?: string;
         cash_account_type?: string;
+        identification_hash?: string;
+        identification_hashes?: string[];
       }>;
     };
     const accounts: EnableBankingAccount[] = (raw.accounts ?? []).map((a) => ({
@@ -121,6 +123,10 @@ export async function createSession(
       currency: a.currency ?? 'EUR',
       name: a.name,
       cashAccountType: a.cash_account_type,
+      // The fixtures carry these, so the mock exercises the same re-link
+      // path the real client does.
+      identificationHash: a.identification_hash,
+      identificationHashes: a.identification_hashes,
     }));
     return { sessionId: raw.session_id, accounts };
   }

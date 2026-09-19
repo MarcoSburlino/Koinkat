@@ -105,3 +105,56 @@ export function requireActiveKoinkatAccountId(): string {
   }
   return id;
 }
+
+/**
+ * Error thrown when an operation's workspace changed while it was awaiting.
+ * Distinct from a generic Error so callers (and the UI) can tell a
+ * deliberate cancellation apart from a real failure.
+ */
+export class WorkspaceChangedError extends Error {
+  constructor(
+    readonly capturedId: string,
+    readonly currentId: string | null,
+  ) {
+    super(
+      'Workspace changed while the operation was in progress, so it was cancelled before writing anything.',
+    );
+    this.name = 'WorkspaceChangedError';
+  }
+}
+
+/** A workspace id captured at the start of one operation. */
+export interface WorkspaceContext {
+  /** The workspace this operation belongs to, for the whole operation. */
+  readonly id: string;
+  /**
+   * Throw if the active workspace has changed since capture.
+   *
+   * Call this immediately before a mutation. Operations await things that
+   * take real time - an FX fetch can run for seconds - and the user can
+   * switch workspace during that window. Re-reading the global at write
+   * time would silently retarget the write into the NEW workspace while
+   * the rows it was computed from belong to the old one. The rule is:
+   * finish in the original workspace, or cancel before mutating. Never
+   * retarget.
+   */
+  assertUnchanged(): void;
+}
+
+/**
+ * Capture the active workspace for the duration of one operation.
+ *
+ * Use this at the entry point of any service function that awaits before it
+ * writes, and pass `ctx.id` down to helpers and SQL predicates instead of
+ * calling `requireActiveKoinkatAccountId()` again further in.
+ */
+export function captureWorkspace(): WorkspaceContext {
+  const id = requireActiveKoinkatAccountId();
+  return {
+    id,
+    assertUnchanged() {
+      const now = getActiveKoinkatAccountId();
+      if (now !== id) throw new WorkspaceChangedError(id, now);
+    },
+  };
+}

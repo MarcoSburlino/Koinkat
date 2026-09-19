@@ -336,7 +336,6 @@ export interface ApiConfig {
 
 export interface BankConnection {
   id: string;
-  provider: string;
   aspspName: string;
   aspspCountry: string;
   sessionId: string | null;
@@ -354,10 +353,16 @@ export interface LinkedAccount {
   id: string;
   bankConnectionId: string;
   accountId: string;
+  /** Per-session uid. Not stable across re-authorization. */
   externalAccountUid: string;
   iban: string | null;
   lastSyncedAt: string | null;
+  /** Dead by design - see the note on LinkedAccountRow.sync_cursor. */
   syncCursor: string | null;
+  /** Provider-supplied stable identity; survives re-authorization. */
+  identificationHash: string | null;
+  /** Every stable identity hash the provider returned. */
+  identificationHashes: string[];
   /**
    * User-chosen floor for the initial transaction sync. ISO YYYY-MM-DD.
    * Null = legacy row; fall back to the 180-day default. See
@@ -481,7 +486,6 @@ export interface ApiConfigRow {
 
 export interface BankConnectionRow {
   id: string;
-  provider: string;
   aspsp_name: string;
   aspsp_country: string;
   session_id: string | null;
@@ -499,11 +503,24 @@ export interface LinkedAccountRow {
   id: string;
   bank_connection_id: string;
   account_id: string;
+  /**
+   * Enable Banking's per-SESSION account uid. Not stable across
+   * re-authorization - see `identification_hash`.
+   */
   external_account_uid: string;
   iban: string | null;
   last_synced_at: string | null;
+  /**
+   * Dead by design. Reserved for cursor-based pagination that was never
+   * implemented; bank-sync-service uses `last_synced_at` as its window
+   * cursor and deliberately never writes this. Do not wire it up.
+   */
   sync_cursor: string | null;
   sync_start_date: string | null;
+  /** Provider-supplied stable identity; survives re-authorization (v14). */
+  identification_hash: string | null;
+  /** JSON array of every stable identity hash the provider returned (v14). */
+  identification_hashes: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -691,7 +708,6 @@ export const EMPTY_API_CONFIG: ApiConfig = {
 export function toBankConnection(row: BankConnectionRow): BankConnection {
   return {
     id: row.id,
-    provider: row.provider,
     aspspName: row.aspsp_name,
     aspspCountry: row.aspsp_country,
     sessionId: row.session_id,
@@ -706,6 +722,17 @@ export function toBankConnection(row: BankConnectionRow): BankConnection {
   };
 }
 
+/** Stored as a JSON array; tolerate legacy NULL and malformed values. */
+function parseHashes(raw: string | null): string[] {
+  if (!raw) return [];
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed.filter((v): v is string => typeof v === 'string') : [];
+  } catch {
+    return [];
+  }
+}
+
 export function toLinkedAccount(row: LinkedAccountRow): LinkedAccount {
   return {
     id: row.id,
@@ -715,6 +742,8 @@ export function toLinkedAccount(row: LinkedAccountRow): LinkedAccount {
     iban: row.iban,
     lastSyncedAt: row.last_synced_at,
     syncCursor: row.sync_cursor,
+    identificationHash: row.identification_hash,
+    identificationHashes: parseHashes(row.identification_hashes),
     syncStartDate: row.sync_start_date,
     createdAt: row.created_at,
     updatedAt: row.updated_at,

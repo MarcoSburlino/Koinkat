@@ -710,10 +710,15 @@ export function Analysis() {
                                     backgroundColor: 'var(--border)',
                                   }}
                                 >
+                                  {/* A category can net negative when a split
+                                      was reimbursed for more than it cost. A
+                                      bar cannot show that, so it clamps to
+                                      zero and the signed figure beside it
+                                      carries the real value. */}
                                   <div
                                     className="h-full rounded-full"
                                     style={{
-                                      width: `${row.percentage}%`,
+                                      width: `${Math.max(0, row.percentage)}%`,
                                       backgroundColor: colorVar,
                                       transition:
                                         'width var(--dur-std) var(--ease-standard)',

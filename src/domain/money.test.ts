@@ -8,6 +8,10 @@ import {
   requireNonNegativeAmount,
   convertAmount,
   tryConvert,
+  tryConvertWithRate,
+  rateToStorage,
+  isUsableRate,
+  requireUsableRate,
 } from './money';
 
 const eqBig = (a: Big, b: Big) => a.eq(b);
@@ -148,12 +152,18 @@ describe('convertAmount', () => {
   });
 
   it('computes 100 EUR -> DKK with the canonical rates', () => {
-    // 6.8734 / 0.9215 = 7.45892566... -> qRate (5th digit = 2) -> 7.4589
-    // 100 * 7.4589 = 745.89 -> qCent -> 745.89
+    // 6.8734 / 0.9215 = 7.45892566...  The rate is kept at full precision
+    // and only the amount is rounded: 100 * 7.45892566... = 745.8925...
+    // -> qCent -> 745.89. Same amount as the old 4-dp path, but the rate is
+    // now the real one rather than a truncation of it.
     const rates = { eur: '0.9215', dkk: '6.8734' };
     const result = convertAmount(new Big('100'), 'EUR', 'DKK', rates);
-    expect(eqBig(result.rate, new Big('7.4589'))).toBe(true);
     expect(eqBig(result.converted, new Big('745.89'))).toBe(true);
+    // Exact, not pre-rounded...
+    expect(eqBig(result.rate, new Big('7.4589'))).toBe(false);
+    expect(result.rate.toFixed(6)).toBe('7.458926');
+    // ...and 7.4589 is what it looks like when formatted for display.
+    expect(eqBig(qRate(result.rate), new Big('7.4589'))).toBe(true);
   });
 
   it('throws when source currency is missing from rates', () => {
@@ -234,5 +244,93 @@ describe('rounding mode regression', () => {
   // would round 0.025 down to 0.02; half-up rounds it up to 0.03.
   it('qCent uses half-up, not banker\'s rounding (0.025 -> 0.03)', () => {
     expect(eqBig(qCent(new Big('0.025')), new Big('0.03'))).toBe(true);
+  });
+});
+
+describe('FX precision - cross rates below 0.0001', () => {
+  // The audit's reproduction: quantizing the cross rate to 4 dp before the
+  // multiply turned 1,000,000 VND into 0.00 USD instead of 40.00.
+  const rates = { usd: '1', vnd: '25000' };
+
+  it('converts 1,000,000 VND to 40.00 USD', () => {
+    const r = convertAmount(new Big('1000000'), 'VND', 'USD', rates);
+    expect(r.converted.toFixed(2)).toBe('40.00');
+  });
+
+  it('returns a nonzero rate for VND -> USD', () => {
+    const r = convertAmount(new Big('1000000'), 'VND', 'USD', rates);
+    expect(r.rate.gt(new Big('0'))).toBe(true);
+    expect(rateToStorage(r.rate)).toBe('0.000040000000');
+  });
+
+  it('converts back: 40 USD -> 1,000,000 VND', () => {
+    const r = convertAmount(new Big('40'), 'USD', 'VND', rates);
+    expect(r.converted.toFixed(2)).toBe('1000000.00');
+  });
+
+  it('tryConvert agrees with convertAmount on the same small rate', () => {
+    const t = tryConvert(new Big('1000000'), 'VND', 'USD', rates);
+    expect(t!.toFixed(2)).toBe('40.00');
+  });
+
+  it('keeps precision for an extreme pair (IRR -> KWD)', () => {
+    const extreme = { irr: '42000', kwd: '0.30' };
+    const r = convertAmount(new Big('14000000'), 'IRR', 'KWD', extreme);
+    // 14,000,000 * (0.30/42000) = 100
+    expect(r.converted.toFixed(2)).toBe('100.00');
+    expect(r.rate.gt(new Big('0'))).toBe(true);
+  });
+
+  it('rejects a zero source rate instead of dividing by it', () => {
+    expect(() =>
+      convertAmount(new Big('100'), 'AAA', 'USD', { aaa: '0', usd: '1' }),
+    ).toThrow();
+  });
+
+  it('never persists a rate in exponential notation', () => {
+    const tiny = { weak: '1000000000', kwd: '0.3' };
+    const r = convertAmount(new Big('1000000000'), 'WEAK', 'KWD', tiny);
+    expect(rateToStorage(r.rate)).not.toMatch(/e/i);
+  });
+});
+
+describe('rate validation (the DB CHECK cannot do this)', () => {
+  it('rejects zero', () => {
+    expect(isUsableRate(new Big('0'))).toBe(false);
+  });
+
+  it('rejects negative', () => {
+    expect(isUsableRate(new Big('-1'))).toBe(false);
+  });
+
+  it('rejects null and undefined', () => {
+    expect(isUsableRate(null)).toBe(false);
+    expect(isUsableRate(undefined)).toBe(false);
+  });
+
+  it('accepts a small positive rate', () => {
+    expect(isUsableRate(new Big('0.00004'))).toBe(true);
+  });
+
+  it('requireUsableRate throws with the pair in the message', () => {
+    expect(() => requireUsableRate(new Big('0'), 'VND->USD')).toThrow(/VND->USD/);
+  });
+});
+
+describe('unusable provider rates fail before anything is written', () => {
+  it('rejects a zero TARGET rate rather than returning rate 0', () => {
+    expect(() =>
+      convertAmount(new Big('100'), 'USD', 'BAD', { usd: '1', bad: '0' }),
+    ).toThrow(/USD->BAD/);
+  });
+
+  it('rejects a negative target rate', () => {
+    expect(() =>
+      convertAmount(new Big('100'), 'USD', 'BAD', { usd: '1', bad: '-3' }),
+    ).toThrow();
+  });
+
+  it('tryConvertWithRate returns null for the same input instead of throwing', () => {
+    expect(tryConvertWithRate(new Big('100'), 'USD', 'BAD', { usd: '1', bad: '0' })).toBeNull();
   });
 });

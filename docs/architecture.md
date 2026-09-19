@@ -49,10 +49,10 @@ src/
 ├── data/
 │   └── mcc-mappings.ts    # Static MCC → category seed table
 ├── db/
-│   ├── database.ts        # `getDb()` - singleton handle
+│   ├── database.ts        # `getDb()` + `withTransaction()` + snapshot export
 │   ├── schema.sql         # Legacy v1 schema (reference only)
 │   ├── schema-v2.sql      # Current schema
-│   ├── migration-v2…v8.sql# Incremental migrations
+│   ├── migration-v2…v14.sql # Incremental migrations
 │   └── seed.ts            # Default categories + MCC rule seeding
 ├── domain/                # Pure helpers (no React, no DB)
 │   ├── money.ts           # big.js wrappers + tryConvert
@@ -230,16 +230,82 @@ sidebar shell. Shell renders it directly when `view === 'accountHub'`.
 `src-tauri/`:
 
 - `tauri.conf.json` - the production + dev config. Window 1280×800
-  (min 900×600), strict CSP, deep-link scheme `koinkat://`,
-  preloaded SQLite `sqlite:koinkat.db`.
+  (min 900×600), strict CSP, deep-link scheme `koinkat://`. Note that
+  `plugins.sql.preload` is deliberately ABSENT: with it set, the plugin
+  opened one pool at startup and the webview's `Database.load` opened a
+  second on the same file, and two pools contending while SQLite recovered
+  a WAL left by an unclean shutdown produced a transient "database is
+  locked" on the first query after a restart. Migrations still run, on the
+  webview's own load.
 - `tauri.conf.demo.json` - a thin override merged on top via `-c`.
   Sets `productName: "Koinkat Demo"`, `identifier: "com.koinkat.app.demo"`,
   `beforeBuildCommand: "npm run build:demo"`. Side-by-side install with
   production.
-- `Cargo.toml` - Rust deps are entirely Tauri plugin crates: `sql`,
-  `http`, `fs`, `dialog`, `shell`, `deep-link`, `single-instance`. No
-  direct `reqwest`, no crypto crate. JWT signing happens in JS via `jose`;
-  HTTP goes through the plugin so CSP applies.
+- `secrets.rs` - OS credential store (`secret_set/get/delete`) for the
+  Enable Banking private key.
+- `db_tx.rs` - connection-owning SQLite transactions
+  (`tx_begin/execute/select/commit/rollback`). See below.
+- `Cargo.toml` - Rust deps are Tauri plugin crates (`sql`, `http`, `fs`,
+  `dialog`, `shell`, `deep-link`, `single-instance`) plus `keyring` and
+  `sqlx`. No direct `reqwest`, no crypto crate. JWT signing happens in JS
+  via `jose`; HTTP goes through the plugin so CSP applies.
+
+### Transactions
+
+`tauri-plugin-sql` executes every command as its own `pool.acquire()`, so a
+`BEGIN IMMEDIATE` issued from JavaScript has no guaranteed relationship to
+the `COMMIT` that follows it. sqlx may serve a later statement from a
+different pooled connection, and it closes pooled connections on release
+once they pass `max_lifetime` (30 min) or `idle_timeout` (10 min) - a
+recycle landing mid-transaction drops the transaction and leaves a partial
+write.
+
+`src-tauri/src/db_tx.rs` therefore owns transactions natively. `tx_begin`
+checks out one connection, sets `busy_timeout` on it, runs `BEGIN
+IMMEDIATE`, and returns a token; every later call in that transaction is
+routed to the same connection until `tx_commit`/`tx_rollback` releases it.
+
+It borrows the pool the SQL plugin already opened (via the plugin's public
+`DbInstances` state) rather than opening its own. A second pool on the same
+file is the configuration that produced the "database is locked" bug
+described in the `plugins.sql.preload` note in `lib.rs`. Migrations stay
+entirely with the plugin, so `_sqlx_migrations` and its checksums are
+untouched.
+
+On the JavaScript side nothing changed shape: `withTransaction(fn)` still
+takes a body and hands it a `DbExecutor`. The body MUST use that executor
+for every call - a bare `getDb()` inside the body runs outside the
+transaction.
+
+### Backup and recovery
+
+Settings offers two different exports, and they are not interchangeable:
+
+| Export | What it contains | Restore |
+|---|---|---|
+| **Workspace JSON** | One workspace's records, in a readable format. Not a database. | Reference/portability only - there is no import path. |
+| **Database snapshot** | The WHOLE database: every user, every workspace, all history and settings. | Copy it over `koinkat.db` in the app config directory with Koinkat closed. |
+
+`exportDatabaseSnapshot()` uses SQLite's `VACUUM INTO`, which writes a
+complete, already-checkpointed, self-contained database in one implicit
+transaction - no `-wal`/`-shm` sidecars to keep alongside it. The previous
+approach (checkpoint the WAL, then read `koinkat.db` as bytes) was two
+operations against a live database, so a sync committing between them could
+produce a torn backup.
+
+Two things the snapshot does NOT carry:
+
+- **Enable Banking credentials.** The private key lives in the OS credential
+  store (Windows Credential Manager / macOS Keychain / Secret Service), not
+  in the database, so a restored database needs the key re-entered before
+  bank sync works again.
+- **Nothing else.** It is a byte-for-byte usable database; opening it needs
+  no migration or conversion step.
+
+To verify a snapshot without touching a live install, open it with any
+SQLite client and run `PRAGMA integrity_check` and `PRAGMA
+foreign_key_check`. `src/test/backup-snapshot.test.ts` does exactly that
+against real files on every test run.
 - Capability files under `src-tauri/capabilities/` declare which
   commands/plugins each window may call.
 

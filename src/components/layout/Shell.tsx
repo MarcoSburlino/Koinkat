@@ -152,24 +152,13 @@ export function Shell() {
       });
       applyTheme(freshActiveAccount.theme);
 
-      // Everything below is NON-FATAL. The user and workspace are already
-      // resolved, so the app is usable. FX rates need the network - which is
-      // routinely still down in the seconds after a laptop restart, exactly
-      // when this runs - and bank config/connections have their own in-app
-      // error surfaces. Letting these reach the outer catch would strand a
-      // user with perfectly good data behind the boot-error screen.
-      try {
-        const fxOk = await ensureTodayRates();
-        useBankStore.getState().setFxError(fxOk ? null : FX_UNAVAILABLE_MSG);
-        await bankLoadConfig();
-        await bankLoadConnections();
-        // Route through the store so failures populate `lastSyncError` and
-        // surface in the UI banner, instead of being lost to console.warn.
-        void useBankStore.getState().startSync();
-      } catch (err) {
-        console.warn('Non-fatal boot step failed:', err);
-        useBankStore.getState().setFxError(FX_UNAVAILABLE_MSG);
-      }
+      // FX and bank initialisation deliberately does NOT happen here. The
+      // workspace effect below owns it, and that effect fires as soon as
+      // bootstrap completes (both `activeKoinkatAccount` and `initialized`
+      // change during bootstrap) as well as on every later workspace
+      // switch. Running it in both places meant a cold start fired
+      // loadConfig/loadConnections/startSync twice, with the duplicate
+      // masked rather than prevented by the `isSyncing` guard in bank-store.
 
       setView('app');
     } catch (err) {
@@ -286,13 +275,22 @@ export function Shell() {
     // on `isConfigured`, which still holds the PREVIOUS workspace's value
     // until loadConfig lands - firing the sync first silently skips it (or
     // runs it against stale config) after a workspace switch.
+    // Non-fatal: the user and workspace are already resolved, so the app is
+    // usable regardless. FX needs the network - routinely still down in the
+    // seconds after a laptop restart, exactly when this first runs - and
+    // bank config/connections have their own in-app error surfaces.
     void (async () => {
       try {
+        const fxOk = await ensureTodayRates();
+        useBankStore.getState().setFxError(fxOk ? null : FX_UNAVAILABLE_MSG);
         await bankLoadConfig();
         await bankLoadConnections();
+        // Through the store, so failures populate `lastSyncError` and reach
+        // the UI banner instead of being lost to console.warn.
         await useBankStore.getState().startSync();
       } catch (err) {
-        console.warn('Workspace-switch bank init failed:', err);
+        console.warn('Workspace bank init failed:', err);
+        useBankStore.getState().setFxError(FX_UNAVAILABLE_MSG);
       }
     })();
     setView('app');

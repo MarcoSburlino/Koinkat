@@ -252,11 +252,26 @@ export async function startAuthorization(params: {
 }
 
 export interface EnableBankingAccount {
+  /**
+   * Identifies the account WITHIN one authorization session. Enable Banking
+   * does not guarantee it is stable across sessions, so it must not be used
+   * on its own to recognise an account the user has re-authorized.
+   */
   uid: string;
   iban?: string;
   currency: string;
   name?: string;
   cashAccountType?: string;
+  /**
+   * Provider-supplied stable identity hashes. Unlike `uid` these survive
+   * re-authorization, which is what lets a new session be matched back to
+   * the existing local account instead of creating a duplicate.
+   *
+   * `identificationHash` is the primary value; `identificationHashes`
+   * carries any additional ones the provider returns.
+   */
+  identificationHash?: string;
+  identificationHashes?: string[];
 }
 
 export async function createSession(
@@ -275,6 +290,8 @@ export async function createSession(
       account_id?: { iban?: string };
       name?: string;
       cash_account_type?: string;
+      identification_hash?: string;
+      identification_hashes?: string[];
     }>;
   }>('/sessions', { authorization_id: authorizationId, code });
 
@@ -284,6 +301,10 @@ export async function createSession(
     currency: a.currency ?? 'EUR',
     name: a.name,
     cashAccountType: a.cash_account_type,
+    // Kept, not dropped: these are the only identity the provider gives us
+    // that survives a new authorization session.
+    identificationHash: a.identification_hash,
+    identificationHashes: a.identification_hashes,
   }));
 
   return { sessionId: data.session_id, accounts };

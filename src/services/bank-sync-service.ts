@@ -1,7 +1,6 @@
-import Big from 'big.js';
 import { format, subDays, addDays, parseISO } from 'date-fns';
-import { getDb, withTransaction } from '../db/database';
-import { dec, qCent, qRate, tryConvert } from '../domain/money';
+import { getDb, withTransaction, type DbExecutor } from '../db/database';
+import { dec, qCent, rateToStorage, tryConvertWithRate } from '../domain/money';
 import * as ebService from './enable-banking-service';
 import type { EnableBankingTransaction } from './enable-banking-service';
 import { EBRateLimitError, EBApiError } from './enable-banking-service';
@@ -78,6 +77,110 @@ function isConnectionExpired(validUntilDateStr: string): boolean {
   return validUntil < new Date();
 }
 
+// ── Bank-account identity across authorization sessions ─────────────────
+
+/** All stable identity hashes the provider gave for this session account. */
+function allHashes(acct: ebService.EnableBankingAccount): string[] {
+  const set = new Set<string>();
+  if (acct.identificationHash) set.add(acct.identificationHash);
+  for (const h of acct.identificationHashes ?? []) if (h) set.add(h);
+  return [...set];
+}
+
+/** The full hash set as JSON for storage, or null when there is none. */
+function serializeHashes(acct: ebService.EnableBankingAccount): string | null {
+  const hashes = allHashes(acct);
+  return hashes.length > 0 ? JSON.stringify(hashes) : null;
+}
+
+/**
+ * IBANs differ only by formatting between providers and sessions - spaces,
+ * lowercase - so compare them normalized.
+ */
+function normalizeIban(iban: string | null | undefined): string | null {
+  if (!iban) return null;
+  const n = iban.replace(/\s+/g, '').toUpperCase();
+  return n.length > 0 ? n : null;
+}
+
+/**
+ * Find the local linked_account that this session account already
+ * corresponds to, if any.
+ *
+ * Three tiers, most to least reliable. Each is scoped to the workspace, so
+ * an account can never be matched across workspaces.
+ *
+ *   1. The provider's stable identification hash. Survives re-authorization
+ *      and is the only identity meant for this purpose.
+ *   2. The session uid. Correct within a session, and the only thing rows
+ *      created before migration v14 have.
+ *   3. Normalized IBAN, for legacy rows with no stored hash. Deliberately
+ *      conservative: the currency must also agree, and the match is used
+ *      ONLY when exactly one candidate qualifies. Several candidates means
+ *      we cannot tell them apart, and silently merging accounts that may
+ *      carry separately edited history would be worse than creating a new
+ *      one - so we log and let the caller create a fresh link, leaving the
+ *      duplicates visible for the user to resolve.
+ */
+async function findExistingLink(
+  db: DbExecutor,
+  koinkatAccountId: string,
+  bankAcct: ebService.EnableBankingAccount,
+): Promise<LinkedAccountRow[]> {
+  const hashes = allHashes(bankAcct);
+
+  // 1. Stable provider identity.
+  if (hashes.length > 0) {
+    const placeholders = hashes.map(() => '?').join(', ');
+    const byHash = await db.select<LinkedAccountRow[]>(
+      `SELECT * FROM linked_accounts
+        WHERE koinkat_account_id = ?
+          AND identification_hash IS NOT NULL
+          AND identification_hash IN (${placeholders})`,
+      [koinkatAccountId, ...hashes],
+    );
+    if (byHash.length > 0) return [byHash[0]];
+  }
+
+  // 2. Same-session uid (and pre-v14 rows, which have nothing else).
+  const byUid = await db.select<LinkedAccountRow[]>(
+    `SELECT * FROM linked_accounts
+      WHERE koinkat_account_id = ? AND external_account_uid = ?`,
+    [koinkatAccountId, bankAcct.uid],
+  );
+  if (byUid.length > 0) return [byUid[0]];
+
+  // 3. Legacy fallback: normalized IBAN + currency, only when unambiguous.
+  const iban = normalizeIban(bankAcct.iban);
+  if (!iban) return [];
+
+  type Candidate = LinkedAccountRow & { account_currency: string };
+  const candidates = await db.select<Candidate[]>(
+    `SELECT la.*, a.currency AS account_currency
+       FROM linked_accounts la
+       JOIN accounts a ON a.id = la.account_id
+      WHERE la.koinkat_account_id = ?
+        AND la.identification_hash IS NULL
+        AND la.iban IS NOT NULL`,
+    [koinkatAccountId],
+  );
+
+  const matches = candidates.filter(
+    (c: Candidate) =>
+      normalizeIban(c.iban) === iban &&
+      c.account_currency.toUpperCase() === bankAcct.currency.toUpperCase(),
+  );
+
+  if (matches.length === 1) return [matches[0]];
+  if (matches.length > 1) {
+    console.warn(
+      `[bank-sync] ${matches.length} existing links share IBAN ${iban} in this workspace; ` +
+        'not merging automatically. A new link will be created and the duplicates left for review.',
+    );
+  }
+  return [];
+}
+
 // ── Auth callback handler ───────────────────────────────────────────────
 
 export async function handleAuthCallback(
@@ -132,17 +235,18 @@ export async function handleAuthCallback(
 
   for (const bankAcct of accounts) {
 
-    // Re-link detection (Phase 2): if a prior linked_account exists for
-    // this (koinkat_account, external_account_uid) pair, reuse its row
-    // - preserve last_synced_at and sync_start_date so the next
-    // syncTransactions naturally "continues from where it left off" via
-    // the existing delta-window logic. This also avoids tripping the
+    // Re-link detection. Reusing the existing row preserves last_synced_at
+    // and sync_start_date, so the next syncTransactions continues from
+    // where it left off, and it avoids tripping the
     // UNIQUE(koinkat_account_id, external_account_uid) constraint.
-    const existingLinked = await db.select<LinkedAccountRow[]>(
-      `SELECT * FROM linked_accounts
-        WHERE koinkat_account_id = ? AND external_account_uid = ?`,
-      [koinkatAccountId, bankAcct.uid],
-    );
+    //
+    // `external_account_uid` identifies an account within ONE authorization
+    // session. Re-authorizing - which every user must do when a 90-day
+    // consent lapses - issues new uids, so matching on it alone created a
+    // second local account for the same IBAN and double-counted its balance.
+    // findExistingLink tries the provider's stable identity first and only
+    // then falls back.
+    const existingLinked = await findExistingLink(db, koinkatAccountId, bankAcct);
 
     let linkedId: string;
     const acctName = bankAcct.name ?? bankAcct.iban ?? `Account ${bankAcct.uid.slice(0, 8)}`;
@@ -159,11 +263,25 @@ export async function handleAuthCallback(
       await db.execute(
         `UPDATE linked_accounts
             SET bank_connection_id = ?,
+                external_account_uid = ?,
                 iban = ?,
                 sync_start_date = ?,
+                identification_hash = COALESCE(?, identification_hash),
+                identification_hashes = COALESCE(?, identification_hashes),
                 updated_at = datetime('now')
           WHERE id = ?`,
-        [conn.id, bankAcct.iban ?? null, preservedStartDate, linkedId],
+        [
+          conn.id,
+          // Adopt the NEW session's uid - the old one is dead once the
+          // previous session ends, and leaving it would make the next
+          // re-link fall back to the fuzzy path unnecessarily.
+          bankAcct.uid,
+          bankAcct.iban ?? null,
+          preservedStartDate,
+          bankAcct.identificationHash ?? null,
+          serializeHashes(bankAcct),
+          linkedId,
+        ],
       );
       console.log(`[bank-sync] Re-linked existing linked_account ${linkedId}`);
     } else {
@@ -179,9 +297,21 @@ export async function handleAuthCallback(
       colorIdx++;
 
       await db.execute(
-        `INSERT INTO linked_accounts (id, koinkat_account_id, bank_connection_id, account_id, external_account_uid, iban, sync_start_date)
-         VALUES (?, ?, ?, ?, ?, ?, ?)`,
-        [linkedId, koinkatAccountId, conn.id, accountId, bankAcct.uid, bankAcct.iban ?? null, syncStartDate ?? null],
+        `INSERT INTO linked_accounts
+           (id, koinkat_account_id, bank_connection_id, account_id, external_account_uid,
+            iban, sync_start_date, identification_hash, identification_hashes)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          linkedId,
+          koinkatAccountId,
+          conn.id,
+          accountId,
+          bankAcct.uid,
+          bankAcct.iban ?? null,
+          syncStartDate ?? null,
+          bankAcct.identificationHash ?? null,
+          serializeHashes(bankAcct),
+        ],
       );
     }
     accountsCreatedOrRelinked++;
@@ -334,20 +464,19 @@ async function buildImportFields(
   let exchangeRate: string;
   if (txn.currency.toLowerCase() === accountCurrency.toLowerCase()) {
     amountInAccountCcy = amount;
-    exchangeRate = '1.0000';
+    exchangeRate = rateToStorage(dec('1'));
   } else {
     const rates = await getRatesForDate(effectiveDate);
-    const converted = tryConvert(amtBig, txn.currency, accountCurrency, rates);
-    if (converted === null) {
+    const result = tryConvertWithRate(amtBig, txn.currency, accountCurrency, rates);
+    if (result === null) {
       console.error(
         `[bank-sync] SKIPPED: No FX rate for ${txn.currency}→${accountCurrency} on ${effectiveDate}. Transaction not imported to prevent corrupt amount_in_account_ccy.`,
       );
       return null;
     }
-    amountInAccountCcy = converted.toFixed(2);
-    exchangeRate = amtBig.gt(new Big('0'))
-      ? qRate(converted.div(amtBig)).toFixed(4)
-      : '1.0000';
+    amountInAccountCcy = result.converted.toFixed(2);
+    // The exact rate, not one re-derived from the cent-rounded amount.
+    exchangeRate = rateToStorage(result.rate);
   }
 
   return {
@@ -677,6 +806,12 @@ export async function syncTransactions(
       [koinkatAccountId, la.account_id],
     );
 
+    // Occurrence counters for the no-reference dedup path, per sync run.
+    //   ...Seen: how many times this sync's response carried a fingerprint.
+    //   ...Held: how many BOOKED rows we already had for it (read once).
+    const bookedFingerprintSeen = new Map<string, number>();
+    const bookedFingerprintHeld = new Map<string, number>();
+
     // ── 3. Process booked entries. ──
     for (const txn of bookedEntries) {
       // Defensive: ignore anything the bank didn't actually mark booked.
@@ -685,17 +820,25 @@ export async function syncTransactions(
         continue;
       }
 
-      // a. Dedup against an already-imported booked row.
+      // a. Dedup against an already-imported BOOKED row.
+      //
+      // A row with the same reference that is still PENDING is not a
+      // duplicate - it is this entry's earlier sighting, and belongs in the
+      // promotion path below. Skipping it here meant the booked entry was
+      // dropped AND the pending row then fell to the disappearance sweep,
+      // losing the transaction along with any category or note on it.
       const externalRef = txn.entryReference ?? null;
+      let refClaimedPendingId: string | null = null;
       if (externalRef) {
-        const existing = await db.select<{ id: string }[]>(
-          'SELECT id FROM transactions WHERE koinkat_account_id = ? AND external_ref = ? AND account_id = ?',
+        const existing = await db.select<{ id: string; status: string }[]>(
+          'SELECT id, status FROM transactions WHERE koinkat_account_id = ? AND external_ref = ? AND account_id = ?',
           [koinkatAccountId, externalRef, la.account_id],
         );
-        if (existing.length > 0) {
+        if (existing.some((r) => r.status === 'booked')) {
           skipped++;
           continue;
         }
+        refClaimedPendingId = existing.find((r) => r.status === 'pending')?.id ?? null;
       }
 
       const fields = await buildImportFields(txn, accountCurrency);
@@ -704,6 +847,44 @@ export async function syncTransactions(
         continue;
       }
       const bankTxnId = txn.transactionId ?? txn.entryReference ?? null;
+      const importFingerprint = computePendingFingerprint({
+        accountId: la.account_id,
+        direction: directionFromIndicator(txn.creditDebitIndicator),
+        amount: fields.amount,
+        currency: txn.currency,
+        merchantNormalized: fields.merchantNormalized,
+        transactionDate: fields.effectiveDate,
+      });
+
+      // a2. Entries with NO entry_reference had no dedup at all, so every
+      // repeat sync of the same window re-inserted them. Fall back to the
+      // durable import fingerprint, counting OCCURRENCES rather than
+      // treating the fingerprint as unique: two genuinely identical
+      // payments (same shop, same amount, same day) are both real, so we
+      // import only the shortfall between what the bank reported and what
+      // we already hold.
+      if (!externalRef) {
+        const seenSoFar = (bookedFingerprintSeen.get(importFingerprint) ?? 0) + 1;
+        bookedFingerprintSeen.set(importFingerprint, seenSoFar);
+
+        let heldLocally = bookedFingerprintHeld.get(importFingerprint);
+        if (heldLocally === undefined) {
+          const rows = await db.select<{ c: number }[]>(
+            `SELECT COUNT(*) AS c FROM transactions
+              WHERE koinkat_account_id = ? AND account_id = ?
+                AND import_fingerprint = ? AND status = 'booked'`,
+            [koinkatAccountId, la.account_id, importFingerprint],
+          );
+          heldLocally = Number(rows[0]?.c ?? 0);
+          bookedFingerprintHeld.set(importFingerprint, heldLocally);
+        }
+
+        if (seenSoFar <= heldLocally) {
+          // Already have this occurrence from an earlier sync.
+          skipped++;
+          continue;
+        }
+      }
 
       // b. Try to claim a local pending row → flip it in place.
       const bookedEntry: BookedEntry = {
@@ -712,10 +893,17 @@ export async function syncTransactions(
         amount: fields.amount,
         date: fields.effectiveDate,
       };
-      const match = matchBookedToPending(
-        bookedEntry,
-        availablePending.map(rowToCandidate),
-      );
+      // An entry_reference match is exact, so it wins over the fuzzy
+      // amount/date matcher. Fall back to the matcher only when the bank
+      // gave us no reference to match on.
+      const refMatch =
+        refClaimedPendingId !== null
+          ? availablePending.find((r) => r.id === refClaimedPendingId)
+          : undefined;
+      const match =
+        refMatch !== undefined
+          ? { id: refMatch.id }
+          : matchBookedToPending(bookedEntry, availablePending.map(rowToCandidate));
       if (match) {
         const claimedRow = availablePending.find((r) => r.id === match.id)!;
         // Keep the earlier of the pending row's date and the booked entry's
@@ -741,6 +929,10 @@ export async function syncTransactions(
                   booking_date = ?,
                   pending_fingerprint = NULL,
                   pending_last_seen_at = NULL,
+                  -- Durable identity, kept across the promotion so a later
+                  -- sync can recognise this booked row even when the bank
+                  -- sends no entry_reference for it.
+                  import_fingerprint = COALESCE(import_fingerprint, ?),
                   updated_at = datetime('now')
             WHERE id = ? AND koinkat_account_id = ?`,
           [
@@ -752,6 +944,7 @@ export async function syncTransactions(
             fields.amountInAccountCcy,
             fields.sourceDescription,
             txn.bookingDate,
+            importFingerprint,
             match.id,
             koinkatAccountId,
           ],
@@ -782,12 +975,12 @@ export async function syncTransactions(
             amount_in_dest_ccy, category_id, note, date, is_budgeted, budget_event_id,
             external_ref, merchant_raw, merchant_normalized, needs_review,
             source_description, booking_date, event_link_pinned,
-            status, bank_transaction_id,
+            status, bank_transaction_id, import_fingerprint,
             recorded_at, created_at, updated_at)
          VALUES (?, ?, ?, NULL, NULL, ?, ?, ?, ?, ?, NULL, NULL, ?, ?, 1, NULL,
                  ?, ?, ?, 1,
                  ?, ?, 0,
-                 'booked', ?,
+                 'booked', ?, ?,
                  datetime('now'), datetime('now'), datetime('now'))`,
         [
           txnId,
@@ -806,6 +999,7 @@ export async function syncTransactions(
           fields.sourceDescription,
           txn.bookingDate,
           bankTxnId,
+          importFingerprint,
         ],
       );
       newImportedIds.push(txnId);
@@ -902,11 +1096,13 @@ export async function syncTransactions(
             external_ref, merchant_raw, merchant_normalized, needs_review,
             source_description, booking_date, event_link_pinned,
             status, bank_transaction_id, pending_last_seen_at, pending_fingerprint,
+            import_fingerprint,
             recorded_at, created_at, updated_at)
          VALUES (?, ?, ?, NULL, NULL, ?, ?, ?, ?, ?, NULL, NULL, ?, ?, 1, NULL,
                  ?, ?, ?, 1,
                  ?, ?, 0,
                  'pending', ?, ?, ?,
+                 ?,
                  datetime('now'), datetime('now'), datetime('now'))`,
         [
           txnId,
@@ -926,6 +1122,9 @@ export async function syncTransactions(
           txn.bookingDate ?? null,
           bankTxnId,
           syncStartedAt,
+          fingerprint,
+          // Durable identity: `pending_fingerprint` is cleared on promotion,
+          // this one is not.
           fingerprint,
         ],
       );
@@ -957,7 +1156,14 @@ export async function syncTransactions(
             AND status = 'pending'
             AND date >= ?
             AND date <= ?
-            AND (pending_last_seen_at IS NULL OR pending_last_seen_at < ?)`,
+            -- Only rows THIS importer stamped and did not re-see. The
+            -- predicate used to include \`pending_last_seen_at IS NULL\`,
+            -- which also deleted any pending row created by another path
+            -- (it has no stamp to compare) on its first complete sync.
+            -- A row the importer owns always carries a stamp, so an
+            -- unstamped row is by definition not ours to sweep.
+            AND pending_last_seen_at IS NOT NULL
+            AND pending_last_seen_at < ?`,
         [koinkatAccountId, la.account_id, pendingFrom, dateTo, syncStartedAt],
       );
     } else {

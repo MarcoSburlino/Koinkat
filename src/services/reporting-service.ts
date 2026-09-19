@@ -346,7 +346,9 @@ export async function categoryBreakdown(params: {
     const key = macroId ?? UNCATEGORIZED_KEY;
     const macroName = row.macro_name ?? 'Uncategorized';
     const macroIcon = row.macro_icon ?? null;
-    const amount = dec(row.amount_in_account_ccy).abs();
+    // Signed on purpose: a split reimbursed for more than it cost has a
+    // negative net, and abs() would report that as positive spending.
+    const amount = dec(row.amount_in_account_ccy);
     const srcCcy = row.account_currency.toLowerCase();
 
     // Convert to preferred currency. SKIP rows whose rate is missing -
@@ -477,7 +479,9 @@ export async function sumNonBudgetedExpenses(params: {
   let count = 0;
 
   for (const row of rows) {
-    const amount = dec(row.amount_in_account_ccy).abs();
+    // Signed on purpose: a split reimbursed for more than it cost has a
+    // negative net, and abs() would report that as positive spending.
+    const amount = dec(row.amount_in_account_ccy);
     const converted = tryConvert(
       amount,
       row.account_currency,
@@ -591,7 +595,9 @@ export async function monthlyCashflow(params: {
     const m = parseInt(row.month, 10);
     if (isNaN(m) || m < 1 || m > 12) continue;
 
-    const amount = dec(row.amount_in_account_ccy).abs();
+    // Signed on purpose: a split reimbursed for more than it cost has a
+    // negative net, and abs() would report that as positive spending.
+    const amount = dec(row.amount_in_account_ccy);
     const srcCcy = row.account_currency.toLowerCase();
     contributingCurrencies.add(srcCcy);
 
@@ -735,7 +741,9 @@ async function netProfitSinceYear(params: {
   const rates = await getLatestCachedRates();
   let total = new Big('0');
   for (const r of rows) {
-    const amt = dec(r.amount_in_account_ccy).abs();
+    // Signed on purpose: a split reimbursed for more than it cost has a
+    // negative net, and abs() would report that as positive spending.
+    const amt = dec(r.amount_in_account_ccy);
     const converted = tryConvert(
       amt,
       r.account_currency,

@@ -35,7 +35,8 @@
     "active": true,
     "targets": "all",
     "resources": {
-      "../THIRD-PARTY-LICENSES.md": "THIRD-PARTY-LICENSES.md"
+      "../THIRD-PARTY-LICENSES.md": "THIRD-PARTY-LICENSES.md",
+      "../LICENSE": "LICENSE"
     },
     "icon": [
       "icons/32x32.png",

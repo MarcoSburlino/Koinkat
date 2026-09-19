@@ -1,0 +1,15 @@
+{
+  // Test files only. Node types live here rather than in the app tsconfig so
+  // application code still cannot reach Node builtins - this is a Tauri
+  // webview, and a stray `node:fs` import in src/ must stay a type error.
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "types": ["node"],
+    "noEmit": true
+  },
+  // Reset the parent's exclude, which otherwise cancels the include below.
+  "exclude": [],
+  // vite-env.d.ts declares the __KOINKAT_* compile-time flags, which the
+  // Enable Banking dispatcher reads at module load.
+  "include": ["src/test/**/*.ts", "src/**/*.test.ts", "src/vite-env.d.ts"]
+}

@@ -1223,7 +1223,7 @@ function MonthPulseCard({
   // helper keeps this math identical to the Budgets focused-month card.
   const pace = monthPace(budgetMonth?.summary.remaining ?? '0', now);
   const clampedBudgetPct = budgetMonth
-    ? Math.min(budgetMonth.summary.percentUsed, 100)
+    ? Math.min(Math.max(0, budgetMonth.summary.percentUsed), 100)
     : 0;
 
   return (

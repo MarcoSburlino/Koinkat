@@ -1,8 +1,25 @@
+/// <reference types="vitest/config" />
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import type { Plugin } from "vite";
+import { createRequire } from "node:module";
 import pkg from "./package.json";
+
+// The integration harness (src/test/sqlite-harness.ts) runs the real
+// migrations against node:sqlite. That module is unflagged from Node 22.13,
+// but needs --experimental-sqlite on older 22.x. Probe the running Node
+// rather than hardcoding a flag: passing a flag a future Node has retired
+// would break the whole suite, and omitting one an older Node needs would
+// break it too.
+const sqliteExecArgv: string[] = (() => {
+  try {
+    createRequire(import.meta.url)("node:sqlite");
+    return [];
+  } catch {
+    return ["--experimental-sqlite"];
+  }
+})();
 
 // Three-build structure:
 //   mode=development : mocks on by default (KOINKAT_EB_REAL=1 switches the
@@ -61,6 +78,14 @@ export default defineConfig(({ mode }) => {
           },
         },
       },
+    },
+    // Vitest shares this config so the __KOINKAT_* define flags above apply
+    // to tests too - the Enable Banking dispatcher reads them at module load,
+    // so a standalone vitest.config.ts would break every bank-sync suite.
+    test: {
+      environment: "node",
+      include: ["src/**/*.test.ts"],
+      execArgv: sqliteExecArgv,
     },
   };
 });

@@ -2,6 +2,7 @@ use tauri::Manager;
 use tauri_plugin_deep_link::DeepLinkExt;
 use tauri_plugin_sql::{Migration, MigrationKind};
 
+mod db_tx;
 mod secrets;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -88,6 +89,18 @@ pub fn run() {
             sql: include_str!("../../src/db/migration-v12.sql"),
             kind: MigrationKind::Up,
         },
+        Migration {
+            version: 13,
+            description: "Durable import fingerprint for bank transactions",
+            sql: include_str!("../../src/db/migration-v13.sql"),
+            kind: MigrationKind::Up,
+        },
+        Migration {
+            version: 14,
+            description: "Stable bank-account identity across sessions",
+            sql: include_str!("../../src/db/migration-v14.sql"),
+            kind: MigrationKind::Up,
+        },
     ];
 
     let mut builder = tauri::Builder::default();
@@ -128,12 +141,23 @@ pub fn run() {
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_shell::init())
-        // The one set of app-defined commands: OS-keychain storage for the
-        // Enable Banking private key (see secrets.rs for the rationale).
+        // App-defined commands, kept to two deliberate groups:
+        //   - OS-keychain storage for the Enable Banking private key
+        //     (see secrets.rs).
+        //   - Connection-owning SQLite transactions (see db_tx.rs). Both
+        //     are host plumbing the webview cannot do for itself; neither
+        //     contains business logic.
+        .manage(db_tx::TxRegistry::default())
         .invoke_handler(tauri::generate_handler![
             secrets::secret_set,
             secrets::secret_get,
-            secrets::secret_delete
+            secrets::secret_delete,
+            db_tx::tx_begin,
+            db_tx::tx_execute,
+            db_tx::tx_select,
+            db_tx::tx_commit,
+            db_tx::tx_rollback,
+            db_tx::tx_rollback_all
         ])
         .setup(|app| {
             // Register the koinkat:// URL scheme on Windows and Linux.
@@ -142,6 +166,21 @@ pub fn run() {
             app.deep_link().register_all()?;
             Ok(())
         })
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+        .build(tauri::generate_context!())
+        .expect("error while running tauri application")
+        .run(|app, event| {
+            // Exiting with a transaction open would strand a checked-out
+            // connection holding SQLite's write lock.
+            //
+            // Only Exit is handled here. A webview RELOAD emits no event we
+            // can distinguish (RunEvent::WebviewEvent is drag-drop, and
+            // rolling back on it would abort live transactions), so reload
+            // recovery is handled from the JS side instead: the database
+            // module calls `tx_rollback_all` once during initialisation,
+            // which clears anything a previous page load abandoned.
+            if matches!(event, tauri::RunEvent::Exit) {
+                let registry = app.state::<db_tx::TxRegistry>();
+                tauri::async_runtime::block_on(db_tx::rollback_all(&registry));
+            }
+        });
 }

@@ -706,7 +706,9 @@ export async function recurringBreakdown(params: {
   let variable = new Big('0');
 
   for (const r of rows) {
-    const amount = dec(r.amount_in_account_ccy).abs();
+    // Signed on purpose: a split reimbursed for more than it cost has a
+    // negative net, and abs() would report that as positive spending.
+    const amount = dec(r.amount_in_account_ccy);
     const converted = tryConvert(amount, r.account_currency, params.preferredCurrency, rates);
     if (converted === null) {
       unconvertible.add(r.account_currency.toLowerCase());
@@ -816,7 +818,9 @@ export async function getRecurringForMonth(params: {
 
   const actualBySeries = new Map<string, Big>();
   for (const r of chargeRows) {
-    const amount = dec(r.amount_in_account_ccy).abs();
+    // Signed on purpose: a split reimbursed for more than it cost has a
+    // negative net, and abs() would report that as positive spending.
+    const amount = dec(r.amount_in_account_ccy);
     let converted: Big | null;
     if (r.account_currency.toUpperCase() === params.targetCurrency.toUpperCase()) {
       converted = amount;

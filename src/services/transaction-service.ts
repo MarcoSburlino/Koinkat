@@ -4,10 +4,10 @@
 import Big from 'big.js';
 import { format } from 'date-fns';
 import { getDb, withTransaction, type DbExecutor } from '../db/database';
-import { dec, qCent, qRate, convertAmount, tryConvert, requirePositiveAmount, requireNonNegativeAmount } from '../domain/money';
+import { dec, qCent, convertAmount, crossRate, rateToStorage, tryConvert, requirePositiveAmount, requireNonNegativeAmount } from '../domain/money';
 import { isSupportedCurrency } from '../domain/currencies';
 import { getRatesForDate, getLatestCachedRates } from './exchange-rate-service';
-import { requireActiveKoinkatAccountId } from '../lib/active-koinkat-account';
+import { requireActiveKoinkatAccountId, captureWorkspace } from '../lib/active-koinkat-account';
 import { applyAutoCaptureForTransaction } from './budget-service';
 import type {
   Transaction,
@@ -163,9 +163,42 @@ async function requireRates(dateStr: string): Promise<Record<string, string>> {
   return rates;
 }
 
-/** Fetch an account row from DB, scoped to the active profile. */
-async function requireAccount(accountId: string, exec?: DbExecutor): Promise<AccountRow> {
-  const koinkatAccountId = requireActiveKoinkatAccountId();
+/**
+ * Resolve rates only when a conversion actually needs them.
+ *
+ * `pairs` lists the (from, to) currency pairs this operation will convert.
+ * If every pair is same-currency, no rate is required and this returns an
+ * empty map, so the operation succeeds with the network down and an empty
+ * FX cache. Every mutation used to call `requireRates` unconditionally,
+ * which meant a fresh offline user could not record a EUR expense in a EUR
+ * account - a rate was demanded that the conversion would never have read.
+ *
+ * When a pair IS cross-currency the behaviour is unchanged: rates are
+ * required, and a missing one fails here, before any mutation.
+ */
+async function ratesForConversions(
+  dateStr: string,
+  pairs: Array<[string, string]>,
+): Promise<Record<string, string>> {
+  const needed = pairs.some(([from, to]) => from.toLowerCase() !== to.toLowerCase());
+  if (!needed) return {};
+  return requireRates(dateStr);
+}
+
+/**
+ * Fetch an account row from DB, scoped to a workspace.
+ *
+ * Pass `koinkatAccountId` explicitly from an operation's captured context
+ * whenever the caller awaited before reaching here - re-reading the mutable
+ * global would scope the read to whatever workspace is active NOW, which
+ * may not be the one the operation belongs to.
+ */
+async function requireAccount(
+  accountId: string,
+  exec?: DbExecutor,
+  workspaceId?: string,
+): Promise<AccountRow> {
+  const koinkatAccountId = workspaceId ?? requireActiveKoinkatAccountId();
   const db = exec ?? await getDb();
   const rows = await db.select<AccountRow[]>(
     'SELECT * FROM accounts WHERE id = ? AND koinkat_account_id = ?',
@@ -193,11 +226,16 @@ function ensureCurrency(currency: string): string {
 }
 
 /** Update an account's balance in the DB. */
-async function updateBalance(accountId: string, newBalance: Big, exec?: DbExecutor): Promise<void> {
+async function updateBalance(
+  accountId: string,
+  newBalance: Big,
+  exec?: DbExecutor,
+  workspaceId?: string,
+): Promise<void> {
   // Every caller passes an id pre-validated by requireAccount, but the
   // write itself carries the workspace filter too (invariant #2) so the
   // safety doesn't rest on the call-site discipline alone.
-  const koinkatAccountId = requireActiveKoinkatAccountId();
+  const koinkatAccountId = workspaceId ?? requireActiveKoinkatAccountId();
   const db = exec ?? await getDb();
   await db.execute(
     "UPDATE accounts SET current_balance = ?, updated_at = datetime('now') WHERE id = ? AND koinkat_account_id = ?",
@@ -205,8 +243,33 @@ async function updateBalance(accountId: string, newBalance: Big, exec?: DbExecut
   );
 }
 
-/** Reverse the balance effect of a single transaction. */
-async function reverseBalanceEffect(txn: TransactionRow, exec?: DbExecutor): Promise<void> {
+/**
+ * Does this row contribute to its account's stored balance?
+ *
+ * Bank-PENDING rows do not. They are imported without touching
+ * `current_balance` - for a linked account the bank's own reported available
+ * balance is the source of truth, and it already reflects pending activity.
+ * Applying and reversing therefore share this one rule: a row that never
+ * moved the balance must not move it on the way out either.
+ *
+ * Booked rows (bank or manual) keep their existing semantics.
+ */
+function hasBalanceEffect(txn: Pick<TransactionRow, 'status'>): boolean {
+  return txn.status !== 'pending';
+}
+
+/**
+ * Reverse the balance effect of a single transaction.
+ *
+ * `exec` is REQUIRED: a reversal that ran outside the transaction doing the
+ * delete/update could commit on its own and leave the balance moved while
+ * the row survived.
+ */
+async function reverseBalanceEffect(txn: TransactionRow, exec: DbExecutor): Promise<void> {
+  // Deleting a pending bank row of 10 from a bank balance of 100 used to
+  // leave 110 - it credited back an amount that had never been debited.
+  if (!hasBalanceEffect(txn)) return;
+
   if (txn.type === 'income' || txn.type === 'expense') {
     const acct = await requireAccount(txn.account_id, exec);
     const balance = dec(acct.current_balance);
@@ -254,10 +317,12 @@ async function reverseBalanceEffect(txn: TransactionRow, exec?: DbExecutor): Pro
 async function deleteLinkedChildren(
   parentId: string,
   opts: { kind?: 'fee' | 'repayment' } = {},
-  exec?: DbExecutor,
+  // Required: this reverses balances, so it must run inside the caller's
+  // transaction rather than committing independently.
+  exec: DbExecutor,
 ): Promise<void> {
   const koinkatAccountId = requireActiveKoinkatAccountId();
-  const db = exec ?? await getDb();
+  const db = exec;
   let sql = 'SELECT * FROM transactions WHERE related_transaction_id = ? AND koinkat_account_id = ?';
   const params: unknown[] = [parentId, koinkatAccountId];
   if (opts.kind !== undefined) {
@@ -472,8 +537,7 @@ async function _createFeeExpense(params: {
 
   // Convert fee to account currency. feeAmt > 0 is guaranteed by the
   // early-return guard above, so the division is always safe.
-  const { converted } = convertAmount(feeAmt, feeCurrency, acct.currency, rates);
-  const rate = qRate(converted.div(feeAmt));
+  const { converted, rate } = convertAmount(feeAmt, feeCurrency, acct.currency, rates);
 
   // Deduct fee from account balance
   const newBalance = dec(acct.current_balance).minus(converted);
@@ -524,7 +588,7 @@ async function _createFeeExpense(params: {
       params.relatedTransactionId,
       feeAmt.toFixed(2),
       feeCurrency,
-      rate.toFixed(4),
+      rateToStorage(rate),
       converted.toFixed(2),
       feeCategoryId,
       noteText,
@@ -546,23 +610,25 @@ async function _createFeeExpense(params: {
  * Converts amount to account currency, mutates account balance, inserts row.
  */
 export async function createTransaction(params: CreateTransactionParams): Promise<Transaction> {
+  // Capture the workspace ONCE for this whole operation.
+  const ws = captureWorkspace();
   const ttype = ensureIncomeOrExpense(params.type);
   const amt = requirePositiveAmount(params.amount);
   const ccy = ensureCurrency(params.currency);
   const txnDate = params.date ?? format(new Date(), 'yyyy-MM-dd');
 
-  const acct = await requireAccount(params.accountId);
-  const rates = await requireRates(txnDate);
+  const acct = await requireAccount(params.accountId, undefined, ws.id);
+  const rates = await ratesForConversions(txnDate, [[ccy, acct.currency]]);
 
   // Convert to account currency
-  const { converted } = convertAmount(amt, ccy, acct.currency, rates);
-  const rate = amt.gt(dec('0'))
-    ? qRate(converted.div(amt))
-    : qRate(dec('1'));
+  // Use the exact rate the conversion applied. Re-deriving it from the
+  // cent-rounded result made `amount * exchange_rate` disagree with the
+  // stored `amount_in_account_ccy`.
+  const { converted, rate } = convertAmount(amt, ccy, acct.currency, rates);
 
   // Pre-compute everything that doesn't write to the DB before we BEGIN
   // - rate fetches and validation should not hold a transaction open.
-  const koinkatAccountId = requireActiveKoinkatAccountId();
+  const koinkatAccountId = ws.id;
   const id = crypto.randomUUID();
   const isBudgeted = params.isBudgeted ?? true;
 
@@ -585,13 +651,23 @@ export async function createTransaction(params: CreateTransactionParams): Promis
     throw new Error('Fees can only be attached to expense transactions');
   }
 
+  // Awaiting FX (which can make a network call) gives the user time to
+  // switch workspace. Confirm we are still in the workspace this operation
+  // belongs to, and cancel before writing rather than retargeting.
+  ws.assertUnchanged();
   await withTransaction(async (tx) => {
     // Mutate balance
-    const balance = dec(acct.current_balance);
+    // Re-read the balance INSIDE the transaction. The copy fetched
+    // above is stale: FX resolution between the two can await for
+    // seconds, and two concurrent expenses that both read 100 would
+    // each write an absolute balance computed from it, so the second
+    // write would silently discard the first.
+    const acctNow = await requireAccount(params.accountId, tx, ws.id);
+    const balance = dec(acctNow.current_balance);
     if (ttype === 'income') {
-      await updateBalance(acct.id, balance.plus(converted), tx);
+      await updateBalance(acctNow.id, balance.plus(converted), tx, ws.id);
     } else {
-      await updateBalance(acct.id, balance.minus(converted), tx);
+      await updateBalance(acctNow.id, balance.minus(converted), tx, ws.id);
     }
 
     // event_link_pinned: any non-null budgetEventId at create time
@@ -621,7 +697,7 @@ export async function createTransaction(params: CreateTransactionParams): Promis
         ttype,
         amt.toFixed(2),
         ccy,
-        rate.toFixed(4),
+        rateToStorage(rate),
         converted.toFixed(2),
         params.categoryId ?? null,
         finalNote,
@@ -678,6 +754,8 @@ export async function createTransaction(params: CreateTransactionParams): Promis
  * Converts amount to each account's currency independently, mutates both balances.
  */
 export async function createTransfer(params: CreateTransferParams): Promise<Transaction> {
+  // Capture the workspace ONCE for this whole operation.
+  const ws = captureWorkspace();
   if (params.sourceAccountId === params.destAccountId) {
     throw new Error('Source and destination accounts must be different');
   }
@@ -686,26 +764,40 @@ export async function createTransfer(params: CreateTransferParams): Promise<Tran
   const ccy = ensureCurrency(params.currency);
   const txnDate = params.date ?? format(new Date(), 'yyyy-MM-dd');
 
-  const src = await requireAccount(params.sourceAccountId);
-  const dst = await requireAccount(params.destAccountId);
-  const rates = await requireRates(txnDate);
+  const src = await requireAccount(params.sourceAccountId, undefined, ws.id);
+  const dst = await requireAccount(params.destAccountId, undefined, ws.id);
+  const rates = await ratesForConversions(txnDate, [
+    [ccy, src.currency],
+    [ccy, dst.currency],
+  ]);
 
   // Convert to each account's currency
-  const { converted: outflow } = convertAmount(amt, ccy, src.currency, rates);
-  const { converted: inflow } = convertAmount(amt, ccy, dst.currency, rates);
+  const { converted: outflow, rate: srcRate } = convertAmount(amt, ccy, src.currency, rates);
+  const { converted: inflow, rate: dstRate } = convertAmount(amt, ccy, dst.currency, rates);
 
-  // Exchange rate stored as dest_ccy / src_ccy
-  const rate = outflow.gt(dec('0'))
-    ? qRate(inflow.div(outflow))
-    : qRate(dec('1'));
+  // Exchange rate stored as dest_ccy / src_ccy, from the two exact rates.
+  // The old form divided two independently cent-rounded amounts, so both
+  // the numerator and the denominator carried rounding error.
+  const rate = crossRate(srcRate, dstRate);
 
-  const koinkatAccountId = requireActiveKoinkatAccountId();
+  const koinkatAccountId = ws.id;
   const id = crypto.randomUUID();
 
+  // Awaiting FX (which can make a network call) gives the user time to
+  // switch workspace. Confirm we are still in the workspace this operation
+  // belongs to, and cancel before writing rather than retargeting.
+  ws.assertUnchanged();
   await withTransaction(async (tx) => {
     // Mutate balances
-    await updateBalance(src.id, dec(src.current_balance).minus(outflow), tx);
-    await updateBalance(dst.id, dec(dst.current_balance).plus(inflow), tx);
+    // Re-read the balance INSIDE the transaction. The copy fetched
+    // above is stale: FX resolution between the two can await for
+    // seconds, and two concurrent expenses that both read 100 would
+    // each write an absolute balance computed from it, so the second
+    // write would silently discard the first.
+    const srcNow = await requireAccount(params.sourceAccountId, tx, ws.id);
+    const dstNow = await requireAccount(params.destAccountId, tx, ws.id);
+    await updateBalance(srcNow.id, dec(srcNow.current_balance).minus(outflow), tx, ws.id);
+    await updateBalance(dstNow.id, dec(dstNow.current_balance).plus(inflow), tx, ws.id);
 
     await tx.execute(
       `INSERT INTO transactions
@@ -724,7 +816,7 @@ export async function createTransfer(params: CreateTransferParams): Promise<Tran
         params.destAccountId,
         amt.toFixed(2),
         ccy,
-        rate.toFixed(4),
+        rateToStorage(rate),
         outflow.toFixed(2),
         inflow.toFixed(2),
         params.note ?? null,
@@ -871,6 +963,40 @@ export async function getFeeChild(parentId: string): Promise<Transaction | null>
 }
 
 /**
+ * Which edits are permitted on a bank-PENDING row.
+ *
+ * A pending row is still owned by the bank: the next sync can promote it to
+ * booked or withdraw it entirely, and it contributes nothing to the stored
+ * balance. The category, note and budget link are the user's own work and
+ * survive promotion, so those stay editable. Anything structural - amount,
+ * account, currency, date, split state - describes what the bank reported,
+ * and changing it locally would desynchronise the row from the next sync
+ * and from the bank's available balance.
+ *
+ * Rejecting here (before any write) rather than in the UI alone means the
+ * rule holds for every caller.
+ */
+function assertPendingEditAllowed(
+  txn: TransactionRow,
+  next: { accountId: string; amount: string; currency: string; date?: string; isSplit?: boolean },
+): void {
+  const changed: string[] = [];
+  if (next.accountId !== txn.account_id) changed.push('account');
+  if (dec(next.amount).cmp(dec(txn.amount)) !== 0) changed.push('amount');
+  if (next.currency.toUpperCase() !== txn.currency.toUpperCase()) changed.push('currency');
+  if (next.date !== undefined && next.date !== txn.date.slice(0, 10)) changed.push('date');
+  if (next.isSplit !== undefined) changed.push('split state');
+
+  if (changed.length > 0) {
+    throw new Error(
+      `Cannot change the ${changed.join(', ')} of a pending bank transaction. ` +
+        'Pending rows still belong to the bank and are replaced on the next sync. ' +
+        'Category, note and budget links can be edited.',
+    );
+  }
+}
+
+/**
  * Update an income or expense transaction.
  * Reverses old balance, recalculates with new values, applies new balance.
  */
@@ -878,10 +1004,15 @@ export async function updateIncomeExpense(
   id: string,
   params: UpdateIncomeExpenseParams,
 ): Promise<Transaction> {
-  const koinkatAccountId = requireActiveKoinkatAccountId();
+  // Capture the workspace ONCE for this whole operation.
+  const ws = captureWorkspace();
+  const koinkatAccountId = ws.id;
   const txn = await requireTransactionRow(id);
   if (txn.type === 'transfer') {
     throw new Error('Use updateTransfer() for transfer transactions');
+  }
+  if (!hasBalanceEffect(txn)) {
+    assertPendingEditAllowed(txn, params);
   }
 
   const amt = requirePositiveAmount(params.amount);
@@ -890,13 +1021,13 @@ export async function updateIncomeExpense(
 
   // Pre-fetch (reads/network) before BEGIN so the transaction window
   // only spans actual writes.
-  const acct = await requireAccount(params.accountId);
-  const rates = await requireRates(txnDate);
+  const acct = await requireAccount(params.accountId, undefined, ws.id);
+  const rates = await ratesForConversions(txnDate, [[ccy, acct.currency]]);
 
-  const { converted } = convertAmount(amt, ccy, acct.currency, rates);
-  const rate = amt.gt(dec('0'))
-    ? qRate(converted.div(amt))
-    : qRate(dec('1'));
+  // Use the exact rate the conversion applied. Re-deriving it from the
+  // cent-rounded result made `amount * exchange_rate` disagree with the
+  // stored `amount_in_account_ccy`.
+  const { converted, rate } = convertAmount(amt, ccy, acct.currency, rates);
 
   // Resolve budget fields
   const isBudgeted = params.isBudgeted ?? true;
@@ -949,6 +1080,10 @@ export async function updateIncomeExpense(
   // recomputeSplitNet below to factor in any surviving repayments.
   const provisionalNet = nextSplitStatus != null ? converted.toFixed(2) : null;
 
+  // Awaiting FX (which can make a network call) gives the user time to
+  // switch workspace. Confirm we are still in the workspace this operation
+  // belongs to, and cancel before writing rather than retargeting.
+  ws.assertUnchanged();
   await withTransaction(async (tx) => {
     // Delete only fee children (preserve repayments; they survive a parent edit).
     await deleteLinkedChildren(txn.id, { kind: 'fee' }, tx);
@@ -958,12 +1093,20 @@ export async function updateIncomeExpense(
 
     // Apply new balance. Re-read the account so we see the post-reversal
     // balance (especially when the user kept the account the same).
-    const acctAfter = await requireAccount(params.accountId, tx);
-    const balance = dec(acctAfter.current_balance);
-    if (txn.type === 'income') {
-      await updateBalance(acctAfter.id, balance.plus(converted), tx);
-    } else {
-      await updateBalance(acctAfter.id, balance.minus(converted), tx);
+    //
+    // Applying and reversing share ONE rule (`hasBalanceEffect`). A pending
+    // bank row contributes nothing to the stored balance, so an edit to its
+    // metadata must not start contributing one - reversing nothing and then
+    // applying a debit would have moved a 100.00 balance to 90.00 on a note
+    // change.
+    if (hasBalanceEffect(txn)) {
+      const acctAfter = await requireAccount(params.accountId, tx, ws.id);
+      const balance = dec(acctAfter.current_balance);
+      if (txn.type === 'income') {
+        await updateBalance(acctAfter.id, balance.plus(converted), tx, ws.id);
+      } else {
+        await updateBalance(acctAfter.id, balance.minus(converted), tx, ws.id);
+      }
     }
 
     // event_link_pinned: any explicit touch of budgetEventId in the
@@ -987,7 +1130,7 @@ export async function updateIncomeExpense(
         params.accountId,
         amt.toFixed(2),
         ccy,
-        rate.toFixed(4),
+        rateToStorage(rate),
         converted.toFixed(2),
         params.categoryId ?? null,
         resolvedNote,
@@ -1103,7 +1246,9 @@ export async function updateTransfer(
   id: string,
   params: UpdateTransferParams,
 ): Promise<Transaction> {
-  const koinkatAccountId = requireActiveKoinkatAccountId();
+  // Capture the workspace ONCE for this whole operation.
+  const ws = captureWorkspace();
+  const koinkatAccountId = ws.id;
   const txn = await requireTransactionRow(id);
   if (txn.type !== 'transfer') {
     throw new Error('Transaction is not a transfer');
@@ -1119,16 +1264,24 @@ export async function updateTransfer(
 
   // Pre-fetch reads/network before BEGIN so the transaction window
   // only spans actual writes.
-  const src = await requireAccount(params.sourceAccountId);
-  const dst = await requireAccount(params.destAccountId);
-  const rates = await requireRates(txnDate);
+  const src = await requireAccount(params.sourceAccountId, undefined, ws.id);
+  const dst = await requireAccount(params.destAccountId, undefined, ws.id);
+  const rates = await ratesForConversions(txnDate, [
+    [ccy, src.currency],
+    [ccy, dst.currency],
+  ]);
 
-  const { converted: outflow } = convertAmount(amt, ccy, src.currency, rates);
-  const { converted: inflow } = convertAmount(amt, ccy, dst.currency, rates);
-  const rate = outflow.gt(dec('0'))
-    ? qRate(inflow.div(outflow))
-    : qRate(dec('1'));
+  const { converted: outflow, rate: srcRate } = convertAmount(amt, ccy, src.currency, rates);
+  const { converted: inflow, rate: dstRate } = convertAmount(amt, ccy, dst.currency, rates);
+  // Destination per source, from the two exact rates. The old form
+  // divided two independently cent-rounded amounts, so both the
+  // numerator and the denominator carried rounding error.
+  const rate = crossRate(srcRate, dstRate);
 
+  // Awaiting FX (which can make a network call) gives the user time to
+  // switch workspace. Confirm we are still in the workspace this operation
+  // belongs to, and cancel before writing rather than retargeting.
+  ws.assertUnchanged();
   await withTransaction(async (tx) => {
     // Delete only fee children (preserve repayments; they survive a parent edit).
     await deleteLinkedChildren(txn.id, { kind: 'fee' }, tx);
@@ -1139,10 +1292,10 @@ export async function updateTransfer(
     // Apply new balances. Re-read source/dest after reversal in case the
     // same account is on both legs of the transfer (covers the case where
     // the user keeps the account but changes amount/currency).
-    const srcAfter = await requireAccount(params.sourceAccountId, tx);
-    await updateBalance(srcAfter.id, dec(srcAfter.current_balance).minus(outflow), tx);
-    const dstAfter = await requireAccount(params.destAccountId, tx);
-    await updateBalance(dstAfter.id, dec(dstAfter.current_balance).plus(inflow), tx);
+    const srcAfter = await requireAccount(params.sourceAccountId, tx, ws.id);
+    await updateBalance(srcAfter.id, dec(srcAfter.current_balance).minus(outflow), tx, ws.id);
+    const dstAfter = await requireAccount(params.destAccountId, tx, ws.id);
+    await updateBalance(dstAfter.id, dec(dstAfter.current_balance).plus(inflow), tx, ws.id);
 
     await tx.execute(
       `UPDATE transactions
@@ -1159,7 +1312,7 @@ export async function updateTransfer(
         params.destAccountId,
         amt.toFixed(2),
         ccy,
-        rate.toFixed(4),
+        rateToStorage(rate),
         outflow.toFixed(2),
         inflow.toFixed(2),
         params.note ?? null,
@@ -1224,6 +1377,8 @@ export async function addSplitRepayment(
   parentId: string,
   params: AddSplitRepaymentParams,
 ): Promise<Transaction> {
+  // Capture the workspace ONCE for this whole operation.
+  const ws = captureWorkspace();
   const parent = await requireTransactionRow(parentId);
   if (parent.split_status == null) {
     throw new Error('Parent transaction is not a split expense');
@@ -1236,22 +1391,32 @@ export async function addSplitRepayment(
   const ccy = ensureCurrency(params.currency);
   const txnDate = params.date ?? format(new Date(), 'yyyy-MM-dd');
 
-  const acct = await requireAccount(params.accountId);
-  const rates = await requireRates(txnDate);
+  const acct = await requireAccount(params.accountId, undefined, ws.id);
+  const rates = await ratesForConversions(txnDate, [[ccy, acct.currency]]);
 
-  const { converted } = convertAmount(amt, ccy, acct.currency, rates);
-  const rate = amt.gt(dec('0'))
-    ? qRate(converted.div(amt))
-    : qRate(dec('1'));
+  // Use the exact rate the conversion applied. Re-deriving it from the
+  // cent-rounded result made `amount * exchange_rate` disagree with the
+  // stored `amount_in_account_ccy`.
+  const { converted, rate } = convertAmount(amt, ccy, acct.currency, rates);
 
-  const koinkatAccountId = requireActiveKoinkatAccountId();
+  const koinkatAccountId = ws.id;
   const id = crypto.randomUUID();
   const manualSource: CategorizationSource = 'user_manual';
 
+  // Awaiting FX (which can make a network call) gives the user time to
+  // switch workspace. Confirm we are still in the workspace this operation
+  // belongs to, and cancel before writing rather than retargeting.
+  ws.assertUnchanged();
   await withTransaction(async (tx) => {
     // Credit the destination account (repayments are income).
-    const balance = dec(acct.current_balance);
-    await updateBalance(acct.id, balance.plus(converted), tx);
+    // Re-read the balance INSIDE the transaction. The copy fetched
+    // above is stale: FX resolution between the two can await for
+    // seconds, and two concurrent expenses that both read 100 would
+    // each write an absolute balance computed from it, so the second
+    // write would silently discard the first.
+    const acctNow = await requireAccount(params.accountId, tx, ws.id);
+    const balance = dec(acctNow.current_balance);
+    await updateBalance(acctNow.id, balance.plus(converted), tx, ws.id);
 
     await tx.execute(
       `INSERT INTO transactions
@@ -1272,7 +1437,7 @@ export async function addSplitRepayment(
         parentId,
         amt.toFixed(2),
         ccy,
-        rate.toFixed(4),
+        rateToStorage(rate),
         converted.toFixed(2),
         params.note ?? null,
         txnDate,
@@ -1300,7 +1465,9 @@ export async function updateSplitRepayment(
   repaymentId: string,
   params: UpdateSplitRepaymentParams,
 ): Promise<Transaction> {
-  const koinkatAccountId = requireActiveKoinkatAccountId();
+  // Capture the workspace ONCE for this whole operation.
+  const ws = captureWorkspace();
+  const koinkatAccountId = ws.id;
   const txn = await requireTransactionRow(repaymentId);
   if (txn.relation_kind !== 'repayment') {
     throw new Error('Transaction is not a repayment');
@@ -1320,22 +1487,28 @@ export async function updateSplitRepayment(
   const amt = requirePositiveAmount(nextAmount);
   const ccy = ensureCurrency(nextCurrency);
 
-  // Pre-fetch reads/network before BEGIN.
-  const rates = await requireRates(nextDate);
+  // Pre-fetch reads/network before BEGIN. The account is read FIRST so we
+  // know the target currency, and can skip the rate lookup entirely when no
+  // conversion is needed.
   // We need the destination account's currency for the conversion. The
   // post-reversal balance is read inside the transaction below.
-  const acctPre = await requireAccount(nextAccountId);
-  const { converted } = convertAmount(amt, ccy, acctPre.currency, rates);
-  const rate = amt.gt(dec('0'))
-    ? qRate(converted.div(amt))
-    : qRate(dec('1'));
+  const acctPre = await requireAccount(nextAccountId, undefined, ws.id);
+  const rates = await ratesForConversions(nextDate, [[ccy, acctPre.currency]]);
+  // Use the exact rate the conversion applied. Re-deriving it from the
+  // cent-rounded result made `amount * exchange_rate` disagree with the
+  // stored `amount_in_account_ccy`.
+  const { converted, rate } = convertAmount(amt, ccy, acctPre.currency, rates);
 
+  // Awaiting FX (which can make a network call) gives the user time to
+  // switch workspace. Confirm we are still in the workspace this operation
+  // belongs to, and cancel before writing rather than retargeting.
+  ws.assertUnchanged();
   await withTransaction(async (tx) => {
     // Reverse old balance
     await reverseBalanceEffect(txn, tx);
 
     // Apply new balance against the post-reversal account row.
-    const acctAfter = await requireAccount(nextAccountId, tx);
+    const acctAfter = await requireAccount(nextAccountId, tx, ws.id);
     await updateBalance(acctAfter.id, dec(acctAfter.current_balance).plus(converted), tx);
 
     await tx.execute(
@@ -1348,7 +1521,7 @@ export async function updateSplitRepayment(
         nextAccountId,
         amt.toFixed(2),
         ccy,
-        rate.toFixed(4),
+        rateToStorage(rate),
         converted.toFixed(2),
         nextNote,
         nextDate,
@@ -1777,11 +1950,13 @@ export async function addExternalReimbursement(
   parentId: string,
   params: AddExternalReimbursementParams,
 ): Promise<SplitExternalReimbursement> {
+  // Capture the workspace ONCE for this whole operation.
+  const ws = captureWorkspace();
   const parent = await requireTransactionRow(parentId);
   if (parent.split_status == null) {
     throw new Error('Parent transaction is not a split expense');
   }
-  const parentAccount = await requireAccount(parent.account_id);
+  const parentAccount = await requireAccount(parent.account_id, undefined, ws.id);
   const parentCcy = parentAccount.currency.toUpperCase();
 
   const amt = requirePositiveAmount(params.amount);
@@ -1798,13 +1973,17 @@ export async function addExternalReimbursement(
     rate = dec('1');
   } else {
     const rates = await requireRates(date);
-    const { converted } = convertAmount(amt, ccy, parentCcy, rates);
+    const { converted, rate: exact } = convertAmount(amt, ccy, parentCcy, rates);
     amountInParentCcy = converted;
-    rate = amt.gt(dec('0')) ? qRate(converted.div(amt)) : qRate(dec('1'));
+    rate = exact;
   }
 
-  const koinkatAccountId = requireActiveKoinkatAccountId();
+  const koinkatAccountId = ws.id;
   const id = crypto.randomUUID();
+  // Awaiting FX (which can make a network call) gives the user time to
+  // switch workspace. Confirm we are still in the workspace this operation
+  // belongs to, and cancel before writing rather than retargeting.
+  ws.assertUnchanged();
   await withTransaction(async (tx) => {
     await tx.execute(
       `INSERT INTO split_external_reimbursements
@@ -1818,7 +1997,7 @@ export async function addExternalReimbursement(
         amt.toFixed(2),
         ccy,
         qCent(amountInParentCcy).toFixed(2),
-        rate.toFixed(4),
+        rateToStorage(rate),
         date,
         params.source ?? null,
         params.note ?? null,

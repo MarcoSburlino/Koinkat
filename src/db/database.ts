@@ -1,13 +1,9 @@
 import Database from '@tauri-apps/plugin-sql';
+import { invoke } from '@tauri-apps/api/core';
 
 let db: Database | null = null;
 let pending: Promise<Database> | null = null;
 
-// Unwrapped (non-queued) DB methods, captured at load time. Used only by
-// `withTransaction` so a transaction's own statements bypass `opQueue` and
-// run on a single connection.
-let rawExecute: Database['execute'] | null = null;
-let rawSelect: Database['select'] | null = null;
 
 /**
  * Single global JS-side queue that every `db.execute` / `db.select`
@@ -33,6 +29,13 @@ let rawSelect: Database['select'] | null = null;
  * sequential acquires return the same connection - the one we ran
  * `PRAGMA busy_timeout=5000` and `PRAGMA journal_mode=WAL` on right
  * after load.
+ *
+ * NOTE: this queue no longer has anything to do with transaction safety.
+ * `withTransaction` owns a real connection in Rust (see db_tx.rs) and does
+ * NOT pass through here, so a transaction can no longer be torn apart by
+ * pool churn, and holding the queue for the length of a transaction - which
+ * used to be required, and which deadlocked any body that called `getDb()`
+ * - is gone. What remains is ordering for ordinary one-off calls.
  *
  * Cost: every DB call is sequential. For a single-user local-first
  * SQLite app the queries are sub-millisecond; the queue is not a
@@ -119,13 +122,49 @@ async function loadWithRetry(): Promise<Database> {
 /**
  * Force any WAL content back into the main `koinkat.db` file.
  *
- * Needed before copying the file (the export in Settings reads only
- * `koinkat.db`, so uncheckpointed commits sitting in `koinkat.db-wal` would
- * be silently missing from the backup).
+ * Kept for callers that genuinely want a checkpoint. It is NOT sufficient
+ * on its own to produce a backup - see `exportDatabaseSnapshot`.
  */
 export async function checkpointWal(): Promise<void> {
   const loaded = await getDb();
   await loaded.execute('PRAGMA wal_checkpoint(TRUNCATE)');
+}
+
+/**
+ * Write a transactionally consistent snapshot of the database to `destPath`.
+ *
+ * Why not checkpoint-then-copy. The export used to run
+ * `PRAGMA wal_checkpoint(TRUNCATE)` and then read `koinkat.db` as bytes.
+ * Those are two separate operations against a live database: a bank sync
+ * committing between them lands in a fresh WAL that the copy never sees, so
+ * the "backup" could be a torn mixture of before and after. Checkpointing
+ * also cannot stop a writer from appending immediately afterwards.
+ *
+ * `VACUUM INTO` is SQLite's own snapshot facility. It runs in a single
+ * implicit transaction and writes a complete, self-contained, already
+ * checkpointed database - no -wal or -shm sidecars to keep alongside it.
+ *
+ * It also writes through SQLite's file I/O inside the Rust process rather
+ * than the Tauri fs plugin, so a destination outside the plugin's scope
+ * (`$DOWNLOAD`, `$DESKTOP`, `$DOCUMENT`) still works. The user picked the
+ * path in a native save dialog, which is the authorization.
+ *
+ * SQLite refuses to overwrite, so an existing file at `destPath` must be
+ * removed first; callers get a clear error rather than a silent no-op.
+ */
+export async function exportDatabaseSnapshot(destPath: string): Promise<void> {
+  const loaded = await getDb();
+  try {
+    await loaded.execute('VACUUM INTO ?', [destPath]);
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    if (/already exists/i.test(msg)) {
+      throw new Error(
+        `A file already exists at ${destPath}. Choose a new filename, or delete that file first.`,
+      );
+    }
+    throw toDbError(err);
+  }
 }
 
 /**
@@ -165,8 +204,6 @@ export async function getDb(): Promise<Database> {
         origSelect<T>(sql, args).catch((err) => {
           throw toDbError(err);
         })) as typeof loaded.select;
-      rawExecute = wrappedExecute;
-      rawSelect = wrappedSelect;
       loaded.execute = ((sql: string, args?: unknown[]) =>
         serialize(() => wrappedExecute(sql, args))) as typeof loaded.execute;
       loaded.select = (<T>(sql: string, args?: unknown[]) =>
@@ -177,6 +214,19 @@ export async function getDb(): Promise<Database> {
         await loaded.execute('PRAGMA journal_mode = WAL');
       } catch (err) {
         console.warn('[db] PRAGMA setup failed:', err);
+      }
+
+      // A webview reload mid-transaction leaves a connection checked out in
+      // Rust still holding SQLite's write lock. Rust cannot tell a reload
+      // apart from ordinary webview activity, so the cleanup happens here,
+      // once, on the next initialisation.
+      try {
+        const cleared = await invoke<number>('tx_rollback_all');
+        if (cleared > 0) {
+          console.warn(`[db] rolled back ${cleared} transaction(s) abandoned by a previous page load`);
+        }
+      } catch (err) {
+        console.warn('[db] abandoned-transaction sweep failed:', err);
       }
       db = loaded;
       return loaded;
@@ -195,10 +245,9 @@ export async function getDb(): Promise<Database> {
 }
 
 /**
- * A DB executor whose calls run directly (bypassing the serialize queue).
- * Both `Database` and the raw `tx` handed to `withTransaction` satisfy this,
- * so internal helpers can accept either: the wrapped handle when called on
- * their own, or `tx` when called inside a transaction.
+ * A DB executor. Both the wrapped `Database` handle and the `tx` handed to
+ * `withTransaction` satisfy it, so internal helpers can accept either: the
+ * handle when called on their own, or `tx` when called inside a transaction.
  */
 export interface DbExecutor {
   execute(
@@ -215,106 +264,98 @@ export interface BatchStatement {
 }
 
 /**
- * Run `fn` inside a single `BEGIN IMMEDIATE … COMMIT` transaction that holds
- * the global op-queue for its entire duration.
+ * Run `fn` inside a real SQLite transaction that owns ONE connection from
+ * `BEGIN IMMEDIATE` through `COMMIT`.
  *
- * Why this exists: the per-statement `serialize` queue keeps individual calls
- * ordered but does NOT keep a multi-statement transaction atomic - other DB
- * calls could interleave between a transaction's statements, and sqlx could
- * then serve a later statement from a different pooled connection (one
- * without `busy_timeout`), surfacing `(code: 5) database is locked`.
+ * The transaction lives in Rust (`src-tauri/src/db_tx.rs`). Every statement
+ * issued against the `tx` executor below is routed to the connection that
+ * transaction checked out, so:
  *
- * By wrapping the whole BEGIN…COMMIT in ONE `serialize` task and giving the
- * body a RAW executor (`tx`) that bypasses the queue, the transaction is the
- * only DB acquirer while it runs: every statement lands on the same
- * connection and all other callers queue behind it.
+ *   - a read inside the body sees the body's own uncommitted writes, which
+ *     is what makes read-then-write balance updates safe;
+ *   - sqlx cannot recycle the connection mid-transaction (a checked-out
+ *     connection is not in the idle queue), so a COMMIT can no longer fail
+ *     with "cannot commit - no transaction is active" after a partial write;
+ *   - concurrent callers each get their own connection and their own
+ *     transaction. The second `BEGIN IMMEDIATE` waits on `busy_timeout`
+ *     rather than interleaving, so two simultaneous mutations serialize in
+ *     SQLite instead of racing in JavaScript.
  *
- * IMPORTANT: the body must use the passed `tx` for every DB call (and pass it
- * to any helper that touches the DB). A wrapped `getDb()` call inside the body
- * would deadlock behind this held task.
- *
- * CAVEAT: each statement is still its own pool acquire, and sqlx closes
- * pooled connections on release once they pass `max_lifetime` (30 min
- * default) or sit idle past `idle_timeout` (10 min default). A recycle
- * that lands between this function's statements silently drops the open
- * transaction, and the COMMIT then fails with "cannot commit - no
- * transaction is active". Prefer `executeAtomicBatch` for write-only
- * groups - it is immune to that failure mode. Keep `withTransaction`
- * only for bodies that must read or run JS logic mid-transaction.
+ * IMPORTANT: the body must use the passed `tx` for every DB call, and pass
+ * it to any helper that touches the DB. A plain `getDb()` call inside the
+ * body runs OUTSIDE the transaction - it will not see uncommitted rows and
+ * its writes will not roll back with it.
  */
 export async function withTransaction<T>(
   fn: (tx: DbExecutor) => Promise<T>,
 ): Promise<T> {
-  await getDb(); // ensures rawExecute / rawSelect are assigned
-  const exec = rawExecute;
-  const sel = rawSelect;
-  if (!exec || !sel) throw new Error('Database not initialised');
-  const tx: DbExecutor = { execute: exec, select: sel };
-  return serialize(async () => {
-    // Clear a transaction abandoned by a previous crash/deadlock on this
-    // connection (errors harmlessly when none is active). Without this, one
-    // orphaned BEGIN poisons the connection and every later BEGIN IMMEDIATE
-    // fails with "cannot start a transaction within a transaction". Safe
-    // because `serialize` guarantees no other transaction is mid-flight here.
+  await getDb(); // ensure the plugin has loaded the database and migrated it
+  const token = await beginNativeTx();
+
+  const tx: DbExecutor = {
+    async execute(sql: string, args: unknown[] = []) {
+      const [rowsAffected, lastInsertId] = await invoke<[number, number]>(
+        'tx_execute',
+        { token, query: sql, values: args },
+      ).catch((err) => {
+        throw toDbError(err);
+      });
+      return { rowsAffected, lastInsertId };
+    },
+    async select<R>(sql: string, args: unknown[] = []) {
+      return invoke<R>('tx_select', {
+        token,
+        query: sql,
+        values: args,
+      }).catch((err) => {
+        throw toDbError(err);
+      });
+    },
+  };
+
+  try {
+    const result = await fn(tx);
+    await invoke('tx_commit', { token }).catch((err) => {
+      throw toDbError(err);
+    });
+    return result;
+  } catch (err) {
     try {
-      await exec('ROLLBACK');
+      await invoke('tx_rollback', { token });
     } catch {
-      // No active transaction - nothing to clear.
+      // A secondary failure during rollback is not actionable - the
+      // connection is dropped either way. Surface the original error.
     }
-    await exec('BEGIN IMMEDIATE');
-    try {
-      const result = await fn(tx);
-      await exec('COMMIT');
-      return result;
-    } catch (err) {
-      try {
-        await exec('ROLLBACK');
-      } catch {
-        // Secondary failure during rollback isn't actionable - keep the
-        // original error as the thing surfaced to the caller.
-      }
-      throw err;
-    }
-  });
+    throw err;
+  }
+}
+
+/** Open a native transaction, normalising the plugin's string rejections. */
+async function beginNativeTx(): Promise<string> {
+  try {
+    return await invoke<string>('tx_begin', { db: DB_URL });
+  } catch (err) {
+    throw toDbError(err);
+  }
 }
 
 /**
- * Run a group of write statements as ONE atomic SQLite transaction sent
- * in a SINGLE plugin `execute` call: `BEGIN IMMEDIATE; <stmts>; COMMIT`.
+ * Run a group of write statements as one atomic transaction.
  *
- * Why this exists: `withTransaction` issues BEGIN / body / COMMIT as
- * separate `execute` calls, each its own pool acquire, and a connection
- * recycle between them drops the transaction mid-flight (see the caveat
- * on `withTransaction`). sqlx's SQLite driver splits a multi-statement
- * string on ';', binds positional args across the statements in order,
- * and runs everything on ONE connection inside one acquire - so this
- * batch form cannot be torn apart by pool churn.
- *
- * Contract:
- *   - Statements must be developer literals using `?` binds only, with
- *     no `;` and no literal `?` inside quoted strings. Guarded below:
- *     an embedded `;` is rejected (it would misalign every following
- *     statement's binds) and each statement's `?` count must match its
- *     params length.
- *   - Write-only: rows produced by a SELECT would be discarded.
- *   - `rowsAffected` is the SUM across all statements in the batch.
- *   - On failure the recovery ROLLBACK is best-effort, same residual
- *     risk and self-healing preamble as `withTransaction`.
+ * This is now a thin wrapper over `withTransaction`. It previously
+ * concatenated everything into a single `BEGIN; …; COMMIT` string to dodge
+ * the pool-recycling hazard, which forced two awkward restrictions: no `;`
+ * anywhere in a statement, and write-only (SELECT rows were discarded).
+ * With a real transaction neither workaround is needed, but the validation
+ * below is kept - a placeholder/param mismatch is a caller bug worth
+ * catching early, and callers still rely on the summed `rowsAffected`.
  */
 export async function executeAtomicBatch(
   statements: BatchStatement[],
 ): Promise<{ rowsAffected: number }> {
   if (statements.length === 0) return { rowsAffected: 0 };
-  await getDb(); // ensures rawExecute is assigned
-  const exec = rawExecute;
-  if (!exec) throw new Error('Database not initialised');
 
   for (const stmt of statements) {
-    if (stmt.sql.includes(';')) {
-      throw new Error(
-        `executeAtomicBatch: statement contains ';': ${stmt.sql.slice(0, 80)}`,
-      );
-    }
     const placeholders = (stmt.sql.match(/\?/g) ?? []).length;
     const paramCount = stmt.params?.length ?? 0;
     if (placeholders !== paramCount) {
@@ -324,34 +365,12 @@ export async function executeAtomicBatch(
     }
   }
 
-  const sql = [
-    'BEGIN IMMEDIATE',
-    ...statements.map((s) => s.sql),
-    'COMMIT',
-  ].join('; ');
-  const args = statements.flatMap((s) => s.params ?? []);
-
-  return serialize(async () => {
-    // Clear a transaction abandoned by a previous crash on this
-    // connection (errors harmlessly when none is active) - same
-    // rationale as withTransaction's preamble.
-    try {
-      await exec('ROLLBACK');
-    } catch {
-      // No active transaction - nothing to clear.
+  return withTransaction(async (tx) => {
+    let rowsAffected = 0;
+    for (const stmt of statements) {
+      const res = await tx.execute(stmt.sql, stmt.params ?? []);
+      rowsAffected += res.rowsAffected;
     }
-    try {
-      const result = await exec(sql, args);
-      return { rowsAffected: result.rowsAffected };
-    } catch (err) {
-      // A mid-batch failure leaves the transaction open on the
-      // connection that served the batch; roll it back best-effort.
-      try {
-        await exec('ROLLBACK');
-      } catch {
-        // Keep the original error as the surfaced failure.
-      }
-      throw err;
-    }
+    return { rowsAffected };
   });
 }

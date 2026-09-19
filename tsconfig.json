@@ -5,6 +5,10 @@
     "lib": ["ES2021", "DOM", "DOM.Iterable"],
     "module": "ESNext",
     "skipLibCheck": true,
+    // Empty on purpose: this is a Tauri webview. Without it, having
+    // @types/node installed for the test harness would make Node
+    // globals ambiently available to application code.
+    "types": [],
     "moduleResolution": "bundler",
     "allowImportingTsExtensions": true,
     "isolatedModules": true,
@@ -18,5 +22,6 @@
     "forceConsistentCasingInFileNames": true
   },
   "include": ["src"],
+  "exclude": ["src/test", "src/**/*.test.ts"],
   "references": [{ "path": "./tsconfig.node.json" }]
 }
