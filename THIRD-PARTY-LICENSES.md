@@ -68,7 +68,7 @@ Applies to:
 - `@types/d3-shape@3.1.8` - https://github.com/DefinitelyTyped/DefinitelyTyped
 - `@types/d3-time@3.0.4` - https://github.com/DefinitelyTyped/DefinitelyTyped
 - `@types/d3-timer@3.0.2` - https://github.com/DefinitelyTyped/DefinitelyTyped
-- `@types/react@19.2.14` - https://github.com/DefinitelyTyped/DefinitelyTyped
+- `@types/react@19.3.0` - https://github.com/DefinitelyTyped/DefinitelyTyped
 
 <details>
 <summary>Licence text</summary>
@@ -101,9 +101,9 @@ MIT License
 
 Applies to:
 
-- `react-dom@19.2.4` - https://github.com/facebook/react
-- `react@19.2.4` - https://github.com/facebook/react
-- `scheduler@0.27.0` - https://github.com/facebook/react
+- `react-dom@19.3.0` - https://github.com/react/react
+- `react@19.3.0` - https://github.com/react/react
+- `scheduler@0.28.0` - https://github.com/react/react
 
 <details>
 <summary>Licence text</summary>
@@ -240,7 +240,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 Applies to:
 
-- `big.js@6.2.2` (Michael Mclaughlin) - https://github.com/MikeMcl/big.js
+- `big.js@7.0.1` (Michael Mclaughlin) - https://github.com/MikeMcl/big.js
 
 <details>
 <summary>Licence text</summary>
@@ -249,7 +249,7 @@ Applies to:
 The MIT License (MIT)
 =====================
 
-Copyright © `<2024>` `Michael Mclaughlin`
+Copyright © `<2025>` `Michael Mclaughlin`
 
 Permission is hereby granted, free of charge, to any person
 obtaining a copy of this software and associated documentation
@@ -919,7 +919,7 @@ SOFTWARE.
 
 Applies to:
 
-- `zustand@5.0.12` (Paul Henschel) - https://github.com/pmndrs/zustand
+- `zustand@5.0.14` (Paul Henschel) - https://github.com/pmndrs/zustand
 
 <details>
 <summary>Licence text</summary>
@@ -1109,7 +1109,7 @@ THIS SOFTWARE.
 
 Applies to:
 
-- `lucide-react@0.468.0` (Eric Fennis) - https://github.com/lucide-icons/lucide
+- `lucide-react@1.47.0` (Eric Fennis) - https://github.com/lucide-icons/lucide
 
 <details>
 <summary>Licence text</summary>
@@ -1117,7 +1117,7 @@ Applies to:
 ```text
 ISC License
 
-Copyright (c) for portions of Lucide are held by Cole Bemis 2013-2022 as part of Feather (MIT). All other copyright (c) for Lucide are held by Lucide Contributors 2022.
+Copyright (c) 2026 Lucide Icons and Contributors
 
 Permission to use, copy, modify, and/or distribute this software for any
 purpose with or without fee is hereby granted, provided that the above
@@ -1130,6 +1130,34 @@ ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
 WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
 ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+
+---
+
+The following Lucide icons are derived from the Feather project:
+
+airplay, alert-circle, alert-octagon, alert-triangle, aperture, arrow-down-circle, arrow-down-left, arrow-down-right, arrow-down, arrow-left-circle, arrow-left, arrow-right-circle, arrow-right, arrow-up-circle, arrow-up-left, arrow-up-right, arrow-up, at-sign, calendar, cast, check, chevron-down, chevron-left, chevron-right, chevron-up, chevrons-down, chevrons-left, chevrons-right, chevrons-up, circle, clipboard, clock, code, columns, command, compass, corner-down-left, corner-down-right, corner-left-down, corner-left-up, corner-right-down, corner-right-up, corner-up-left, corner-up-right, crosshair, database, divide-circle, divide-square, dollar-sign, download, external-link, feather, frown, hash, headphones, help-circle, info, italic, key, layout, life-buoy, link-2, link, loader, lock, log-in, log-out, maximize, meh, minimize, minimize-2, minus-circle, minus-square, minus, monitor, moon, more-horizontal, more-vertical, move, music, navigation-2, navigation, octagon, pause-circle, percent, plus-circle, plus-square, plus, power, radio, rss, search, server, share, shopping-bag, sidebar, smartphone, smile, square, table-2, tablet, target, terminal, trash-2, trash, triangle, tv, type, upload, x-circle, x-octagon, x-square, x, zoom-in, zoom-out
+
+The MIT License (MIT) (for the icons listed above)
+
+Copyright (c) 2013-present Cole Bemis
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
 ```
 
 </details>
@@ -1726,7 +1754,7 @@ This project is released under the MIT license, but the vendor'ed in libraries i
 
 ## Rust dependencies
 
-- Apache License 2.0 (309)
+- Apache License 2.0 (305)
 - MIT License (130)
 - Unicode License v3 (19)
 - ISC License (18)
@@ -2956,17 +2984,13 @@ Applies to:
 - `windows-link` 0.2.1 - https://github.com/microsoft/windows-rs
 - `windows-numerics` 0.2.0 - https://github.com/microsoft/windows-rs
 - `windows-registry` 0.5.3 - https://github.com/microsoft/windows-rs
-- `windows-registry` 0.6.1 - https://github.com/microsoft/windows-rs
 - `windows-result` 0.3.4 - https://github.com/microsoft/windows-rs
-- `windows-result` 0.4.1 - https://github.com/microsoft/windows-rs
 - `windows-strings` 0.4.2 - https://github.com/microsoft/windows-rs
-- `windows-strings` 0.5.1 - https://github.com/microsoft/windows-rs
-- `windows-sys` 0.45.0 - https://github.com/microsoft/windows-rs
 - `windows-sys` 0.48.0 - https://github.com/microsoft/windows-rs
+- `windows-sys` 0.52.0 - https://github.com/microsoft/windows-rs
 - `windows-sys` 0.59.0 - https://github.com/microsoft/windows-rs
 - `windows-sys` 0.60.2 - https://github.com/microsoft/windows-rs
 - `windows-sys` 0.61.2 - https://github.com/microsoft/windows-rs
-- `windows-targets` 0.42.2 - https://github.com/microsoft/windows-rs
 - `windows-targets` 0.48.5 - https://github.com/microsoft/windows-rs
 - `windows-targets` 0.52.6 - https://github.com/microsoft/windows-rs
 - `windows-targets` 0.53.5 - https://github.com/microsoft/windows-rs
@@ -2976,7 +3000,6 @@ Applies to:
 - `windows_x86_64_gnu` 0.48.5 - https://github.com/microsoft/windows-rs
 - `windows_x86_64_gnu` 0.52.6 - https://github.com/microsoft/windows-rs
 - `windows_x86_64_gnu` 0.53.1 - https://github.com/microsoft/windows-rs
-- `windows_x86_64_msvc` 0.42.2 - https://github.com/microsoft/windows-rs
 - `windows_x86_64_msvc` 0.48.5 - https://github.com/microsoft/windows-rs
 - `windows_x86_64_msvc` 0.52.6 - https://github.com/microsoft/windows-rs
 - `windows_x86_64_msvc` 0.53.1 - https://github.com/microsoft/windows-rs
@@ -10881,27 +10904,28 @@ Applies to:
 - `ryu` 1.0.23 - https://github.com/dtolnay/ryu
 - `semver` 1.0.28 - https://github.com/dtolnay/semver
 - `serde-untagged` 0.1.9 - https://github.com/dtolnay/serde-untagged
-- `serde` 1.0.228 - https://github.com/serde-rs/serde
-- `serde_core` 1.0.228 - https://github.com/serde-rs/serde
-- `serde_derive` 1.0.228 - https://github.com/serde-rs/serde
+- `serde` 1.0.229 - https://github.com/serde-rs/serde
+- `serde_core` 1.0.229 - https://github.com/serde-rs/serde
+- `serde_derive` 1.0.229 - https://github.com/serde-rs/serde
 - `serde_derive_internals` 0.29.1 - https://github.com/serde-rs/serde
-- `serde_json` 1.0.150 - https://github.com/serde-rs/json
+- `serde_json` 1.0.151 - https://github.com/serde-rs/json
 - `serde_repr` 0.1.20 - https://github.com/dtolnay/serde-repr
 - `serde_urlencoded` 0.7.1 - https://github.com/nox/serde_urlencoded
 - `shlex` 2.0.1 - https://github.com/comex/rust-shlex
 - `siphasher` 1.0.3 - https://github.com/jedisct1/rust-siphash
 - `syn` 2.0.118 - https://github.com/dtolnay/syn
+- `syn` 3.0.6 - https://github.com/dtolnay/syn
 - `sync_wrapper` 1.0.2 - https://github.com/Actyx/sync_wrapper
 - `tauri-build` 2.6.3 - https://github.com/tauri-apps/tauri
 - `tauri-codegen` 2.6.3 - https://github.com/tauri-apps/tauri
 - `tauri-macros` 2.6.3 - https://github.com/tauri-apps/tauri
-- `tauri-plugin-deep-link` 2.4.9 - https://github.com/tauri-apps/plugins-workspace
-- `tauri-plugin-dialog` 2.7.1 - https://github.com/tauri-apps/plugins-workspace
+- `tauri-plugin-deep-link` 2.4.10 - https://github.com/tauri-apps/plugins-workspace
+- `tauri-plugin-dialog` 2.7.2 - https://github.com/tauri-apps/plugins-workspace
 - `tauri-plugin-fs` 2.5.1 - https://github.com/tauri-apps/plugins-workspace
 - `tauri-plugin-http` 2.5.9 - https://github.com/tauri-apps/plugins-workspace
 - `tauri-plugin-shell` 2.3.5 - https://github.com/tauri-apps/plugins-workspace
-- `tauri-plugin-single-instance` 2.4.2 - https://github.com/tauri-apps/plugins-workspace
-- `tauri-plugin-sql` 2.4.0 - https://github.com/tauri-apps/plugins-workspace
+- `tauri-plugin-single-instance` 2.4.4 - https://github.com/tauri-apps/plugins-workspace
+- `tauri-plugin-sql` 2.4.1 - https://github.com/tauri-apps/plugins-workspace
 - `tauri-plugin` 2.6.3 - https://github.com/tauri-apps/tauri
 - `tauri-runtime-wry` 2.11.4 - https://github.com/tauri-apps/tauri
 - `tauri-runtime` 2.11.3 - https://github.com/tauri-apps/tauri
