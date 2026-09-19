@@ -1726,7 +1726,7 @@ This project is released under the MIT license, but the vendor'ed in libraries i
 
 ## Rust dependencies
 
-- Apache License 2.0 (310)
+- Apache License 2.0 (309)
 - MIT License (130)
 - Unicode License v3 (19)
 - ISC License (18)
@@ -2963,7 +2963,6 @@ Applies to:
 - `windows-strings` 0.5.1 - https://github.com/microsoft/windows-rs
 - `windows-sys` 0.45.0 - https://github.com/microsoft/windows-rs
 - `windows-sys` 0.48.0 - https://github.com/microsoft/windows-rs
-- `windows-sys` 0.52.0 - https://github.com/microsoft/windows-rs
 - `windows-sys` 0.59.0 - https://github.com/microsoft/windows-rs
 - `windows-sys` 0.60.2 - https://github.com/microsoft/windows-rs
 - `windows-sys` 0.61.2 - https://github.com/microsoft/windows-rs
@@ -7616,7 +7615,7 @@ Applies to:
 - `ring` 0.17.14 - https://github.com/briansmith/ring
 - `rustc_version` 0.4.1 - https://github.com/djc/rustc-version-rs
 - `rustix` 1.1.4 - https://github.com/bytecodealliance/rustix
-- `rustls` 0.23.41 - https://github.com/rustls/rustls
+- `rustls` 0.23.45 - https://github.com/rustls/rustls
 - `scopeguard` 1.2.0 - https://github.com/bluss/scopeguard
 - `serde_with` 3.21.0 - https://github.com/jonasbb/serde_with/
 - `serde_with_macros` 3.21.0 - https://github.com/jonasbb/serde_with/
@@ -12091,7 +12090,7 @@ CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 Applies to:
 
-- `rustls-webpki` 0.103.13 - https://github.com/rustls/webpki
+- `rustls-webpki` 0.103.15 - https://github.com/rustls/webpki
 
 <details>
 <summary>Licence text</summary>
