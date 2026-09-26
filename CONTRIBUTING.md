@@ -25,6 +25,7 @@ Useful commands:
 | `npm run test` | vitest unit tests |
 | `npm run build` | production web bundle + the mock-leak scanner |
 | `cargo check --manifest-path src-tauri/Cargo.toml` | Rust shell check |
+| `cargo test --manifest-path src-tauri/Cargo.toml` | Rust shell tests (`src-tauri/tests/`, transaction commands over mock IPC) |
 | `npm run tauri:build` | full production binary |
 | `npm run tauri:build:demo` | demo binary (installs side by side) |
 
@@ -61,8 +62,8 @@ codebase is layered.
 ## Pull requests
 
 - Keep PRs focused; unrelated refactors go in their own PR.
-- CI must be green (typecheck, tests, production bundle, cargo check on
-  all three OSes).
+- CI must be green (typecheck, tests, production bundle, cargo check and
+  cargo test on all three OSes).
 - If behavior changes, update the matching doc in `docs/` in the same PR.
 - Never include real bank data, credentials, or `.pem` files in code,
   fixtures, tests, or issue text.

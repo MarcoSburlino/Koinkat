@@ -6,7 +6,7 @@
 
 - [ ] `npm run typecheck` passes
 - [ ] `npm run test` passes
-- [ ] `cargo check --manifest-path src-tauri/Cargo.toml` passes (if `src-tauri/` changed)
+- [ ] `cargo check` and `cargo test` pass with `--manifest-path src-tauri/Cargo.toml` (if `src-tauri/` changed)
 - [ ] Money amounts go through `src/domain/money.ts` (no float arithmetic)
 - [ ] New workspace-scoped queries call `requireActiveKoinkatAccountId()`
 - [ ] New monetary DOM nodes carry `data-privacy-field`

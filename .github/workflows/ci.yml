@@ -137,3 +137,9 @@ jobs:
         with:
           workspaces: src-tauri
       - run: cargo check --manifest-path src-tauri/Cargo.toml
+      # Rust tests (src-tauri/tests/). db_tx_ipc drives the transaction
+      # commands through Tauri's IPC mock runtime with the exact arguments
+      # the webview sends; every write in the app goes through them. Runs on
+      # all three OSes for the same reason the check does. On Windows the
+      # test executables need a manifest to start at all - see build.rs.
+      - run: cargo test --manifest-path src-tauri/Cargo.toml
