@@ -6,6 +6,8 @@ uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.1.5] - 2026-09-26
+
 If you have data, Koinkat should always find it. This release is about the
 ways it could fail to.
 
