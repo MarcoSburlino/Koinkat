@@ -34,7 +34,7 @@ serde_json = "1"
 # opened. Version and features are kept in step with the plugin's own
 # declaration (sqlx/sqlite + sqlx/runtime-tokio) so cargo unifies both on a
 # single sqlx instance rather than linking two SQLite drivers.
-sqlx = { version = "0.8", default-features = false, features = ["sqlite", "runtime-tokio"] }
+sqlx = { version = "0.9", default-features = false, features = ["sqlite", "runtime-tokio"] }
 log = "0.4"
 # OS credential store for the Enable Banking private key. Each feature
 # activates only on its own platform (Windows Credential Manager, macOS
