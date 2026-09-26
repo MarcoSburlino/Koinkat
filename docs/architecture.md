@@ -52,7 +52,7 @@ src/
 │   ├── database.ts        # `getDb()` + `withTransaction()` + snapshot export
 │   ├── schema.sql         # Legacy v1 schema (reference only)
 │   ├── schema-v2.sql      # Current schema
-│   ├── migration-v2…v14.sql # Incremental migrations
+│   ├── migration-v2…v15.sql # Incremental migrations
 │   └── seed.ts            # Default categories + MCC rule seeding
 ├── domain/                # Pure helpers (no React, no DB)
 │   ├── money.ts           # big.js wrappers + tryConvert
@@ -143,6 +143,8 @@ the newer version instead of suggesting a retry.
   offers nothing else.
 
 The fs permissions are command-scoped in `capabilities/default.json`:
+`exists` on `$APPCONFIG/backups`, `backups/*`, the database and its
+sidecars, `read-dir` on `$APPCONFIG/backups`,
 `mkdir` on `$APPCONFIG/backups`, `remove` on `$APPCONFIG/backups/*`,
 `rename` on the database, its sidecars, `koinkat-replaced-*` and
 `backups/*` (the `.partial` step), and
@@ -150,6 +152,14 @@ The fs permissions are command-scoped in `capabilities/default.json`:
 lists `$APPCONFIG/koinkat.db` (nothing reads or writes it through the fs
 plugin since export moved to `VACUUM INTO`), so `remove` cannot reach the
 database.
+
+Every one of these must be granted explicitly. `fs:default` looks as if it
+covers reads in the app folders, but in tauri-plugin-fs 2.5.1 its
+`read-app-specific-dirs-recursive` set lists `scope-app-recursive` as a
+command rather than a scope, so `exists` and `read_dir` are allowed with
+no path in scope. 0.1.5 relied on it and every backup failed with
+"forbidden path". `src/lib/capabilities.test.ts` checks each (command,
+path) pair the backup service uses against the real capability file.
 
 Folder-opening buttons are deliberately absent: the shell plugin's `open`
 accepts only https/mailto/tel URLs by default, so a folder path is refused.
@@ -200,8 +210,8 @@ persistence library. Persistence (when needed) is done by hand against
 |---|---|---|
 | `user-store.ts` | List of users + active user | `setActive` clears the active-koinkat-account so a user switch always lands in the hub. |
 | `koinkat-account-store.ts` | List of workspaces + active workspace | Calls `ensureKoinkatAccountSeeded(id)` on activation so pre-v4 workspaces get categories + MCC rules on first re-entry. |
-| `app-store.ts` | App-level settings (currency, theme, decimal separator), `pendingReviewCount` for the Sidebar/Dashboard badge | Settings are mirrored from the active workspace. |
-| `bank-store.ts` | List of bank connections, sync state, `isConfigured`, `isDemoMode` | Wraps `bank-sync-service` so the UI can call `startSync`, `startFullResync`, `startFullResyncOverride`, `startPullOlderHistory`. |
+| `app-store.ts` | App-level settings (currency, theme, decimal separator), `pendingReviewCount` and `transferSuggestionCount` for the Sidebar/Dashboard badge, `dataVersion` | Settings are mirrored from the active workspace. `notifyDataChanged()` bumps `dataVersion` and refreshes both counts; pages reload quietly on it through `hooks/useDataChanged`. |
+| `bank-store.ts` | List of bank connections, sync state, `isConfigured`, `isDemoMode` | Wraps `bank-sync-service` so the UI can call `startSync`, `startFullResync`, `startFullResyncOverride`, `startPullOlderHistory`. Every sync ends (success or not) with `notifyDataChanged()`, so whatever page is open refreshes in place. |
 | `ui-store.ts` | Sidebar open/closed, privacy mode | Privacy mode is the only `localStorage`-backed UI flag. |
 
 ## Services
@@ -216,7 +226,7 @@ directly for one-off reads/writes.
 | `koinkat-account-service` | CRUD workspaces + per-workspace cascade. Owns workspace seeding. |
 | `account-service` | Manual + linked bank accounts (currency, balance, pinned, color). |
 | `transaction-service` | Income/expense/transfer rows. Owns the split-expense lifecycle and FX-aware balance maintenance. |
-| `transfer-detection-service` | Matches income↔expense pairs across accounts that look like transfers; surfaces them in the Review queue. |
+| `transfer-detection-service` | Suggests transfers between the user's own accounts (outflow on one account, inflow on another; certain when the stored counterparty IBAN is one of the user's linked accounts). Confirm / dismiss / undo, manual pairing, one-row transfers. Suggestions show on Review and on Transactions. |
 | `category-service` | Categories + the system macros. `categorization-service` consumes this. |
 | `categorization-service` | Three-stage rule engine (user → learned → MCC). Populates `categorization_source`, `merchant_normalized`, `needs_review`. |
 | `rule-service` | CRUD over `categorization_rules` (Rules debug page + automatic learning from user confirmations). |

@@ -1744,6 +1744,28 @@
           }
         },
         {
+          "entry_reference": "5510284471",
+          "transaction_id": "3c1f6f0e-5e2a-4a8b-9d61-0b7e2f4c9a15",
+          "status": "BOOK",
+          "transaction_amount": {
+            "currency": "EUR",
+            "amount": "2338.40"
+          },
+          "credit_debit_indicator": "CRDT",
+          "booking_date": "2026-03-23",
+          "transaction_date": "2026-03-23",
+          "debtor": {
+            "name": "MARCO ROSSI"
+          },
+          "debtor_account": {
+            "iban": "GB82BARC20000055779911"
+          },
+          "remittance_information": [
+            "BONIFICO ESTERO IN ENTRATA",
+            "ORDINANTE: MARCO ROSSI"
+          ]
+        },
+        {
           "entry_reference": "9503167458",
           "transaction_id": "8d3aed99-711c-21c9-bdc1-4f1f295d6fbf",
           "status": "BOOK",
@@ -3397,6 +3419,9 @@
           "transaction_date": "2026-03-20",
           "creditor": {
             "name": "INTL WIRE TRANSFER"
+          },
+          "creditor_account": {
+            "iban": "IT60X0542811101000000111222"
           },
           "remittance_information": [
             "OUTGOING INTERNATIONAL WIRE",

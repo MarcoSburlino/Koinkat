@@ -18,6 +18,7 @@ import { InfoBanner } from '../components/ui/InfoBanner';
 import { Select } from '../components/ui/Select';
 import { PageHeader } from '../components/layout/PageHeader';
 import { useAppStore } from '../stores/app-store';
+import { useDataChanged } from '../hooks/useDataChanged';
 import { formatAmount } from '../lib/format';
 import { MONTH_NAMES } from '../lib/date-constants';
 import { categoryBreakdown, availableYears, sumNonBudgetedExpenses } from '../services/reporting-service';
@@ -121,9 +122,10 @@ export function Analysis() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Load breakdown whenever filters change.
-  const load = useCallback(async () => {
-    setLoading(true);
+  // Load breakdown whenever filters change. `quiet` keeps the current
+  // figures on screen while re-reading (used after a sync).
+  const load = useCallback(async (opts?: { quiet?: boolean }) => {
+    if (!opts?.quiet) setLoading(true);
     setLoadError(null);
     try {
       // Current and previous period are independent - fetch in parallel.
@@ -178,7 +180,7 @@ export function Analysis() {
     } catch (err) {
       setLoadError(err instanceof Error ? err.message : 'Failed to load analysis data');
     } finally {
-      setLoading(false);
+      if (!opts?.quiet) setLoading(false);
     }
   }, [year, month, type, settings.preferredCurrency]);
 
@@ -204,18 +206,8 @@ export function Analysis() {
     [setSearchParams],
   );
 
-  const toggleDrawer = useCallback(
+  const fetchDrawer = useCallback(
     async (key: DrawerKey) => {
-      if (expanded === key) {
-        setExpanded(null);
-        return;
-      }
-      setExpanded(key);
-      if (drawerData[key]) return; // cached
-      setDrawerData((prev) => ({
-        ...prev,
-        [key]: { loading: true, transactions: [] },
-      }));
       try {
         const isUncategorized = key === UNCATEGORIZED_KEY;
         const result = await transactionService.listTransactions({
@@ -226,6 +218,9 @@ export function Analysis() {
           // subcategories (rollup).
           macroCategoryId: isUncategorized ? undefined : key,
           uncategorized: isUncategorized ? true : undefined,
+          // The total above leaves transfers out (a confirmed transfer also
+          // has no category, so it would land in Uncategorized).
+          excludeTransfers: true,
           perPage: 200,
           sortBy: 'date',
           sortDir: 'desc',
@@ -245,8 +240,33 @@ export function Analysis() {
         }));
       }
     },
-    [expanded, drawerData, year, month, type],
+    [year, month, type],
   );
+
+  const toggleDrawer = useCallback(
+    async (key: DrawerKey) => {
+      if (expanded === key) {
+        setExpanded(null);
+        return;
+      }
+      setExpanded(key);
+      if (drawerData[key]) return; // cached
+      setDrawerData((prev) => ({
+        ...prev,
+        [key]: { loading: true, transactions: [] },
+      }));
+      await fetchDrawer(key);
+    },
+    [expanded, drawerData, fetchDrawer],
+  );
+
+  // A sync finished: re-read the figures without collapsing the open
+  // drawer. Cached drawers are dropped; the open one refreshes in place.
+  useDataChanged(() => {
+    void load({ quiet: true });
+    setDrawerData((prev) => (expanded && prev[expanded] ? { [expanded]: prev[expanded] } : {}));
+    if (expanded) void fetchDrawer(expanded);
+  });
 
   // ── Derived display values ─────────────────────────────────────
   const yearOptions = years.map((y) => ({

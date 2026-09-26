@@ -34,6 +34,7 @@ import { CategoryPicker } from '../components/ui/CategoryPicker';
 import { PageHeader } from '../components/layout/PageHeader';
 
 import { useAppStore } from '../stores/app-store';
+import { useDataChanged } from '../hooks/useDataChanged';
 import { formatAmount, formatMoney } from '../lib/format';
 import { MONTH_NAMES_SHORT } from '../lib/date-constants';
 import { dec, qCent } from '../domain/money';
@@ -131,6 +132,11 @@ export function Budgets() {
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [yearlyData, setYearlyData] = useState<YearlyBudgetData | null>(null);
   const [focusedPeriodId, setFocusedPeriodId] = useState<string | null>(null);
+  // Read by the quiet reload, which must not depend on (and re-create
+  // itself for) every focus change.
+  const focusedPeriodIdRef = useRef<string | null>(null);
+  focusedPeriodIdRef.current = focusedPeriodId;
+  const dataVersion = useAppStore((s) => s.dataVersion);
   const [loading, setLoading] = useState(true);
 
   // Events + spending
@@ -175,8 +181,12 @@ export function Budgets() {
 
   // ── Load data ─────────────────────────────────────────────────────────
 
-  const load = useCallback(async () => {
-    setLoading(true);
+  // `quiet` (after a sync) keeps the page mounted and keeps the month the
+  // user is looking at, instead of unmounting everything behind the loading
+  // state and snapping back to the current month.
+  const load = useCallback(async (opts?: { quiet?: boolean }) => {
+    const quiet = opts?.quiet === true;
+    if (!quiet) setLoading(true);
     setLoadError(null);
     try {
       // Run the three independent top-level fetches in parallel.
@@ -190,8 +200,15 @@ export function Budgets() {
       setYearlyData(data);
       setEvents(list);
 
-      // Decide focused period.
-      if (data) {
+      // Decide focused period. A quiet reload stays on the month the user
+      // is looking at when it is still part of the budget.
+      const keepFocus =
+        quiet &&
+        !!data &&
+        data.periods.some((p) => p.id === focusedPeriodIdRef.current);
+      if (keepFocus) {
+        // Stay on the month on screen.
+      } else if (data) {
         const now = new Date();
         const isCurrentYear = now.getFullYear() === selectedYear;
         if (isCurrentYear) {
@@ -241,13 +258,17 @@ export function Budgets() {
       console.error('[Budgets.load] failed:', err);
       setLoadError(msg || 'Failed to load budget data.');
     } finally {
-      setLoading(false);
+      if (!quiet) setLoading(false);
     }
   }, [selectedYear]);
 
   useEffect(() => {
     load();
   }, [load]);
+
+  useDataChanged(() => {
+    void load({ quiet: true });
+  });
 
   // ── Derived data ──────────────────────────────────────────────────────
 
@@ -288,7 +309,7 @@ export function Budgets() {
     return () => {
       cancelled = true;
     };
-  }, [focusedMonthKey, focusedBudgetCcy]);
+  }, [focusedMonthKey, focusedBudgetCcy, dataVersion]);
 
   const activeEvents = useMemo(
     () => events.filter((e) => !e.isExpired),
@@ -2507,6 +2528,11 @@ function RecurringCostsSection({
   useEffect(() => {
     void reload();
   }, [reload]);
+
+  // After a sync, new charges may have landed for this month.
+  useDataChanged(() => {
+    void reload();
+  });
 
   async function runAction(_id: string, work: () => Promise<void>) {
     setActionErr(null);

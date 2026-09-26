@@ -15,6 +15,7 @@ import { Modal } from '../components/ui/Modal';
 import { CategoryIcon } from '../components/ui/CategoryIcon';
 import { PageHeader } from '../components/layout/PageHeader';
 import * as categoryService from '../services/category-service';
+import { useDataChanged } from '../hooks/useDataChanged';
 import type { Category } from '../types/models';
 
 /**
@@ -77,6 +78,11 @@ export function Categories() {
   useEffect(() => {
     load();
   }, [load]);
+
+  // The per-category transaction counts change when a sync imports rows.
+  useDataChanged(() => {
+    void load();
+  });
 
   const expenseMacros = tree.filter((c) => c.type === 'expense');
   const incomeMacros = tree.filter((c) => c.type === 'income');

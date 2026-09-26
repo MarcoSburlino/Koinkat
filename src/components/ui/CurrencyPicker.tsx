@@ -1,6 +1,7 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import { ISO_4217_CURRENCIES, CURRENCY_CODES } from '../../domain/currencies';
 import { ChevronDown } from 'lucide-react';
+import { FloatingPanel } from './FloatingPanel';
 
 interface CurrencyPickerProps {
   value: string;
@@ -20,17 +21,14 @@ export function CurrencyPicker({
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
   const containerRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
-    function handleClickOutside(e: MouseEvent) {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
-        setOpen(false);
-        setSearch('');
-      }
-    }
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+  // Outside clicks, Escape and scrolling the page all land here
+  // (FloatingPanel owns those listeners).
+  const close = useCallback(() => {
+    setOpen(false);
+    setSearch('');
   }, []);
 
   const filtered = CURRENCY_CODES.filter((code) => {
@@ -57,12 +55,14 @@ export function CurrencyPicker({
       )}
       <div className="relative">
         <button
+          ref={triggerRef}
           type="button"
           disabled={disabled}
           onClick={() => {
             if (!disabled) {
               setOpen(!open);
-              setTimeout(() => inputRef.current?.focus(), 0);
+              // preventScroll: focusing must never scroll the page.
+              setTimeout(() => inputRef.current?.focus({ preventScroll: true }), 0);
             }
           }}
           className="w-full h-11 rounded-lg px-3 text-sm text-left flex items-center justify-between cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
@@ -78,65 +78,61 @@ export function CurrencyPicker({
           <ChevronDown size={16} style={{ color: 'var(--text-muted)' }} />
         </button>
 
-        {open && (
-          <div
-            className="absolute top-full left-0 right-0 mt-1 rounded-lg overflow-hidden"
-            style={{
-              backgroundColor: 'var(--surface)',
-              border: '1px solid var(--border)',
-              boxShadow: 'var(--elev-3)',
-              zIndex: 'var(--z-dropdown)',
-              maxHeight: '280px',
-              display: 'flex',
-              flexDirection: 'column',
-            }}
-          >
-            <div className="p-2" style={{ borderBottom: '1px solid var(--border)' }}>
-              <input
-                ref={inputRef}
-                type="text"
-                placeholder="Search currencies..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="w-full h-9 rounded-md px-3 text-sm outline-none"
-                style={{
-                  backgroundColor: 'var(--surface-2)',
-                  color: 'var(--input-fg)',
-                  border: 'none',
-                }}
-              />
-            </div>
-            <div className="overflow-y-auto" style={{ maxHeight: '230px' }}>
-              {filtered.length === 0 ? (
-                <p
-                  className="text-sm px-3 py-2"
-                  style={{ color: 'var(--text-muted)' }}
-                >
-                  No currencies found
-                </p>
-              ) : (
-                filtered.map((code) => (
-                  <button
-                    key={code}
-                    type="button"
-                    onClick={() => handleSelect(code)}
-                    className="w-full text-left px-3 py-2 text-sm transition-colors hover:opacity-80 cursor-pointer"
-                    style={{
-                      color: 'var(--text)',
-                      backgroundColor:
-                        code === value ? 'var(--nav-active-bg)' : 'transparent',
-                    }}
-                  >
-                    <span className="font-medium">{code}</span>
-                    <span style={{ color: 'var(--text-muted)' }}>
-                      {' '}&mdash; {ISO_4217_CURRENCIES[code]}
-                    </span>
-                  </button>
-                ))
-              )}
-            </div>
+        <FloatingPanel
+          open={open}
+          anchorRef={triggerRef}
+          ignoreRef={containerRef}
+          onDismiss={close}
+          maxHeight={280}
+        >
+          <div className="p-2 shrink-0" style={{ borderBottom: '1px solid var(--border)' }}>
+            <input
+              ref={inputRef}
+              type="text"
+              placeholder="Search currencies..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full h-9 rounded-md px-3 text-sm outline-none"
+              style={{
+                backgroundColor: 'var(--surface-2)',
+                color: 'var(--input-fg)',
+                border: 'none',
+              }}
+            />
           </div>
-        )}
+          <div
+            className="overflow-y-auto flex-1 min-h-0"
+            style={{ overscrollBehavior: 'contain' }}
+          >
+            {filtered.length === 0 ? (
+              <p
+                className="text-sm px-3 py-2"
+                style={{ color: 'var(--text-muted)' }}
+              >
+                No currencies found
+              </p>
+            ) : (
+              filtered.map((code) => (
+                <button
+                  key={code}
+                  type="button"
+                  onClick={() => handleSelect(code)}
+                  className="w-full text-left px-3 py-2 text-sm transition-colors hover:opacity-80 cursor-pointer"
+                  style={{
+                    color: 'var(--text)',
+                    backgroundColor:
+                      code === value ? 'var(--nav-active-bg)' : 'transparent',
+                  }}
+                >
+                  <span className="font-medium">{code}</span>
+                  <span style={{ color: 'var(--text-muted)' }}>
+                    {' · '}{ISO_4217_CURRENCIES[code]}
+                  </span>
+                </button>
+              ))
+            )}
+          </div>
+        </FloatingPanel>
       </div>
       {error && (
         <p className="text-xs" style={{ color: 'var(--danger)' }}>

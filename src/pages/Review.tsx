@@ -1,7 +1,7 @@
 import { formatFullDate as formatDate } from '../lib/date-format';
 import { UPPERCASE_LABEL } from '../lib/label-styles';
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { Check, CheckCheck, Clock, Ellipsis, Repeat2, RefreshCw, RotateCcw, Sparkles, Users } from 'lucide-react';
+import { ArrowLeftRight, Check, CheckCheck, Clock, Ellipsis, Repeat2, RefreshCw, RotateCcw, Sparkles, Users } from 'lucide-react';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Modal } from '../components/ui/Modal';
@@ -12,7 +12,10 @@ import { RecurringBadge } from '../components/ui/RecurringBadge';
 import { PrivacyField } from '../components/ui/PrivacyField';
 import { InfoBanner } from '../components/ui/InfoBanner';
 import { PageHeader } from '../components/layout/PageHeader';
+import { TransferCandidateRow } from '../components/TransferCandidateRow';
+import { TransferPickerModal } from '../components/TransferPickerModal';
 import { useAppStore } from '../stores/app-store';
+import { useDataChanged } from '../hooks/useDataChanged';
 import { formatAmount } from '../lib/format';
 import * as transactionService from '../services/transaction-service';
 import * as categoryService from '../services/category-service';
@@ -24,6 +27,12 @@ import {
   recategorizeAll,
 } from '../services/categorization-service';
 import { recleanImportedNotes } from '../services/bank-sync-service';
+import {
+  findCandidateTransfers,
+  confirmTransferPair,
+  dismissTransferPair,
+  type TransferCandidate,
+} from '../services/transfer-detection-service';
 import type { Transaction, Category } from '../types/models';
 import type { RecurrenceCadence } from '../types/enums';
 
@@ -172,6 +181,119 @@ export function Review() {
   useEffect(() => {
     load();
   }, [load]);
+
+  // ── Suggested transfers ───────────────────────────────────────────
+  // Pairs across the WHOLE history, not only rows still in the queue: a
+  // transfer confirmed with a category earlier still counts as income and
+  // spending until it is marked as a transfer.
+  const [transferCandidates, setTransferCandidates] = useState<TransferCandidate[]>([]);
+  // Outflow ids of suggestions being saved; 'all' while "Confirm all" runs.
+  // Per row, so acting on one suggestion leaves the others clickable.
+  const [transferBusy, setTransferBusy] = useState<ReadonlySet<string>>(new Set());
+  const markTransferBusy = (id: string, busy: boolean) =>
+    setTransferBusy((prev) => {
+      const next = new Set(prev);
+      if (busy) next.add(id);
+      else next.delete(id);
+      return next;
+    });
+  // Row whose "It's a transfer" picker is open.
+  const [transferFor, setTransferFor] = useState<Transaction | null>(null);
+
+  const refreshSuggestions = useCallback(async () => {
+    try {
+      setTransferCandidates(await findCandidateTransfers(settings.preferredCurrency));
+    } catch (err) {
+      console.warn('[Review] transfer suggestions failed:', err);
+      setTransferCandidates([]);
+    }
+  }, [settings.preferredCurrency]);
+
+  useEffect(() => {
+    void refreshSuggestions();
+  }, [refreshSuggestions]);
+
+  // A sync finished (or other data changed) while this page is open: pick
+  // up the new rows in place, without blanking the queue or losing scroll.
+  useDataChanged(() => {
+    void load({ background: true });
+    void refreshSuggestions();
+  });
+
+  /** Drop rows that just became part of a transfer, then resync quietly. */
+  async function afterTransferChange(ids: string[]) {
+    const gone = new Set(ids);
+    setTransactions((prev) => prev.filter((t) => !gone.has(t.id)));
+    await refreshPendingReviewCount();
+    await Promise.all([load({ background: true }), refreshSuggestions()]);
+  }
+
+  function showFailure(err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    setRetroToast(`Failed: ${msg}`);
+    setTimeout(() => setRetroToast(null), 6000);
+  }
+
+  async function handleConfirmTransfer(c: TransferCandidate) {
+    markTransferBusy(c.outflow.id, true);
+    try {
+      await confirmTransferPair(c.outflow.id, c.inflow.id);
+      setTransferCandidates((prev) => prev.filter((x) => x !== c));
+      await afterTransferChange([c.outflow.id, c.inflow.id]);
+    } catch (err) {
+      showFailure(err);
+    } finally {
+      markTransferBusy(c.outflow.id, false);
+    }
+  }
+
+  async function handleDismissTransfer(c: TransferCandidate) {
+    markTransferBusy(c.outflow.id, true);
+    try {
+      await dismissTransferPair(c.outflow.id, c.inflow.id);
+      setTransferCandidates((prev) => prev.filter((x) => x !== c));
+      await refreshSuggestions();
+      await refreshPendingReviewCount();
+    } catch (err) {
+      showFailure(err);
+    } finally {
+      markTransferBusy(c.outflow.id, false);
+    }
+  }
+
+  /**
+   * Confirm every pair the bank itself links, in one go. The pairs are
+   * independent, so one that fails (a row changed meanwhile) doesn't stop
+   * the rest; the failures are counted in the toast.
+   */
+  async function handleConfirmAllCertain() {
+    const certain = transferCandidates.filter((c) => c.certain);
+    markTransferBusy('all', true);
+    const done: string[] = [];
+    let failed = 0;
+    let lastError: unknown = null;
+    for (const c of certain) {
+      try {
+        await confirmTransferPair(c.outflow.id, c.inflow.id);
+        done.push(c.outflow.id, c.inflow.id);
+      } catch (err) {
+        failed++;
+        lastError = err;
+      }
+    }
+    if (failed > 0) {
+      const msg = lastError instanceof Error ? lastError.message : String(lastError);
+      setRetroToast(
+        `Confirmed ${certain.length - failed} of ${certain.length} transfers. ${failed} could not be saved: ${msg}`,
+      );
+      setTimeout(() => setRetroToast(null), 8000);
+    }
+    try {
+      await afterTransferChange(done);
+    } finally {
+      markTransferBusy('all', false);
+    }
+  }
 
   // ── Recurring capture state ───────────────────────────────────────
   const [recurringSuggestions, setRecurringSuggestions] = useState<
@@ -800,6 +922,69 @@ export function Review() {
         </Card>
       )}
 
+      {!loading && transferCandidates.length > 0 && (() => {
+        const certainCount = transferCandidates.filter((c) => c.certain).length;
+        return (
+          <div
+            className="mb-4 overflow-hidden"
+            style={{
+              borderRadius: 'var(--radius-2)',
+              backgroundColor: 'var(--surface)',
+              border: '1px solid color-mix(in srgb, var(--transfer) 45%, var(--border))',
+              boxShadow: 'var(--elev-1)',
+            }}
+          >
+            <div
+              className="flex items-center justify-between gap-3 px-4 py-3"
+              style={{ borderBottom: '1px solid var(--border)' }}
+            >
+              <div className="flex items-center gap-3 min-w-0">
+                <ArrowLeftRight size={18} style={{ color: 'var(--transfer)' }} aria-hidden />
+                <div className="min-w-0">
+                  <p
+                    style={{
+                      color: 'var(--text)',
+                      fontSize: 'var(--fs-body)',
+                      fontWeight: 'var(--fw-semibold)',
+                    }}
+                  >
+                    {transferCandidates.length} possible transfer
+                    {transferCandidates.length !== 1 ? 's' : ''} between your accounts
+                  </p>
+                  <p style={{ color: 'var(--text-secondary)', fontSize: 'var(--fs-body-sm)' }}>
+                    Money that left one of your accounts and arrived in another.
+                    A transfer is not income or spending, so confirming it takes
+                    both rows out of your totals.
+                  </p>
+                </div>
+              </div>
+              {certainCount >= 2 && (
+                <Button
+                  variant="secondary"
+                  className="shrink-0"
+                  disabled={transferBusy.size > 0}
+                  onClick={handleConfirmAllCertain}
+                  title="Confirm every pair your bank reports as going to your other account."
+                >
+                  <CheckCheck size={16} />
+                  Confirm the {certainCount} your bank confirms
+                </Button>
+              )}
+            </div>
+            {transferCandidates.map((c) => (
+              <TransferCandidateRow
+                key={`${c.outflow.id}-${c.inflow.id}`}
+                candidate={c}
+                decimalSeparator={settings.decimalSeparator}
+                busy={transferBusy.has('all') || transferBusy.has(c.outflow.id)}
+                onConfirm={() => handleConfirmTransfer(c)}
+                onDismiss={() => handleDismissTransfer(c)}
+              />
+            ))}
+          </div>
+        );
+      })()}
+
       {loading ? (
         <Card>
           <p
@@ -812,7 +997,7 @@ export function Review() {
             Loading...
           </p>
         </Card>
-      ) : loadError ? null : !hasRows ? (
+      ) : loadError ? null : !hasRows && transferCandidates.length > 0 ? null : !hasRows ? (
         <Card>
           <div className="flex flex-col items-center justify-center py-12 gap-3">
             <CheckCheck
@@ -1051,6 +1236,20 @@ export function Review() {
                       <CheckCheck size={16} />
                       Confirm for all
                     </Button>
+                    {/* Pending rows can't be paired until they book. */}
+                    {txn.status === 'booked' && (
+                      <button
+                        type="button"
+                        className="inline-flex items-center justify-center gap-1.5 cursor-pointer hover:underline disabled:opacity-50"
+                        style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-rate)' }}
+                        disabled={isProcessing}
+                        onClick={() => setTransferFor(txn)}
+                        title="Money moved between two of your own accounts: not income or spending."
+                      >
+                        <ArrowLeftRight size={12} />
+                        It's a transfer…
+                      </button>
+                    )}
                   </div>
                 </div>
 
@@ -1215,6 +1414,17 @@ export function Review() {
           })}
         </div>
       )}
+
+      <TransferPickerModal
+        transaction={transferFor}
+        preferredCurrency={settings.preferredCurrency}
+        decimalSeparator={settings.decimalSeparator}
+        onClose={() => setTransferFor(null)}
+        onDone={(ids) => {
+          setTransferFor(null);
+          void afterTransferChange(ids);
+        }}
+      />
 
       {(() => {
         const checkedExpenseIds = queueExpenses
