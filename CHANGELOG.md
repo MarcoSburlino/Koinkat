@@ -6,6 +6,20 @@ uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.1.7] - 2026-09-27
+
+The Summary page shows your real balances.
+
+### Fixed
+- The Summary page's starting balance and monthly balances drifted. They
+  were worked out from income minus spending, but a balance also moves with
+  transfers, with money friends pay back, and with the full amount of a
+  split expense. With one account selected, every transfer in or out of it
+  threw the figures off; with all accounts, repayments and money sent to
+  accounts outside Koinkat did. The balances now follow exactly what moved
+  each account, so the December balance of the current year matches the
+  account's balance today. Income, spending and profit are unchanged.
+
 ## [0.1.6] - 2026-09-26
 
 Transfers between your own accounts stop counting as income and spending,

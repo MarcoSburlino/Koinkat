@@ -9,11 +9,12 @@
  *     share, plain rows their gross).
  *
  * Inlining these as raw strings in every query is how one of them
- * silently diverges - e.g. `netProfitSinceYear` once selected the gross
- * `amount_in_account_ccy` while every sibling used the COALESCE net,
- * corrupting the Summary starting balance whenever a split existed.
- * Centralizing the fragments here makes that class of bug a single point
- * of truth.
+ * silently diverges. Centralizing the fragments here makes that class of
+ * bug a single point of truth.
+ *
+ * These rules are for INCOME/EXPENSE figures only. A balance moves by the
+ * gross amount, by repayments and by transfers - see
+ * `domain/balance-effects.ts`, which the Summary balances use instead.
  *
  * All fragments assume the `transactions` table is aliased `t`. They are
  * constant literals - never interpolate user input through this module.
