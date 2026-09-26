@@ -22,3 +22,8 @@ export const DEFAULT_CALLBACK_URL =
 // `bank_connections.valid_until` bookkeeping - they were once 179 vs 180,
 // which made syncs fail with a confusing API error on the final day.
 export const CONSENT_VALID_DAYS = 179;
+
+// Where the newest installers live. Opened from the boot-error screen when the
+// database was upgraded by a newer Koinkat than the one running.
+export const LATEST_RELEASE_URL =
+  'https://github.com/MarcoSburlino/Koinkat/releases/latest';

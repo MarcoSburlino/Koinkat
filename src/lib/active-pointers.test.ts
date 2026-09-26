@@ -158,6 +158,32 @@ describe('device-provisioned tripwire', () => {
     expect(isDeviceProvisioned()).toBe(true);
   });
 
+  it('is disarmed by clear(), including the pre-v12 evidence', async () => {
+    // The deliberate-reset path. Clearing only the breadcrumb key would leave
+    // the legacy pointers counting as proof of setup, and the device would
+    // stay locked on the boot-error screen exactly as before.
+    const store = installLocalStorage({
+      [PROVISIONED]: '1',
+      [USER_MIRROR]: 'user-1',
+      [WS_MIRROR]: 'ws-1',
+    });
+    const { isDeviceProvisioned, clearDeviceProvisioned } =
+      await import('./device-provisioned');
+
+    expect(isDeviceProvisioned()).toBe(true);
+    clearDeviceProvisioned();
+    expect(isDeviceProvisioned()).toBe(false);
+    expect(store.size).toBe(0);
+  });
+
+  it('clear() leaves unrelated storage alone', async () => {
+    const store = installLocalStorage({ [PROVISIONED]: '1', koinkat_theme: 'dark' });
+    const { clearDeviceProvisioned } = await import('./device-provisioned');
+
+    clearDeviceProvisioned();
+    expect(store.get('koinkat_theme')).toBe('dark');
+  });
+
   it('reports false rather than throwing when storage is unavailable', async () => {
     vi.stubGlobal('localStorage', {
       getItem: () => {
@@ -166,13 +192,16 @@ describe('device-provisioned tripwire', () => {
       setItem: () => {
         throw new Error('storage disabled');
       },
-      removeItem: () => {},
+      removeItem: () => {
+        throw new Error('storage disabled');
+      },
       clear: () => {},
     });
-    const { isDeviceProvisioned, markDeviceProvisioned } =
+    const { isDeviceProvisioned, markDeviceProvisioned, clearDeviceProvisioned } =
       await import('./device-provisioned');
 
     expect(() => markDeviceProvisioned()).not.toThrow();
+    expect(() => clearDeviceProvisioned()).not.toThrow();
     expect(isDeviceProvisioned()).toBe(false);
   });
 });

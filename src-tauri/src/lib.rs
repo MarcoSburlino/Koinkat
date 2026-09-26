@@ -2,13 +2,16 @@ use tauri::Manager;
 use tauri_plugin_deep_link::DeepLinkExt;
 use tauri_plugin_sql::{Migration, MigrationKind};
 
-mod db_tx;
+// Public only so tests/db_tx_ipc.rs can register the commands on a mock app.
+// Nothing outside this crate uses it: the crate is the app shell, never a
+// library (publish = false).
+pub mod db_tx;
 mod secrets;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     // Migration v2 concatenates: (a) drop-v1-tables script, (b) schema-v2
-    // CREATE statements. Existing v1 rows are wiped — the v1→v2 split is
+    // CREATE statements. Existing v1 rows are wiped - the v1→v2 split is
     // not data-preserving.
     const MIGRATION_V2_SQL: &str = concat!(
         include_str!("../../src/db/migration-v2.sql"),

@@ -11,6 +11,8 @@ import {
   clearActiveUserId,
 } from '../lib/active-user';
 import { clearActiveKoinkatAccountId } from '../lib/active-koinkat-account';
+import { clearDeviceProvisioned } from '../lib/device-provisioned';
+import { backupBeforeDelete } from '../services/backup-service';
 
 interface UserState {
   users: User[];
@@ -90,6 +92,11 @@ export const useUserStore = create<UserState>((set, get) => ({
   },
 
   deleteUser: async (id: string) => {
+    const before = get().users;
+    const wasOnlyUser = before.length === 1 && before[0].id === id;
+    // Deleting a user is permanent and takes every workspace with it, so a
+    // snapshot comes first. Best-effort: the user typed the name to confirm.
+    await backupBeforeDelete();
     await deleteUserSvc(id);
     if (get().activeUser?.id === id) {
       await clearActiveUserId();
@@ -97,5 +104,19 @@ export const useUserStore = create<UserState>((set, get) => ({
       set({ activeUser: null });
     }
     await get().loadUsers();
+    // Deleting the last user is a deliberate reset of this device. Without
+    // this the provisioned breadcrumb outlived it, and the next launch saw
+    // "zero users on a device set up before" and locked on the boot-error
+    // screen for good. Both conditions are required: the user list agreed
+    // before the delete that this was the only user, and a read that
+    // SUCCEEDED agrees after it that none remain.
+    if (wasOnlyUser && get().users.length === 0) {
+      // Through the pointers' owners, so their in-memory caches and app_state
+      // rows are reset too - not only the localStorage copies the breadcrumb
+      // counts as evidence.
+      await clearActiveUserId();
+      await clearActiveKoinkatAccountId();
+      clearDeviceProvisioned();
+    }
   },
 }));

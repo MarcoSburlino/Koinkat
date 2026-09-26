@@ -242,10 +242,13 @@ for the items that must be resolved before a public 1.0 release. As of
 - **CI** (`.github/workflows/ci.yml`) runs on every push/PR: a version
   consistency check (package.json / tauri.conf.json / Cargo.toml must
   match), `npm run typecheck`, `npm run test`, the production bundle
-  (which includes the mock-leak scanner), and `cargo check` on Ubuntu,
-  Windows, and macOS. The three-OS Rust matrix exists because the shell
-  has platform-conditional code (keychain backends, single-instance,
-  deep-link registration).
+  (which includes the mock-leak scanner), and `cargo check` plus
+  `cargo test` on Ubuntu, Windows, and macOS. The three-OS Rust
+  matrix exists because the shell has platform-conditional code (keychain
+  backends, single-instance, deep-link registration). The Rust tests drive
+  the transaction commands in `db_tx.rs` through Tauri's IPC mock runtime
+  (the `test` feature, enabled only as a dev-dependency) with the argument
+  shapes `src/db/database.ts` sends.
 - **Releases** (`.github/workflows/release.yml`): push a `vX.Y.Z` tag and
   the workflow builds installers for all three platforms via
   `tauri-apps/tauri-action` and attaches them to a DRAFT GitHub release

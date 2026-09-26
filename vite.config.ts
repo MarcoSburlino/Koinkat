@@ -49,7 +49,7 @@ export default defineConfig(({ mode }) => {
       forbidMocksInProductionBundle(mode),
     ],
     define: {
-      // Compile-time flags — replaced as string literals in the bundle.
+      // Compile-time flags - replaced as string literals in the bundle.
       // When `false`, all guarded branches (and their static imports) become
       // dead code and are removed by Rollup's tree-shaking.
       __KOINKAT_ALLOW_MOCKS__: JSON.stringify(mocksAllowed),

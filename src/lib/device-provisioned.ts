@@ -11,10 +11,21 @@
 // registering there would have orphaned the real workspace behind a second
 // user row.
 //
-// Deliberately kept in localStorage, and deliberately NEVER cleared by logout,
-// by leaving a workspace, or by deleting a user. The whole point is to be an
-// INDEPENDENT witness to the database, so storing it in the database would
-// defeat the purpose.
+// Deliberately kept in localStorage, and deliberately NEVER cleared by logout
+// or by leaving a workspace. The whole point is to be an INDEPENDENT witness
+// to the database, so storing it in the database would defeat the purpose.
+//
+// It IS cleared by the two deliberate resets, because a breadcrumb that
+// outlives a reset the user asked for is a trap, not a safeguard: nothing
+// could ever reach registration again, and the boot-error screen would insist
+// "nothing has been deleted" about data the user removed on purpose.
+//   * deleting the last user (typed-name confirmation on the user picker)
+//   * "Start fresh" on the boot-error screen (typed confirmation), which is
+//     the way out after deleting the data folder by hand. That folder holds
+//     the database; this breadcrumb lives in the webview's own profile
+//     folder, so deleting one leaves the other behind.
+// Both reach registration, which only ever ADDS a user row - no path through
+// either reset deletes anything.
 
 const KEY = 'koinkat_device_provisioned';
 
@@ -31,6 +42,26 @@ export function markDeviceProvisioned(): void {
     localStorage.setItem(KEY, '1');
   } catch {
     /* ignore */
+  }
+}
+
+/**
+ * Forget that this device was ever set up. Only for the two deliberate resets
+ * described at the top of this file, and only when the database has just
+ * been read back with zero users - otherwise the next boot would offer
+ * registration on top of data that still exists.
+ *
+ * Removes the legacy pointers as well: `isDeviceProvisioned()` treats either
+ * one as proof of setup, so leaving them would keep the tripwire armed. With
+ * no users they point at nothing.
+ */
+export function clearDeviceProvisioned(): void {
+  for (const k of [KEY, ...LEGACY_EVIDENCE]) {
+    try {
+      localStorage.removeItem(k);
+    } catch {
+      /* ignore */
+    }
   }
 }
 

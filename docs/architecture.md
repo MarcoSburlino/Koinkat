@@ -83,18 +83,93 @@ src/
 
 ## State hierarchy
 
-The app resolves a four-state user flow on bootstrap:
+The app resolves the user flow on bootstrap:
 
 ```
-no users               → UserRegister
-users, no active       → UserLogin
+no users, but workspaces remain  → BootError ('orphanedData': Recover)
+no users, device never set up    → UserRegister (offers backups first, if any)
+no users, device set up before   → BootError ('noUsers': restore a backup, Retry, or Start fresh)
+users, no active                 → UserLogin
 active user, no active workspace → Connection (account hub)
 active user + active workspace   → routed app (Outlet)
+DB upgraded by a newer Koinkat   → BootError ('newerVersion': link to latest)
+any other read threw             → BootError ('readFailed': Retry only)
 ```
 
+The principle: if the user has data, the app finds it, and when it cannot
+open it, it says why without implying the data is gone. Every release uses
+the same identifier (`com.koinkat.app`) and file (`koinkat.db`), and
+migrations only add, so an upgrade always opens existing data. A downgrade
+cannot: sqlx refuses a database carrying a migration the build does not
+know. `src/lib/boot-failure.ts` recognises that error so the screen asks for
+the newer version instead of suggesting a retry.
+
+### Automatic backups
+
+`src/services/backup-service.ts` keeps whole-database snapshots in
+`<appConfigDir>/backups/`, named
+`koinkat-backup-<local time>-m<schema version>-<reason>.db`:
+
+- **When.** A `daily` backup two seconds after bootstrap finds users and
+  on entering a workspace (so the session someone registers in is covered
+  too), at most one per calendar day; refreshed after every successful
+  bank sync and after the first import of a new bank link; before deleting
+  a user or a workspace (`before-delete`, best-effort); and from Settings
+  (`manual`). Pruning keeps only the newest `daily` of each day, then the
+  newest 10 overall.
+- **Never from an empty database.** `createBackup` itself refuses when
+  `users` is empty, so an emptied file can never rotate a good backup out.
+- **How.** `VACUUM INTO`, the same consistent single-transaction snapshot the
+  raw-database export uses, written to `<name>.partial` and renamed only
+  once complete: an interrupted snapshot never carries a backup name, and
+  the next prune deletes it. All backup writes and restores share one
+  queue. SQLite writes the file, not the fs plugin.
+- **Where, and why there.** Next to the database on every platform. The
+  app's local-data folder would have survived deleting the database folder
+  on Windows, but on Linux the fs plugin's default permissions deny all of
+  `$APPLOCALDATA` (the webview's own data lives there), and a deny beats any
+  allow.
+- **Restore.** Offered only while the open database has no users (the
+  `noUsers` screen and first-run registration; `restoreBackup` also refuses
+  on its own otherwise), and only for backups whose
+  schema version is not newer than this build's. `restoreBackup` closes the
+  database, renames `koinkat.db` and its `-wal`/`-shm` sidecars to
+  `koinkat-replaced-<stamp>.db*` (a stale WAL beside a restored file would
+  be replayed into it), copies the backup in, and puts everything back if
+  any step fails. Nothing is deleted.
+- **Restart.** `tauri-plugin-sql` runs migrations only on the first
+  `Database.load` of a process, so a restored file opened in the same
+  process would skip them. The flow ends on a `restartRequired` screen that
+  offers nothing else.
+
+The fs permissions are command-scoped in `capabilities/default.json`:
+`mkdir` on `$APPCONFIG/backups`, `remove` on `$APPCONFIG/backups/*`,
+`rename` on the database, its sidecars, `koinkat-replaced-*` and
+`backups/*` (the `.partial` step), and
+`copy-file` from `backups/*` to `koinkat.db`. The global fs scope no longer
+lists `$APPCONFIG/koinkat.db` (nothing reads or writes it through the fs
+plugin since export moved to `VACUUM INTO`), so `remove` cannot reach the
+database.
+
+Folder-opening buttons are deliberately absent: the shell plugin's `open`
+accepts only https/mailto/tel URLs by default, so a folder path is refused.
+`CopyPathButton` copies the path instead; a real "open folder" needs
+`tauri-plugin-opener`.
+
 Logic lives in `src/components/layout/Shell.tsx::bootstrap`. Active IDs
-are persisted in `localStorage` (`active-user`, `active-koinkat-account`)
-and rehydrated on launch.
+live in the `app_state` table (migration v12), mirrored into
+`localStorage`, and are rehydrated on launch (`src/lib/active-user.ts`,
+`src/lib/active-koinkat-account.ts`).
+
+"Set up before" is a breadcrumb in `localStorage`
+(`src/lib/device-provisioned.ts`), deliberately outside the database so
+it can witness a read that comes back empty when it should not. The
+webview profile holding it is a different folder from the database
+(on Windows `AppData\Local\com.koinkat.app` versus
+`AppData\Roaming\com.koinkat.app`), so deleting one leaves the other.
+Two deliberate resets clear it: deleting the last user, and Start fresh
+behind a typed confirmation on the `noUsers` screen. Neither deletes
+anything; both lead to registration, which only adds a user row.
 
 ```
 User

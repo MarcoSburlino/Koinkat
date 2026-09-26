@@ -168,6 +168,47 @@ export async function exportDatabaseSnapshot(destPath: string): Promise<void> {
 }
 
 /**
+ * The highest migration applied to the open database - which, once
+ * `Database.load` has run, is the newest migration this build knows. Backups
+ * record it in their filename so a restore never offers a file written by a
+ * NEWER Koinkat than the one running (this build could not open it).
+ */
+export async function currentSchemaVersion(): Promise<number> {
+  const loaded = await getDb();
+  const rows = await loaded.select<{ v: number | null }[]>(
+    'SELECT MAX(version) AS v FROM _sqlx_migrations WHERE success = 1',
+  );
+  return Number(rows[0]?.v ?? 0);
+}
+
+/**
+ * Close the database so its files can be moved (backup restore). Afterwards
+ * the process must NOT open the database again: `tauri-plugin-sql` runs
+ * migrations only on the first `Database.load` of a process (it removes them
+ * from its registry as it applies them), so a restored file loaded now would
+ * skip its migrations. The restore flow ends by asking for a restart instead.
+ *
+ * Abandoned native transactions are rolled back first, because the pool's
+ * close waits for every checked-out connection to come home.
+ */
+export async function closeDb(): Promise<void> {
+  const loaded = db;
+  db = null;
+  pending = null;
+  if (!loaded) return;
+  try {
+    await invoke<number>('tx_rollback_all');
+  } catch (err) {
+    console.warn('[db] rollback before close failed:', err);
+  }
+  // Name the database explicitly: with no argument the plugin closes every
+  // pool it holds.
+  await loaded.close(DB_URL).catch((err) => {
+    throw toDbError(err);
+  });
+}
+
+/**
  * Open (or return the cached) database handle. The returned `Database`
  * has its `execute` and `select` methods transparently wrapped in the
  * single-queue serializer documented on `opQueue` above.
