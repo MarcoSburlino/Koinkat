@@ -6,6 +6,10 @@ uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.1.7] - 2026-09-27
+
+The Summary page shows your real balances.
+
 ### Fixed
 - The Summary page's starting balance and monthly balances drifted. They
   were worked out from income minus spending, but a balance also moves with
