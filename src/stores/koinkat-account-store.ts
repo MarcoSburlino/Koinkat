@@ -11,6 +11,7 @@ import {
   setActiveKoinkatAccountId,
   clearActiveKoinkatAccountId,
 } from '../lib/active-koinkat-account';
+import { backupBeforeDelete } from '../services/backup-service';
 
 interface KoinkatAccountState {
   accounts: KoinkatAccount[];
@@ -99,6 +100,9 @@ export const useKoinkatAccountStore = create<KoinkatAccountState>((set, get) => 
   },
 
   deleteKoinkatAccount: async (id: string) => {
+    // Permanent, and it takes every account and transaction in the workspace
+    // with it, so a snapshot comes first. Best-effort, as for deleting a user.
+    await backupBeforeDelete();
     await deleteKoinkatAccountSvc(id);
     if (get().activeKoinkatAccount?.id === id) {
       await clearActiveKoinkatAccountId();

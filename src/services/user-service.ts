@@ -22,6 +22,43 @@ export async function getUserById(id: string): Promise<User | null> {
   return rows.length > 0 ? toUser(rows[0]) : null;
 }
 
+// ── Orphaned workspaces ─────────────────────────────────────────────────
+//
+// `koinkat_accounts.user_id` has no foreign key (schema-v2 is hash-locked
+// and cannot gain one), so a lost `users` row leaves every workspace it owned
+// intact but unreachable: no user to log in as, and nothing to click. With
+// zero users the app used to offer first-run registration on top of that
+// data, which only adds a new, empty user. These let bootstrap notice
+// instead, and put the missing owners back.
+//
+// Device-level queries (the whole file, no active workspace exists yet), so
+// deliberately not scoped by koinkat_account_id.
+
+const ORPHANED_WORKSPACES =
+  'FROM koinkat_accounts WHERE user_id NOT IN (SELECT id FROM users)';
+
+/** Workspaces whose owner is missing from `users`. */
+export async function countOrphanedWorkspaces(): Promise<number> {
+  const db = await getDb();
+  const rows = await db.select<{ n: number }[]>(`SELECT COUNT(*) AS n ${ORPHANED_WORKSPACES}`);
+  return Number(rows[0]?.n ?? 0);
+}
+
+/**
+ * Re-create a user row for every missing owner, under the SAME id, so each
+ * workspace is reachable again exactly as it was. The name is a placeholder
+ * the user can change; nothing else is touched. Returns how many users were
+ * recreated.
+ */
+export async function recoverOrphanedWorkspaceOwners(): Promise<number> {
+  const db = await getDb();
+  const res = await db.execute(
+    `INSERT INTO users (id, name, email)
+     SELECT DISTINCT user_id, 'Recovered user', '' ${ORPHANED_WORKSPACES}`,
+  );
+  return res.rowsAffected;
+}
+
 // ── Create ──────────────────────────────────────────────────────────────
 
 export async function createUser(params: {

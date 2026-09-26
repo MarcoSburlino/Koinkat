@@ -6,6 +6,56 @@ uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+If you have data, Koinkat should always find it. This release is about the
+ways it could fail to.
+
+### Added
+- Automatic backups. Every day you use Koinkat, it copies the whole
+  database into a `backups` folder next to it, refreshes that copy after
+  each bank sync, and takes one more before you delete a user or a
+  workspace. The newest 10 are kept. Backups are only ever taken from a
+  database that has users, so an empty one can never push a good backup
+  out, and a copy interrupted halfway is never mistaken for a backup.
+  Settings > Backup & export shows them and has Back up now.
+- When Koinkat opens to a database with no users and backups exist, it
+  offers to restore one - on the "found no users" screen and on first-run
+  setup alike. Restoring deletes nothing: the current database is renamed
+  and kept, the backup is copied in, and Koinkat asks you to reopen it so the
+  restored data is brought up to date.
+- If the database still holds workspaces but the user they belong to has
+  gone missing, Koinkat now says so and offers Recover, which puts that user
+  back. It used to offer first-run setup, which would have created a new,
+  empty user and left the real workspaces out of reach.
+
+### Fixed
+- Starting over could lock Koinkat for good. After deleting the last user,
+  or deleting the data folder by hand as the README's uninstall notes
+  described, every later launch opened on "Koinkat could not open your
+  data" with only a Retry button, and insisted nothing had been deleted.
+  The app remembers that it has been set up in a separate folder from the
+  database, and nothing ever cleared that memory. Deleting the last user now
+  clears it, and when the database opens with no users the screen says so
+  plainly and offers Start fresh behind a typed confirmation. Start fresh
+  deletes nothing.
+- Opening your data with an older copy of Koinkat than the one that last
+  used it said the problem "usually clears up on a retry". It never does:
+  the newer version had updated the database, and the older one cannot read
+  the result. The data was intact all along. Koinkat now says exactly that
+  and links to the latest version instead of offering a Retry that cannot
+  work. (This helps from this release on; older releases still show the old
+  message.)
+- The "Open data folder" button on the startup error screen never did
+  anything in a release build: the system refused to open a folder path,
+  and the refusal was silently ignored. It is replaced by a Copy folder path
+  button that works.
+
+### Changed
+- The uninstall notes name both folders Koinkat keeps on disk, and explain
+  how to start over from inside the app.
+- The Rust side's transaction commands, which every write in the app goes
+  through, are now tested on all three operating systems through Tauri's
+  own IPC layer with the exact arguments the app sends.
+
 ## [0.1.4] - 2026-09-19
 
 The outcome of a full correctness audit. Eight classes of defect, each one

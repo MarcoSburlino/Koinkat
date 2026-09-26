@@ -117,10 +117,11 @@ Where things physically live:
 | Your database (`koinkat.db`) - Windows | `C:\Users\<you>\AppData\Roaming\com.koinkat.app\koinkat.db` |
 | Your database - macOS | `~/Library/Application Support/com.koinkat.app/koinkat.db` |
 | Your database - Linux | `~/.config/com.koinkat.app/koinkat.db` |
+| Automatic backups | A `backups` folder inside that same folder. One full copy of the database for each day you use the app (refreshed after each bank sync), plus one before you delete a user or a workspace; the newest 10 are kept. Settings > Backup & export shows them and has **Back up now**. |
 | Your Enable Banking private key | The OS credential store: Windows Credential Manager, macOS Keychain, or the Linux secret service (GNOME Keyring / KWallet). Not in the database. If no credential store is available, Koinkat falls back to the database and says so in Settings. |
 
 The database is not encrypted at rest - anyone with access to your OS
-user account can read it. Use OS disk encryption (BitLocker, FileVault,
+user account can read it, and the same goes for its automatic backups. Use OS disk encryption (BitLocker, FileVault,
 LUKS) if that matters to you. See [Security model](#security-model) for
 the rest of the picture.
 
@@ -233,9 +234,6 @@ continue from step 8 above. One honest caveat: this skips the
 SmartScreen dialog, but Microsoft Defender and third-party antivirus
 programs scan every file regardless of how it was downloaded, so an
 aggressive antivirus can still flag the unsigned installer either way.
-(In newer releases the version number in the URL changes; the file you
-want ends in `_x64-setup.exe` on the
-[releases page](https://github.com/MarcoSburlino/Koinkat/releases/latest).)
 
 #### macOS
 
@@ -277,10 +275,7 @@ tar -xzf Koinkat.app.tar.gz
 mv Koinkat.app /Applications/
 ```
 
-Then open Koinkat from Launchpad or Applications as normal. (In newer
-releases the version number in the address changes; the file you want
-is the one ending in `_universal.app.tar.gz` on the
-[releases page](https://github.com/MarcoSburlino/Koinkat/releases/latest).)
+Then open Koinkat from Launchpad or Applications as normal.
 
 **Still running 0.1.0?** That build predates code signing and was Apple
 Silicon only, so macOS refuses it with "Koinkat is damaged and can't be
@@ -996,6 +991,34 @@ install and unlock GNOME Keyring or KWallet, then re-save the
 credentials in Settings). The app keeps working either way; the
 keychain is simply the safer location.
 
+**Koinkat offers to restore a backup.** It does that whenever it opens to
+a database with no users while its automatic backups exist - for example
+after the database file was replaced or emptied. Restoring never deletes
+anything: the current database is renamed and kept beside it, the backup
+is copied in, and the app asks you to close and reopen it so the restored
+data is brought up to date. **Koinkat found your data, but not who it
+belongs to** means the workspaces are all there but their user record is
+missing; **Recover my data** puts it back.
+
+**Koinkat opens on "could not open your data" or "found no users in its
+database".** The first means reading the database failed; press Retry,
+and if it keeps happening, close the app and back up the database file
+the screen names before anything else. The second means the database
+opened but is empty on a computer where Koinkat was set up before -
+usually because the data folder was deleted, or because the app is
+reading a different database file than usual. If you deleted it on
+purpose, choose **Start fresh**. If you did
+not, do not set anything up: check the file path shown, and restore
+your backup over it with the app closed.
+
+**Koinkat says "Your data needs a newer version of Koinkat".** A newer
+version has already opened and updated your database, and the copy you
+are running is older. Your data is intact. Install the latest release
+(or `winget upgrade MarcoSburlino.Koinkat`) and it opens as before.
+Releases up to 0.1.4 report this as "could not open your data" with a
+message containing "was previously applied but is missing in the
+resolved migrations" - the cause and the fix are the same.
+
 **Net worth shows "could not reconcile" or missing conversions.** The
 daily exchange-rate fetch failed (offline, or the CDN was unreachable).
 The Dashboard offers a refresh; rates are cached per day once fetched.
@@ -1011,13 +1034,22 @@ Removing the app itself:
   simply delete the file.
 
 Uninstalling does not touch your data, so a reinstall finds everything
-as you left it. To remove the data as well:
+as you left it. To remove the data as well, delete both folders below,
+plus the credential-store entries if you linked a bank. On Windows,
+ticking **Delete the application data** in the uninstaller removes both
+folders for you.
 
-- **Database and settings** live in one folder; deleting it removes
-  every workspace, account, and transaction:
+- **Your data** - the database holding every workspace, account, and
+  transaction, with its automatic backups in the `backups` folder inside:
   - Windows: `C:\Users\<you>\AppData\Roaming\com.koinkat.app`
   - macOS: `~/Library/Application Support/com.koinkat.app`
   - Linux: `~/.config/com.koinkat.app`
+- **The app's browser storage** - no financial data, but it remembers
+  that Koinkat has been set up on this computer, along with small
+  preferences such as privacy mode:
+  - Windows: `C:\Users\<you>\AppData\Local\com.koinkat.app`
+  - macOS: `~/Library/WebKit/com.koinkat.app`
+  - Linux: `~/.local/share/com.koinkat.app`
 - **Enable Banking keys** (present only if you linked a bank) are
   stored in the operating system's credential store under the service
   name `koinkat`, one entry per workspace named `eb-pem-<workspace-id>`:
@@ -1030,7 +1062,18 @@ as you left it. To remove the data as well:
 
 Deleting a workspace inside the app performs the same cleanup for that
 workspace, including its credential-store entry, so removing all
-workspaces before uninstalling also leaves nothing behind.
+workspaces before uninstalling leaves no bank keys behind.
+
+**To start over without uninstalling**, the simplest route is inside the
+app: **Settings > Leave this workspace**, then **Switch user** on the
+workspace hub, then the delete icon next to your name on the "Who's
+using Koinkat?" screen. The next launch opens on first-run setup, which
+offers Koinkat's automatic backups first; ignore that offer to start
+empty. If you delete only the
+data folder instead, the next launch reports that Koinkat "found no
+users in its database" - that is the app refusing to mistake missing
+data for a brand-new install. If you removed the data on purpose, choose
+**Start fresh** on that screen.
 
 ## Build modes
 
@@ -1068,7 +1111,8 @@ privacy policy is in [docs/privacy-policy.md](docs/privacy-policy.md).
   Settings.
 - **Exports:** the JSON export deliberately excludes API credentials. The
   raw-database export is a full backup - treat the file like the database
-  itself.
+  itself. The automatic backups are the same kind of file and stay in the
+  app's own data folder on this device; nothing is uploaded anywhere.
 - **Network:** the content-security policy allows data connections only
   to `api.enablebanking.com` and the exchange-rate CDN
   (`cdn.jsdelivr.net`, `*.currency-api.pages.dev`). Typefaces are
@@ -1094,7 +1138,7 @@ Koinkat/
 │   ├── domain/             Pure helpers (money math, merchant normalization)
 │   ├── lib/                Cross-cutting utilities
 │   ├── types/              TypeScript types + row→model mappers
-│   ├── db/                 SQL schema + incremental migrations (v2 → v8)
+│   ├── db/                 SQL schema + incremental migrations (v2 → v14)
 │   ├── data/               Static data (MCC mappings)
 │   └── mocks/              Fixture-backed Enable Banking stub (dev/demo only)
 ├── src-tauri/              Tauri Rust shell + config

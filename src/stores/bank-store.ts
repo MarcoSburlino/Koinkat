@@ -9,6 +9,7 @@ import {
   pullOlderHistory,
 } from '../services/bank-sync-service';
 import { ensureTodayRates } from '../services/exchange-rate-service';
+import { refreshTodaysBackup } from '../services/backup-service';
 import type { BankConnection, BankConnectionRow } from '../types/models';
 import { toBankConnection } from '../types/models';
 
@@ -92,6 +93,9 @@ export const useBankStore = create<BankState>((set, get) => {
       const fxOk = await ensureTodayRates();
       set({ lastFxError: fxOk ? null : FX_UNAVAILABLE_MSG });
       const result = await work();
+      // New bank data may have arrived: make today's backup reflect it.
+      // Background and best-effort; pruning keeps one daily per day.
+      void refreshTodaysBackup();
       return result;
     } catch (err) {
       set({ lastSyncError: err instanceof Error ? err.message : String(err) });

@@ -6,15 +6,22 @@ import { Input } from '../components/ui/Input';
 import { createUser } from '../services/user-service';
 import { setActiveUserId } from '../lib/active-user';
 import { useUserStore } from '../stores/user-store';
+import { BackupRestorePanel } from '../components/BackupRestorePanel';
+import type { BackupFile, RestoreResult } from '../services/backup-service';
 
 interface UserRegisterProps {
   /** Called once a user has been created and marked active. */
   onComplete: () => void;
   /** Called when the user wants to back out to the login screen. */
   onCancel?: () => void;
+  /**
+   * Pass ONLY when the database has no users: enables the offer to restore
+   * one of Koinkat's automatic backups instead of starting from nothing.
+   */
+  onRestored?: (result: RestoreResult, backup: BackupFile) => void;
 }
 
-export function UserRegister({ onComplete, onCancel }: UserRegisterProps) {
+export function UserRegister({ onComplete, onCancel, onRestored }: UserRegisterProps) {
   const loadUsers = useUserStore((s) => s.loadUsers);
   const loadActiveUser = useUserStore((s) => s.loadActiveUser);
 
@@ -70,6 +77,15 @@ export function UserRegister({ onComplete, onCancel }: UserRegisterProps) {
             Just the basics for now. You'll set up your first koinkat account next.
           </p>
         </div>
+
+        {/* A fresh-looking database on a machine that has Koinkat backups:
+            offer them before a brand-new setup, so existing data is found
+            first. Renders nothing when there are none. */}
+        {onRestored && (
+          <div className="mb-4">
+            <BackupRestorePanel onRestored={onRestored} />
+          </div>
+        )}
 
         <Card>
           <div className="flex flex-col gap-5">

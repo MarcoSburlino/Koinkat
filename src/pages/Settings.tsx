@@ -11,6 +11,7 @@ import {
   LogOut,
   Download,
   CircleAlert,
+  History,
 } from 'lucide-react';
 import { save, open as openDialog } from '@tauri-apps/plugin-dialog';
 import { open as openUrl } from '@tauri-apps/plugin-shell';
@@ -31,6 +32,14 @@ import { useKoinkatAccountStore } from '../stores/koinkat-account-store';
 import { updateSettings } from '../services/settings-service';
 import { getConnectionSyncFloor, disconnectBank } from '../services/bank-sync-service';
 import { exportWorkspaceAsJson } from '../services/export-service';
+import {
+  BACKUPS_TO_KEEP,
+  backupsDirectory,
+  createBackup,
+  listBackups,
+  type BackupFile,
+} from '../services/backup-service';
+import { CopyPathButton } from '../components/ui/CopyPathButton';
 import { loadApiConfig, saveCredentials, getPemStorage } from '../services/api-config-service';
 import { verifyCredentials } from '../services/enable-banking-service';
 import type { Theme, DecimalSeparator, BankEnvironment } from '../types/enums';
@@ -122,10 +131,44 @@ export function Settings() {
   const [isExportingDb, setIsExportingDb] = useState(false);
   const [exportError, setExportError] = useState<string | null>(null);
   const [exportSuccess, setExportSuccess] = useState<string | null>(null);
+  // Automatic backups: null until loaded (or if listing failed).
+  const [backups, setBackups] = useState<BackupFile[] | null>(null);
+  const [backupsDir, setBackupsDir] = useState<string | null>(null);
+  const [isBackingUp, setIsBackingUp] = useState(false);
 
   function flashSuccess(msg: string) {
     setExportSuccess(msg);
     setTimeout(() => setExportSuccess(null), 2000);
+  }
+
+  const refreshBackups = useCallback(async () => {
+    try {
+      const [list, dir] = await Promise.all([listBackups(), backupsDirectory()]);
+      setBackups(list);
+      setBackupsDir(dir);
+    } catch (err) {
+      console.warn('[backup] could not list backups:', err);
+      setBackups(null);
+    }
+  }, []);
+
+  useEffect(() => {
+    void refreshBackups();
+  }, [refreshBackups]);
+
+  async function handleBackupNow() {
+    setIsBackingUp(true);
+    setExportError(null);
+    setExportSuccess(null);
+    try {
+      await createBackup('manual');
+      await refreshBackups();
+      flashSuccess('Backup saved.');
+    } catch (err) {
+      setExportError(err instanceof Error ? err.message : 'Backup failed');
+    } finally {
+      setIsBackingUp(false);
+    }
   }
 
   async function handleExportJson() {
@@ -521,6 +564,36 @@ export function Settings() {
               it holds all your financial data, and on systems without a
               keychain the key is inside it too.
             </p>
+          </div>
+          <div className="flex flex-col gap-2">
+            <p className="text-sm font-semibold" style={{ color: 'var(--text)' }}>
+              Automatic backups
+            </p>
+            <p style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-rate)' }}>
+              Koinkat copies the whole database into a backups folder next to
+              it every day you use it - refreshed after each bank sync - and
+              before you delete a user or a workspace. It keeps the newest{' '}
+              {BACKUPS_TO_KEEP}. If Koinkat ever opens to an empty
+              database, it offers these back. They stay on this device, as
+              sensitive as the database itself.
+            </p>
+            <p style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-rate)' }}>
+              {backups === null
+                ? 'Backups could not be listed.'
+                : backups.length === 0
+                  ? 'No backups yet.'
+                  : `${backups.length} kept · newest ${format(backups[0].takenAt, 'd MMM yyyy, HH:mm')}`}
+            </p>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                variant="secondary"
+                onClick={() => void handleBackupNow()}
+                disabled={isBackingUp}
+              >
+                <History size={14} /> {isBackingUp ? 'Backing up…' : 'Back up now'}
+              </Button>
+              {backupsDir && <CopyPathButton path={backupsDir} variant="ghost" />}
+            </div>
           </div>
         </div>
       </Card>

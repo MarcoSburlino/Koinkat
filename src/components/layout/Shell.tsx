@@ -14,10 +14,24 @@ import { UserRegister } from '../../pages/UserRegister';
 import { UserLogin } from '../../pages/UserLogin';
 import { Connection } from '../../pages/Connection';
 import { BootError } from './BootError';
+import { classifyBootFailure, type BootErrorKind } from '../../lib/boot-failure';
 import {
+  clearDeviceProvisioned,
   isDeviceProvisioned,
   markDeviceProvisioned,
 } from '../../lib/device-provisioned';
+import { clearActiveUserId } from '../../lib/active-user';
+import { clearActiveKoinkatAccountId } from '../../lib/active-koinkat-account';
+import {
+  countOrphanedWorkspaces,
+  recoverOrphanedWorkspaceOwners,
+} from '../../services/user-service';
+import {
+  ensureDailyBackup,
+  type BackupFile,
+  type RestoreResult,
+} from '../../services/backup-service';
+import { RestartRequired } from './RestartRequired';
 
 function applyTheme(theme: string) {
   const html = document.documentElement;
@@ -34,7 +48,10 @@ type View =
   | 'userLogin'
   | 'accountHub'
   | 'app'
-  | 'bootError';
+  | 'bootError'
+  // A backup was just restored with the database closed. Terminal for this
+  // process: the restored file needs the migrations only a fresh start runs.
+  | 'restartRequired';
 
 export function Shell() {
   const setSettings = useAppStore((s) => s.setSettings);
@@ -66,7 +83,19 @@ export function Shell() {
   // console.error while `view` stayed at the initial 'app' default and
   // the Header (gated on `activeUser`) hid every escape hatch.
   const [bootstrapError, setBootstrapError] = useState<string | null>(null);
+  // Which failure the boot-error screen is showing (see lib/boot-failure.ts).
+  // Only 'noUsers' - the database opened and answered, just with zero users -
+  // may offer "Start fresh". A read that THREW says nothing about what is on
+  // disk, so those screens never lead to registration.
+  const [bootErrorKind, setBootErrorKind] = useState<BootErrorKind>('readFailed');
   const [retrying, setRetrying] = useState(false);
+  // A failed action ON the boot-error screen (Recover), shown there. Separate
+  // from bootstrapError, which describes why the screen is showing at all.
+  const [bootActionError, setBootActionError] = useState<string | null>(null);
+  const [restored, setRestored] = useState<{
+    result: RestoreResult;
+    backup: BackupFile;
+  } | null>(null);
 
   // Apply theme whenever it changes
   useEffect(() => {
@@ -97,11 +126,23 @@ export function Shell() {
       // invited the user to create a second user row that would have orphaned
       // their real workspace. Refuse, and show the recoverable error instead.
       if (usersAfterLoad.length === 0) {
+        // Zero users is not the same as no data. Workspaces whose owner row
+        // went missing are still here (user_id has no foreign key), and
+        // registration would only hide them behind a new, empty user. This
+        // holds whether or not the device looks set up before.
+        if ((await countOrphanedWorkspaces()) > 0) {
+          resetKoinkatAccountStore();
+          setBootErrorKind('orphanedData');
+          setBootstrapError('The database holds workspaces but no user that owns them.');
+          setView('bootError');
+          return;
+        }
         if (isDeviceProvisioned()) {
           resetKoinkatAccountStore();
+          setBootErrorKind('noUsers');
           setBootstrapError(
-            'The database opened but reported no users, even though this ' +
-              'device has been set up before. Your data has not been deleted.',
+            'The database opened but contains no users, even though Koinkat ' +
+              'has been set up on this device before.',
           );
           setView('bootError');
           return;
@@ -113,6 +154,17 @@ export function Shell() {
 
       // At least one real user exists - arm the tripwire for future boots.
       markDeviceProvisioned();
+
+      // Today's backup, taken only now that the database has proved to hold
+      // users, so an empty database can never push a good backup out of the
+      // rotation. Background and non-fatal: a failed backup must never stop
+      // the app from opening. Deferred so the snapshot does not queue ahead
+      // of the startup queries (every call shares database.ts's queue).
+      setTimeout(() => {
+        void ensureDailyBackup().catch((err) => {
+          console.warn('[backup] daily backup failed:', err);
+        });
+      }, 2000);
 
       // Cold start: allow the single-user / single-workspace self-heal, so a
       // lost pointer does not strand the user at a picker with one option.
@@ -164,6 +216,7 @@ export function Shell() {
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       console.error('Init failed:', err);
+      setBootErrorKind(classifyBootFailure(msg));
       setBootstrapError(msg);
       // ALWAYS the dedicated error view. This used to guess between
       // 'userLogin' and 'userRegister' based on `users`, which is still the
@@ -203,7 +256,8 @@ export function Shell() {
     // marks the app initialized in the same batch, so without this guard this
     // effect would immediately fire with a null activeUser and replace it with
     // the very registration form the error screen exists to prevent.
-    if (view === 'bootError') return;
+    // Never navigate away from the boot-error or restart screens.
+    if (view === 'bootError' || view === 'restartRequired') return;
     let cancelled = false;
     (async () => {
       if (!activeUser) {
@@ -212,9 +266,10 @@ export function Shell() {
         // Same tripwire as bootstrap(): zero users on a device that has been
         // set up before is a failure, not a fresh install.
         if (users.length === 0 && isDeviceProvisioned()) {
+          setBootErrorKind('noUsers');
           setBootstrapError(
-            'The database reported no users, even though this device has ' +
-              'been set up before. Your data has not been deleted.',
+            'The database contains no users, even though Koinkat has been ' +
+              'set up on this device before.',
           );
           setView('bootError');
           return;
@@ -232,7 +287,9 @@ export function Shell() {
         // was and the failure only reached the console.
         if (cancelled) return;
         console.error('Workspace resolution failed:', err);
-        setBootstrapError(err instanceof Error ? err.message : String(err));
+        const msg = err instanceof Error ? err.message : String(err);
+        setBootErrorKind(classifyBootFailure(msg));
+        setBootstrapError(msg);
         setView('bootError');
         return;
       }
@@ -256,7 +313,7 @@ export function Shell() {
    */
   useEffect(() => {
     if (!initialized) return;
-    if (view === 'bootError') return; // never navigate away from the error
+    if (view === 'bootError' || view === 'restartRequired') return; // never navigate away
     if (!activeUser) return; // handled by the user effect above
 
     if (!activeKoinkatAccount) {
@@ -293,7 +350,17 @@ export function Shell() {
         useBankStore.getState().setFxError(FX_UNAVAILABLE_MSG);
       }
     })();
+    // Entering a workspace proves there is a user, and it is the first such
+    // moment in the session a user registers in - bootstrap's own daily
+    // backup only runs when users already existed at launch. Idempotent per
+    // day; deferred for the same reason as bootstrap's.
+    const backupTimer = setTimeout(() => {
+      void ensureDailyBackup().catch((err) => {
+        console.warn('[backup] daily backup failed:', err);
+      });
+    }, 2000);
     setView('app');
+    return () => clearTimeout(backupTimer);
     // `initialized` keeps this effect in sync with bootstrap completion
     // - same rationale as the activeUser effect above.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -331,12 +398,60 @@ export function Shell() {
   // the original failure and the only way out was restarting the app.
   const handleRetry = useCallback(async () => {
     setRetrying(true);
+    setBootActionError(null);
     try {
       await bootstrap();
     } finally {
       setRetrying(false);
     }
   }, [bootstrap]);
+
+  // The deliberate way out of the 'noUsers' screen, for a user who deleted
+  // the data folder by hand (the database goes, the webview profile holding
+  // the breadcrumb stays). BootError has already collected a typed
+  // confirmation. Nothing is deleted here: the breadcrumb is forgotten and
+  // bootstrap re-reads the database, so if users reappear on that read the
+  // app simply opens normally and re-arms the tripwire.
+  const handleStartFresh = useCallback(async () => {
+    setRetrying(true);
+    try {
+      // Reset the pointers through their owners, not just the breadcrumb's
+      // copies of them in localStorage: that also clears their in-memory
+      // caches and the app_state rows. With no users they point at nothing.
+      try {
+        await clearActiveUserId();
+        await clearActiveKoinkatAccountId();
+      } catch (err) {
+        console.warn('Clearing stale pointers before Start fresh failed:', err);
+      }
+      clearDeviceProvisioned();
+      await bootstrap();
+    } finally {
+      setRetrying(false);
+    }
+  }, [bootstrap]);
+
+  // The way out of 'orphanedData': put the missing owners back under their
+  // original ids, then boot normally - the workspaces were never touched.
+  const handleRecover = useCallback(async () => {
+    setRetrying(true);
+    setBootActionError(null);
+    try {
+      await recoverOrphanedWorkspaceOwners();
+      await bootstrap();
+    } catch (err) {
+      setBootActionError(
+        `Recovering the missing user failed: ${err instanceof Error ? err.message : String(err)}`,
+      );
+    } finally {
+      setRetrying(false);
+    }
+  }, [bootstrap]);
+
+  const handleRestored = useCallback((result: RestoreResult, backup: BackupFile) => {
+    setRestored({ result, backup });
+    setView('restartRequired');
+  }, []);
 
   const handleCancelRegister = useCallback(() => {
     if (users.length > 0) setView('userLogin');
@@ -364,13 +479,27 @@ export function Shell() {
   // no route into registration. Rendering it before the normal shell means
   // there is no chrome through which the user can reach a "create user" form
   // while the app cannot read the database.
+  if (view === 'restartRequired') {
+    // `restored` is always set in the same batch as this view.
+    return restored ? <RestartRequired result={restored.result} backup={restored.backup} /> : null;
+  }
+
   if (view === 'bootError') {
     return (
       <BootError
+        kind={bootErrorKind}
         message={bootstrapError ?? 'Unknown error while opening the database.'}
+        actionError={bootActionError}
         onRetry={() => {
           void handleRetry();
         }}
+        onStartFresh={() => {
+          void handleStartFresh();
+        }}
+        onRecover={() => {
+          void handleRecover();
+        }}
+        onRestored={handleRestored}
         retrying={retrying}
       />
     );
@@ -390,6 +519,8 @@ export function Shell() {
         <UserRegister
           onComplete={handleRegistered}
           onCancel={users.length > 0 ? handleCancelRegister : undefined}
+          // Only on a database with no users is replacing it safe.
+          onRestored={users.length === 0 ? handleRestored : undefined}
         />
       )}
       {view === 'userLogin' && (
