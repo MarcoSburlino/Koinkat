@@ -10,6 +10,7 @@ import {
 } from '../services/bank-sync-service';
 import { ensureTodayRates } from '../services/exchange-rate-service';
 import { refreshTodaysBackup } from '../services/backup-service';
+import { useAppStore } from './app-store';
 import type { BankConnection, BankConnectionRow } from '../types/models';
 import { toBankConnection } from '../types/models';
 
@@ -106,6 +107,11 @@ export const useBankStore = create<BankState>((set, get) => {
       // must reach the UI.
       await get().loadConnections().catch(() => {});
       set({ isSyncing: false });
+      // Rows may have been imported even when the sync threw part-way (one
+      // account failed, the rest landed), so every open page reloads here,
+      // not only on success. This covers the startup auto-sync and every
+      // sync button, whatever page is showing.
+      useAppStore.getState().notifyDataChanged();
     }
   }
 

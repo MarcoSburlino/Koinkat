@@ -196,6 +196,8 @@ export async function getTransactions(
         | undefined;
       const creditor = t.creditor as { name?: string } | undefined;
       const debtor = t.debtor as { name?: string } | undefined;
+      const creditorAccount = t.creditor_account as { iban?: string } | undefined;
+      const debtorAccount = t.debtor_account as { iban?: string } | undefined;
       return {
         amount: amt?.amount ?? (t.amount as string),
         currency: amt?.currency ?? (t.currency as string),
@@ -213,6 +215,8 @@ export async function getTransactions(
         status: (t.status as string) ?? 'BOOK',
         creditorName: creditor?.name ?? (t.creditorName as string | undefined),
         debtorName: debtor?.name ?? (t.debtorName as string | undefined),
+        creditorIban: creditorAccount?.iban,
+        debtorIban: debtorAccount?.iban,
         remittanceInformation:
           (t.remittance_information as string[] | undefined) ??
           (t.remittanceInformation as string[] | undefined),

@@ -13,7 +13,6 @@ import {
   TriangleAlert,
   ChevronDown,
   ChevronUp,
-  Check,
   X,
   Clock,
 } from 'lucide-react';
@@ -23,10 +22,11 @@ import { Select } from '../components/ui/Select';
 import { Modal } from '../components/ui/Modal';
 import { RecurringBadge } from '../components/ui/RecurringBadge';
 import { PrivacyField } from '../components/ui/PrivacyField';
+import { TransferCandidateRow } from '../components/TransferCandidateRow';
 import { PageHeader } from '../components/layout/PageHeader';
 import { useAppStore } from '../stores/app-store';
+import { useDataChanged } from '../hooks/useDataChanged';
 import { formatAmount, formatMoney } from '../lib/format';
-import { dec } from '../domain/money';
 import * as transactionService from '../services/transaction-service';
 import * as accountService from '../services/account-service';
 import * as categoryService from '../services/category-service';
@@ -220,6 +220,8 @@ export function TransactionList() {
   const [reviewingId, setReviewingId] = useState<string | null>(null);
 
   const settings = useAppStore((s) => s.settings);
+  // Confirming or undoing a transfer moves rows in and out of Review.
+  const refreshPendingReviewCount = useAppStore((s) => s.refreshPendingReviewCount);
 
   // Read filters from URL search params
   // Support both ?accountId= (filter select) and ?account= (Dashboard deep-link).
@@ -264,14 +266,16 @@ export function TransactionList() {
   // Years offered by the Year filter - every year with data, plus the
   // current one.
   const [years, setYears] = useState<number[]>([currentYear]);
-  useEffect(() => {
+  const loadYears = useCallback(() => {
     availableYears()
       .then((yrs) => {
         setYears(yrs.includes(currentYear) ? yrs : [...yrs, currentYear].sort((a, b) => b - a));
       })
       .catch(() => setYears([currentYear]));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [currentYear]);
+  useEffect(() => {
+    loadYears();
+  }, [loadYears]);
 
   // Update a single filter param and reset page to 1
   const setFilter = useCallback(
@@ -308,18 +312,19 @@ export function TransactionList() {
     [setSearchParams],
   );
 
-  // Load accounts and categories on mount
-  useEffect(() => {
-    async function loadMeta() {
-      const [accts, cats] = await Promise.all([
-        accountService.listAccounts(),
-        categoryService.listCategories(),
-      ]);
-      setAccounts(accts);
-      setCategories(cats);
-    }
-    loadMeta();
+  // Load accounts and categories on mount (and after a sync, which can
+  // create accounts).
+  const loadMeta = useCallback(async () => {
+    const [accts, cats] = await Promise.all([
+      accountService.listAccounts(),
+      categoryService.listCategories(),
+    ]);
+    setAccounts(accts);
+    setCategories(cats);
   }, []);
+  useEffect(() => {
+    loadMeta().catch(console.warn);
+  }, [loadMeta]);
 
   // Load transfer-pair candidates on mount and whenever the underlying
   // transactions change (a confirm/dismiss/delete may have surfaced new
@@ -345,6 +350,7 @@ export function TransactionList() {
       const pairId = await confirmTransferPair(c.outflow.id, c.inflow.id);
       setLastConfirmedPair(pairId);
       await refreshCandidates();
+      void refreshPendingReviewCount();
       // Also reload the visible page so the rows pick up their new
       // `transferPairId` and re-render with the Transfer chip.
       await reloadCurrentPage();
@@ -365,6 +371,7 @@ export function TransactionList() {
       await unpairTransfer(lastConfirmedPair);
       setLastConfirmedPair(null);
       await refreshCandidates();
+      void refreshPendingReviewCount();
       await reloadCurrentPage();
     } catch (err) {
       setCandidateError(
@@ -381,6 +388,7 @@ export function TransactionList() {
     try {
       await dismissTransferPair(c.outflow.id, c.inflow.id);
       await refreshCandidates();
+      void refreshPendingReviewCount();
     } catch (err) {
       setCandidateError(
         err instanceof Error ? err.message : 'Failed to dismiss transfer pair',
@@ -457,6 +465,15 @@ export function TransactionList() {
       cancelled = true;
     };
   }, [buildFilters]);
+
+  // A sync finished while this page is open: refresh the visible page,
+  // the filters' option lists and the transfer banner in place.
+  useDataChanged(() => {
+    reloadCurrentPage().catch(console.warn);
+    refreshCandidates().catch(console.warn);
+    loadMeta().catch(console.warn);
+    loadYears();
+  });
 
   async function handleDelete() {
     if (!deleteTarget || deleting) return;
@@ -627,139 +644,15 @@ export function TransactionList() {
               style={{ borderTop: '1px solid color-mix(in srgb, var(--warning) 25%, var(--border))' }}
             >
               {candidates.map((c) => (
-                <div
+                <TransferCandidateRow
                   key={`${c.outflow.id}-${c.inflow.id}`}
-                  className="flex items-center justify-between gap-3 px-4 py-3"
-                  style={{
-                    borderBottom: '1px solid color-mix(in srgb, var(--warning) 18%, var(--border))',
-                  }}
-                >
-                  <div className="flex-1 min-w-0">
-                    <div
-                      className="flex items-center gap-2 flex-wrap"
-                      style={{ fontSize: 'var(--fs-body-sm)' }}
-                    >
-                      {/* Outflow side */}
-                      <span
-                        className="inline-flex items-center gap-1.5"
-                        style={{ color: 'var(--text)' }}
-                      >
-                        <span
-                          className="w-2 h-2 rounded-full shrink-0"
-                          style={{ backgroundColor: c.outflow.accountColor }}
-                        />
-                        <span style={{ fontWeight: 'var(--fw-medium)' }}>
-                          {c.outflow.accountName}
-                        </span>
-                        <span
-                          className="amount"
-                          style={{
-                            color: 'var(--expense)',
-                            fontSize: 'var(--fs-body-sm)',
-                          }}
-                          data-privacy-field
-                        >
-                          −{formatAmount(c.outflow.amount, settings.decimalSeparator)}
-                        </span>
-                        <span className="currency-code">{c.outflow.currency}</span>
-                        <span
-                          style={{
-                            color: 'var(--text-muted)',
-                            fontSize: 'var(--fs-rate)',
-                          }}
-                        >
-                          {formatDate(c.outflow.date)}
-                        </span>
-                      </span>
-
-                      <ArrowLeftRight
-                        size={14}
-                        style={{ color: 'var(--text-muted)' }}
-                      />
-
-                      {/* Inflow side */}
-                      <span
-                        className="inline-flex items-center gap-1.5"
-                        style={{ color: 'var(--text)' }}
-                      >
-                        <span
-                          className="w-2 h-2 rounded-full shrink-0"
-                          style={{ backgroundColor: c.inflow.accountColor }}
-                        />
-                        <span style={{ fontWeight: 'var(--fw-medium)' }}>
-                          {c.inflow.accountName}
-                        </span>
-                        <span
-                          className="amount"
-                          style={{
-                            color: 'var(--income)',
-                            fontSize: 'var(--fs-body-sm)',
-                          }}
-                          data-privacy-field
-                        >
-                          +{formatAmount(c.inflow.amount, settings.decimalSeparator)}
-                        </span>
-                        <span className="currency-code">{c.inflow.currency}</span>
-                        <span
-                          style={{
-                            color: 'var(--text-muted)',
-                            fontSize: 'var(--fs-rate)',
-                          }}
-                        >
-                          {formatDate(c.inflow.date)}
-                        </span>
-                      </span>
-                    </div>
-                    <PrivacyField
-                      as="p"
-                      className="mt-1"
-                      style={{
-                        color: 'var(--text-muted)',
-                        fontSize: 'var(--fs-rate)',
-                      }}
-                    >
-                      Match score {(c.score * 100).toFixed(0)}% · {c.dayGap}-day gap
-                      {dec(c.feeInPreferred).gt('0.005') &&
-                        ` · ~${formatAmount(c.feeInPreferred, settings.decimalSeparator)} ${settings.preferredCurrency} fee`}
-                      {c.isCrossCurrency && ' · cross-currency'}
-                    </PrivacyField>
-                  </div>
-
-                  <div className="flex items-center gap-2 shrink-0">
-                    <button
-                      type="button"
-                      onClick={() => handleConfirmCandidate(c)}
-                      disabled={reviewingId === c.outflow.id}
-                      className="inline-flex items-center gap-1.5 px-3 h-8 rounded cursor-pointer transition-opacity hover:opacity-85 disabled:opacity-50"
-                      style={{
-                        backgroundColor: 'color-mix(in srgb, var(--income) 15%, transparent)',
-                        color: 'var(--income)',
-                        border: '1px solid color-mix(in srgb, var(--income) 40%, transparent)',
-                        fontSize: 'var(--fs-body-sm)',
-                        fontWeight: 'var(--fw-medium)',
-                      }}
-                    >
-                      <Check size={14} />
-                      Confirm
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleDismissCandidate(c)}
-                      disabled={reviewingId === c.outflow.id}
-                      className="inline-flex items-center gap-1.5 px-3 h-8 rounded cursor-pointer transition-opacity hover:opacity-85 disabled:opacity-50"
-                      style={{
-                        backgroundColor: 'transparent',
-                        color: 'var(--text-secondary)',
-                        border: '1px solid var(--border)',
-                        fontSize: 'var(--fs-body-sm)',
-                        fontWeight: 'var(--fw-medium)',
-                      }}
-                    >
-                      <X size={14} />
-                      Dismiss
-                    </button>
-                  </div>
-                </div>
+                  candidate={c}
+                  decimalSeparator={settings.decimalSeparator}
+                  busy={reviewingId === c.outflow.id}
+                  onConfirm={() => handleConfirmCandidate(c)}
+                  onDismiss={() => handleDismissCandidate(c)}
+                  borderColor="color-mix(in srgb, var(--warning) 18%, var(--border))"
+                />
               ))}
             </div>
           )}

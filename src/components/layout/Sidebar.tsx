@@ -45,7 +45,10 @@ const FOOTER_ITEM: NavItem = {
 };
 
 export function Sidebar() {
-  const pendingReviewCount = useAppStore((s) => s.pendingReviewCount);
+  // Rows to categorize plus transfers to confirm: both live on Review.
+  const pendingReviewCount = useAppStore(
+    (s) => s.pendingReviewCount + s.transferSuggestionCount,
+  );
 
   function renderNavLink({ to, label, icon: Icon, badge }: NavItem) {
     return (

@@ -1,5 +1,5 @@
 import { UPPERCASE_LABEL } from '../lib/label-styles';
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { chartTooltipStyle, chartAxisStyle, chartGridStyle } from '../lib/chart-style';
@@ -10,6 +10,7 @@ import { InfoBanner } from '../components/ui/InfoBanner';
 import { Select } from '../components/ui/Select';
 import { PageHeader } from '../components/layout/PageHeader';
 import { useAppStore } from '../stores/app-store';
+import { useDataChanged } from '../hooks/useDataChanged';
 import { formatAmount, formatMoney } from '../lib/format';
 import * as accountService from '../services/account-service';
 import { availableYears, buildYearlySummary, sumNonBudgetedExpenses } from '../services/reporting-service';
@@ -30,30 +31,44 @@ export function Summary() {
   const [nonBudgeted, setNonBudgeted] = useState<string>('0.00');
   const [loading, setLoading] = useState(true);
 
+  // Only the first load shows the loading state. Later reloads - a filter
+  // change, or a sync re-reading the accounts - keep the current figures
+  // on screen until the new ones arrive, and an older, slower request never
+  // overwrites a newer one.
+  const hasShownData = useRef(false);
+  const latestRequest = useRef(0);
+
   // Load accounts and available years on mount
+  const init = useCallback(async () => {
+    const [accts, yrs] = await Promise.all([
+      accountService.listAccounts(),
+      availableYears(),
+    ]);
+    setAccounts(accts);
+    setYears(yrs);
+    setSelectedYear((current) =>
+      yrs.length > 0 && !yrs.includes(current) ? yrs[0] : current,
+    );
+  }, []);
   useEffect(() => {
-    async function init() {
-      const [accts, yrs] = await Promise.all([
-        accountService.listAccounts(),
-        availableYears(),
-      ]);
-      setAccounts(accts);
-      setYears(yrs);
-      if (yrs.length > 0 && !yrs.includes(selectedYear)) {
-        setSelectedYear(yrs[0]);
-      }
-    }
-    init();
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+    init().catch(console.warn);
+  }, [init]);
+
+  // A sync finished: balances and rows changed. Re-reading the accounts
+  // re-runs the summary below.
+  useDataChanged(() => {
+    init().catch(console.warn);
+  });
 
   // Load summary data when filters change
   const loadSummary = useCallback(async () => {
+    const request = ++latestRequest.current;
     if (accounts.length === 0) {
       setData(null);
       setLoading(false);
       return;
     }
-    setLoading(true);
+    if (!hasShownData.current) setLoading(true);
     try {
       const [summary, nb] = await Promise.all([
         buildYearlySummary({
@@ -68,13 +83,16 @@ export function Summary() {
           preferredCurrency: settings.preferredCurrency,
         }),
       ]);
+      if (request !== latestRequest.current) return;
       setData(summary);
       setNonBudgeted(nb.total);
+      hasShownData.current = true;
     } catch (err) {
+      if (request !== latestRequest.current) return;
       console.error('Failed to load summary:', err);
       setData(null);
     } finally {
-      setLoading(false);
+      if (request === latestRequest.current) setLoading(false);
     }
   }, [selectedYear, selectedAccountId, settings.preferredCurrency, accounts]);
 

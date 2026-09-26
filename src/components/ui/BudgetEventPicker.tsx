@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { ChevronDown, CalendarRange } from 'lucide-react';
 import * as budgetService from '../../services/budget-service';
+import { FloatingPanel } from './FloatingPanel';
 import type { BudgetEvent } from '../../types/models';
 
 interface BudgetEventPickerProps {
@@ -15,11 +16,31 @@ interface BudgetEventPickerProps {
 }
 
 /**
+ * One event-list fetch shared by every picker that asks at the same moment
+ * (the Review queue mounts one per row). Dropped once it settles, so a
+ * later open reads fresh data.
+ */
+let inflightEvents: Promise<BudgetEvent[]> | null = null;
+
+function loadActiveEvents(): Promise<BudgetEvent[]> {
+  if (!inflightEvents) {
+    inflightEvents = budgetService
+      .listBudgetEvents()
+      .then((all) => all.filter((e) => !e.isExpired))
+      .finally(() => {
+        inflightEvents = null;
+      });
+  }
+  return inflightEvents;
+}
+
+/**
  * Searchable budget-event dropdown. Mirrors CategoryPicker's interaction
  * model (click to open, search to filter, click outside to dismiss).
  *
  * Lists only active (non-expired) events scoped to the active koinkat
- * account. Events are loaded lazily on first open.
+ * account. Events load on first open, or straight away when a value is set
+ * so the trigger shows the linked event's name instead of "Loading...".
  */
 export function BudgetEventPicker({
   value,
@@ -35,34 +56,26 @@ export function BudgetEventPicker({
   const [events, setEvents] = useState<BudgetEvent[]>([]);
   const [loaded, setLoaded] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const loadEvents = useCallback(async () => {
-    const all = await budgetService.listBudgetEvents();
-    setEvents(all.filter((e) => !e.isExpired));
+    setEvents(await loadActiveEvents());
     setLoaded(true);
   }, []);
 
-  // If the current value points at an event that isn't in the loaded
-  // active list (e.g. it was archived after the link was set), still
-  // try to surface its name. We fetch lazily, but only after first open
-  // - the trigger button shows a fallback label until then.
+  // A linked event needs the list to show its name, so load as soon as
+  // there is a value, not only on first open. A value that isn't in the
+  // active list (archived since it was linked) reads "Unknown event".
   useEffect(() => {
-    if (open && !loaded) loadEvents();
-  }, [open, loaded, loadEvents]);
+    if ((open || value !== null) && !loaded) loadEvents().catch(console.warn);
+  }, [open, value, loaded, loadEvents]);
 
-  useEffect(() => {
-    function handleClickOutside(e: MouseEvent) {
-      if (
-        containerRef.current &&
-        !containerRef.current.contains(e.target as Node)
-      ) {
-        setOpen(false);
-        setSearch('');
-      }
-    }
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+  // Outside clicks, Escape and scrolling the page all land here
+  // (FloatingPanel owns those listeners).
+  const close = useCallback(() => {
+    setOpen(false);
+    setSearch('');
   }, []);
 
   const byId = new Map(events.map((e) => [e.id, e]));
@@ -95,12 +108,14 @@ export function BudgetEventPicker({
       )}
       <div className="relative">
         <button
+          ref={triggerRef}
           type="button"
           disabled={disabled}
           onClick={() => {
             if (!disabled) {
               setOpen(!open);
-              setTimeout(() => inputRef.current?.focus(), 0);
+              // preventScroll: focusing must never scroll the page.
+              setTimeout(() => inputRef.current?.focus({ preventScroll: true }), 0);
             }
           }}
           className="w-full h-11 rounded-lg px-3 text-sm text-left flex items-center justify-between cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
@@ -119,107 +134,102 @@ export function BudgetEventPicker({
           <ChevronDown size={16} style={{ color: 'var(--text-muted)' }} />
         </button>
 
-        {open && (
+        <FloatingPanel
+          open={open}
+          anchorRef={triggerRef}
+          ignoreRef={containerRef}
+          onDismiss={close}
+        >
           <div
-            className="absolute top-full left-0 right-0 mt-1 rounded-lg overflow-hidden"
-            style={{
-              backgroundColor: 'var(--surface)',
-              border: '1px solid var(--border)',
-              boxShadow: 'var(--elev-3)',
-              zIndex: 'var(--z-dropdown)',
-              maxHeight: '340px',
-              display: 'flex',
-              flexDirection: 'column',
-            }}
+            className="p-2 shrink-0"
+            style={{ borderBottom: '1px solid var(--border)' }}
           >
-            <div
-              className="p-2"
-              style={{ borderBottom: '1px solid var(--border)' }}
-            >
-              <input
-                ref={inputRef}
-                type="text"
-                placeholder="Search events..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="w-full h-9 rounded-md px-3 text-sm outline-none"
-                style={{
-                  backgroundColor: 'var(--surface-alt)',
-                  color: 'var(--input-fg)',
-                  border: 'none',
-                }}
-              />
-            </div>
-            <div className="overflow-y-auto" style={{ maxHeight: '260px' }}>
-              {allowNull && !search && (
-                <button
-                  type="button"
-                  onClick={() => handleSelect(null)}
-                  className="w-full text-left px-3 py-2 text-sm cursor-pointer"
-                  style={{
-                    color: 'var(--text-muted)',
-                    backgroundColor:
-                      value === null ? 'var(--nav-active-bg)' : 'transparent',
-                  }}
-                >
-                  No event
-                </button>
-              )}
-              {!loaded ? (
-                <p
-                  className="text-sm px-3 py-2"
-                  style={{ color: 'var(--text-muted)' }}
-                >
-                  Loading events...
-                </p>
-              ) : filtered.length === 0 ? (
-                <p
-                  className="text-sm px-3 py-2"
-                  style={{ color: 'var(--text-muted)' }}
-                >
-                  No events found.
-                </p>
-              ) : (
-                filtered.map((e) => {
-                  const isSelected = e.id === value;
-                  const dateHint = formatDateHint(e.startDate, e.endDate);
-                  return (
-                    <button
-                      key={e.id}
-                      type="button"
-                      onClick={() => handleSelect(e.id)}
-                      className="w-full text-left px-3 py-2 text-sm cursor-pointer flex items-center gap-2"
-                      style={{
-                        color: 'var(--text)',
-                        backgroundColor: isSelected
-                          ? 'var(--nav-active-bg)'
-                          : 'transparent',
-                        fontWeight: 'var(--fw-regular)',
-                      }}
-                    >
-                      <CalendarRange
-                        size={14}
-                        style={{ color: 'var(--text-muted)' }}
-                      />
-                      <span className="truncate">{e.name}</span>
-                      {dateHint && (
-                        <span
-                          className="ml-auto shrink-0 pl-2"
-                          style={{
-                            color: 'var(--text-muted)',
-                            fontSize: 'var(--fs-rate)',
-                          }}
-                        >
-                          {dateHint}
-                        </span>
-                      )}
-                    </button>
-                  );
-                })
-              )}
-            </div>
+            <input
+              ref={inputRef}
+              type="text"
+              placeholder="Search events..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full h-9 rounded-md px-3 text-sm outline-none"
+              style={{
+                backgroundColor: 'var(--surface-alt)',
+                color: 'var(--input-fg)',
+                border: 'none',
+              }}
+            />
           </div>
-        )}
+          <div
+            className="overflow-y-auto flex-1 min-h-0"
+            style={{ overscrollBehavior: 'contain' }}
+          >
+            {allowNull && !search && (
+              <button
+                type="button"
+                onClick={() => handleSelect(null)}
+                className="w-full text-left px-3 py-2 text-sm cursor-pointer"
+                style={{
+                  color: 'var(--text-muted)',
+                  backgroundColor:
+                    value === null ? 'var(--nav-active-bg)' : 'transparent',
+                }}
+              >
+                No event
+              </button>
+            )}
+            {!loaded ? (
+              <p
+                className="text-sm px-3 py-2"
+                style={{ color: 'var(--text-muted)' }}
+              >
+                Loading events...
+              </p>
+            ) : filtered.length === 0 ? (
+              <p
+                className="text-sm px-3 py-2"
+                style={{ color: 'var(--text-muted)' }}
+              >
+                No events found.
+              </p>
+            ) : (
+              filtered.map((e) => {
+                const isSelected = e.id === value;
+                const dateHint = formatDateHint(e.startDate, e.endDate);
+                return (
+                  <button
+                    key={e.id}
+                    type="button"
+                    onClick={() => handleSelect(e.id)}
+                    className="w-full text-left px-3 py-2 text-sm cursor-pointer flex items-center gap-2"
+                    style={{
+                      color: 'var(--text)',
+                      backgroundColor: isSelected
+                        ? 'var(--nav-active-bg)'
+                        : 'transparent',
+                      fontWeight: 'var(--fw-regular)',
+                    }}
+                  >
+                    <CalendarRange
+                      size={14}
+                      style={{ color: 'var(--text-muted)' }}
+                    />
+                    <span className="truncate">{e.name}</span>
+                    {dateHint && (
+                      <span
+                        className="ml-auto shrink-0 pl-2"
+                        style={{
+                          color: 'var(--text-muted)',
+                          fontSize: 'var(--fs-rate)',
+                        }}
+                      >
+                        {dateHint}
+                      </span>
+                    )}
+                  </button>
+                );
+              })
+            )}
+          </div>
+        </FloatingPanel>
       </div>
       {error && (
         <p className="text-xs" style={{ color: 'var(--danger)' }}>

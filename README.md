@@ -1138,7 +1138,7 @@ Koinkat/
 │   ├── domain/             Pure helpers (money math, merchant normalization)
 │   ├── lib/                Cross-cutting utilities
 │   ├── types/              TypeScript types + row→model mappers
-│   ├── db/                 SQL schema + incremental migrations (v2 → v14)
+│   ├── db/                 SQL schema + incremental migrations (v2 → v15)
 │   ├── data/               Static data (MCC mappings)
 │   └── mocks/              Fixture-backed Enable Banking stub (dev/demo only)
 ├── src-tauri/              Tauri Rust shell + config

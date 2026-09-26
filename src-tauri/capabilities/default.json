@@ -35,6 +35,20 @@
       ]
     },
     {
+      "identifier": "fs:allow-exists",
+      "allow": [
+        { "path": "$APPCONFIG/backups" },
+        { "path": "$APPCONFIG/backups/*" },
+        { "path": "$APPCONFIG/koinkat.db" },
+        { "path": "$APPCONFIG/koinkat.db-wal" },
+        { "path": "$APPCONFIG/koinkat.db-shm" }
+      ]
+    },
+    {
+      "identifier": "fs:allow-read-dir",
+      "allow": [{ "path": "$APPCONFIG/backups" }]
+    },
+    {
       "identifier": "fs:allow-mkdir",
       "allow": [{ "path": "$APPCONFIG/backups" }]
     },

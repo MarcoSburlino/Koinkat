@@ -6,6 +6,55 @@ uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.1.6] - 2026-09-26
+
+Transfers between your own accounts stop counting as income and spending,
+and the screen keeps up with your bank.
+
+### Fixed
+- Automatic backups never ran in 0.1.5. The app was not allowed to look
+  inside its own `backups` folder, so every daily backup, every "Back up
+  now" and every safety copy before a delete failed quietly, and first-run
+  setup showed "Koinkat could not check its backups". Backups now work; the
+  first one is taken a couple of seconds after you open a workspace.
+- Money moved between two of your accounts was counted as spending on one
+  and income on the other. Koinkat did look for such pairs, but only in the
+  last 90 days, only on the Transactions page, and it skipped pairs it could
+  not convert between currencies even when both sides were in the same one.
+  It now looks through your whole history, and uses the other side's account
+  number when the bank reports it: when that number is one of your own
+  accounts, the pair is marked as confirmed by your bank.
+- A pair you had marked as a transfer stayed in the Review queue, still
+  asking for a category. Transfers now leave Review, including pairs
+  marked before this release.
+- Saying "not a transfer" to a wrong suggestion hid both transactions from
+  transfer detection for good, so neither could be matched with its real
+  partner. Now only that pairing is forgotten.
+- After a bank sync, including the automatic one when Koinkat opens, the
+  page you were on kept showing the old data until you switched pages. Every
+  page now refreshes in place, and the Review badge updates with it.
+- Dropdowns in Review (category, budget event) could open below the bottom
+  of the window, and opening one could make the page jump. They now open
+  upward when there is no room below, always stay inside the window, are
+  not cut off inside pop-ups, and never scroll the page. Escape closes just
+  the dropdown. The currency picker behaves the same way.
+- A suggested category in Review showed as "Select category..." until you
+  opened the dropdown. It now shows its name straight away.
+
+### Added
+- Suggested transfers at the top of Review, with "It's a transfer" and
+  "Not a transfer", and a one-click confirm for every pair your bank
+  confirms.
+- "It's a transfer..." on each Review row, and "Mark as transfer" on a
+  transaction's edit page, to pick the other side yourself, or to say that
+  the other account isn't in Koinkat.
+- A transfer's edit page shows what it is paired with and has "Not a
+  transfer", so a transfer can always be undone.
+
+### Changed
+- Run "Resync history" once after updating so Koinkat can read the other
+  side's account number on transactions imported before this release.
+
 ## [0.1.5] - 2026-09-26
 
 If you have data, Koinkat should always find it. This release is about the

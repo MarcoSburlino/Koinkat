@@ -347,6 +347,14 @@ export interface EnableBankingTransaction {
   status: string;
   creditorName?: string;
   debtorName?: string;
+  /**
+   * IBAN of the creditor's / debtor's account, when the bank reports it.
+   * For an outgoing payment the creditor is the other side; for an incoming
+   * one the debtor is. Used to recognise transfers between the user's own
+   * linked accounts.
+   */
+  creditorIban?: string;
+  debtorIban?: string;
   remittanceInformation?: string[];
   entryReference?: string;
   /**
@@ -405,6 +413,8 @@ export async function getTransactions(
       status: string;
       creditor?: { name?: string };
       debtor?: { name?: string };
+      creditor_account?: { iban?: string };
+      debtor_account?: { iban?: string };
       remittance_information?: string[];
       entry_reference?: string;
       transaction_id?: string;
@@ -430,6 +440,8 @@ export async function getTransactions(
     status: t.status,
     creditorName: t.creditor?.name,
     debtorName: t.debtor?.name,
+    creditorIban: t.creditor_account?.iban,
+    debtorIban: t.debtor_account?.iban,
     remittanceInformation: t.remittance_information,
     entryReference: t.entry_reference,
     transactionId: t.transaction_id,

@@ -11,6 +11,7 @@ import { InfoBanner } from '../components/ui/InfoBanner';
 import { BankSetupGuide } from '../components/BankSetupGuide';
 import { PageHeader } from '../components/layout/PageHeader';
 import { useBankStore } from '../stores/bank-store';
+import { useAppStore } from '../stores/app-store';
 import { refreshTodaysBackup } from '../services/backup-service';
 import { loadApiConfig } from '../services/api-config-service';
 import * as ebService from '../services/enable-banking-service';
@@ -190,6 +191,7 @@ export function BankLink() {
         await loadConnections();
         // The first import can be months of history: back it up now.
         void refreshTodaysBackup();
+        useAppStore.getState().notifyDataChanged();
 
         const imported = result.transactionsImported;
         const accts = result.accountsCreated;
@@ -275,6 +277,7 @@ export function BankLink() {
       await loadConnections();
       // The first import can be months of history: back it up now.
       void refreshTodaysBackup();
+      useAppStore.getState().notifyDataChanged();
       const imported = result.transactionsImported;
       const accts = result.accountsCreated;
       if (imported === 0) {

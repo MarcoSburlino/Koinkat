@@ -604,13 +604,21 @@ export const categorizer: TransactionCategorizer = new RuleBasedCategorizer();
 
 /* ── Convenience: pending review count ───────────────────────────── */
 
+/**
+ * Rows waiting in the Review queue. A row that is part of a transfer is
+ * never waiting: it has no category to confirm. Rows paired before
+ * confirming a transfer cleared `needs_review` still carry the flag, which
+ * is why the transfer condition lives here and not only in the confirm.
+ * Keep in sync with the `needsReview` filter in `listTransactions`.
+ */
 export async function getPendingReviewCount(): Promise<number> {
   const koinkatAccountId = requireActiveKoinkatAccountId();
   const db = await getDb();
   const rows = await db.select<{ cnt: number }[]>(
     `SELECT COUNT(*) AS cnt
        FROM transactions
-      WHERE koinkat_account_id = ? AND needs_review = 1`,
+      WHERE koinkat_account_id = ? AND needs_review = 1
+        AND transfer_pair_id IS NULL`,
     [koinkatAccountId],
   );
   return rows[0]?.cnt ?? 0;

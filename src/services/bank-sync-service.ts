@@ -415,6 +415,8 @@ interface ImportFields {
   exchangeRate: string;
   effectiveDate: string;
   currency: string;
+  /** IBAN of the other side (creditor for money out, debtor for money in). */
+  counterpartyIban: string | null;
 }
 
 async function buildImportFields(
@@ -490,6 +492,9 @@ async function buildImportFields(
     exchangeRate,
     effectiveDate,
     currency: txn.currency,
+    counterpartyIban: normalizeIban(
+      type === 'expense' ? txn.creditorIban : txn.debtorIban,
+    ),
   };
 }
 
@@ -834,7 +839,22 @@ export async function syncTransactions(
           'SELECT id, status FROM transactions WHERE koinkat_account_id = ? AND external_ref = ? AND account_id = ?',
           [koinkatAccountId, externalRef, la.account_id],
         );
-        if (existing.some((r) => r.status === 'booked')) {
+        const bookedHit = existing.find((r) => r.status === 'booked');
+        if (bookedHit) {
+          // Rows imported before migration v15 have no counterparty IBAN.
+          // Seeing the entry again is the chance to fill it in, so a
+          // "Resync history" also lets transfer detection recognise older
+          // transfers between the user's own accounts.
+          const counterpartyIban = normalizeIban(
+            txn.creditDebitIndicator === 'CRDT' ? txn.debtorIban : txn.creditorIban,
+          );
+          if (counterpartyIban) {
+            await db.execute(
+              `UPDATE transactions SET counterparty_iban = ?
+                WHERE id = ? AND koinkat_account_id = ? AND counterparty_iban IS NULL`,
+              [counterpartyIban, bookedHit.id, koinkatAccountId],
+            );
+          }
           skipped++;
           continue;
         }
@@ -933,6 +953,7 @@ export async function syncTransactions(
                   -- sync can recognise this booked row even when the bank
                   -- sends no entry_reference for it.
                   import_fingerprint = COALESCE(import_fingerprint, ?),
+                  counterparty_iban = COALESCE(?, counterparty_iban),
                   updated_at = datetime('now')
             WHERE id = ? AND koinkat_account_id = ?`,
           [
@@ -945,6 +966,7 @@ export async function syncTransactions(
             fields.sourceDescription,
             txn.bookingDate,
             importFingerprint,
+            fields.counterpartyIban,
             match.id,
             koinkatAccountId,
           ],
@@ -975,12 +997,12 @@ export async function syncTransactions(
             amount_in_dest_ccy, category_id, note, date, is_budgeted, budget_event_id,
             external_ref, merchant_raw, merchant_normalized, needs_review,
             source_description, booking_date, event_link_pinned,
-            status, bank_transaction_id, import_fingerprint,
+            status, bank_transaction_id, import_fingerprint, counterparty_iban,
             recorded_at, created_at, updated_at)
          VALUES (?, ?, ?, NULL, NULL, ?, ?, ?, ?, ?, NULL, NULL, ?, ?, 1, NULL,
                  ?, ?, ?, 1,
                  ?, ?, 0,
-                 'booked', ?, ?,
+                 'booked', ?, ?, ?,
                  datetime('now'), datetime('now'), datetime('now'))`,
         [
           txnId,
@@ -1000,6 +1022,7 @@ export async function syncTransactions(
           txn.bookingDate,
           bankTxnId,
           importFingerprint,
+          fields.counterpartyIban,
         ],
       );
       newImportedIds.push(txnId);
@@ -1096,13 +1119,13 @@ export async function syncTransactions(
             external_ref, merchant_raw, merchant_normalized, needs_review,
             source_description, booking_date, event_link_pinned,
             status, bank_transaction_id, pending_last_seen_at, pending_fingerprint,
-            import_fingerprint,
+            import_fingerprint, counterparty_iban,
             recorded_at, created_at, updated_at)
          VALUES (?, ?, ?, NULL, NULL, ?, ?, ?, ?, ?, NULL, NULL, ?, ?, 1, NULL,
                  ?, ?, ?, 1,
                  ?, ?, 0,
                  'pending', ?, ?, ?,
-                 ?,
+                 ?, ?,
                  datetime('now'), datetime('now'), datetime('now'))`,
         [
           txnId,
@@ -1126,6 +1149,7 @@ export async function syncTransactions(
           // Durable identity: `pending_fingerprint` is cleared on promotion,
           // this one is not.
           fingerprint,
+          fields.counterpartyIban,
         ],
       );
       // Track in-memory so a duplicate pending entry in the same batch
