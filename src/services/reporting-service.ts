@@ -1,5 +1,6 @@
 import Big from 'big.js';
 import { dec, qCent, tryConvert } from '../domain/money';
+import { balanceEffects, type BalanceEffectRow } from '../domain/balance-effects';
 import {
   TX_BOOKED_ONLY,
   TX_EXCLUDE_REPAYMENT,
@@ -691,70 +692,72 @@ export interface YearlySummaryData {
 }
 
 /**
- * Compute the net profit (income − expense) from `year-01-01` onwards,
- * converted to the caller's target currency. Used by
- * `buildYearlySummary` so the start-of-year balance is correct even when
- * the user has transactions AFTER the year being viewed.
+ * How much the given accounts' balances moved from `fromDate` onwards,
+ * converted to `targetCurrency` at the latest cached rates (the same rates
+ * the current balances are converted at), in total and per month
+ * (`YYYY-MM`).
  *
- * If we only subtracted the selected year's net profit from the current
- * balance, any transactions in LATER years would leak into the
- * "starting balance" figure, inflating or deflating it depending on
- * whether they were net positive or negative.
+ * This is a BALANCE flow, not income minus expense: every booked row counts
+ * at the amount that moved the account (`balanceEffects`), so transfers,
+ * repayments and the gross of split parents are all in, and pending rows
+ * are out. Deriving the Summary balances from income minus expense instead
+ * made them drift: one account's starting balance ignored every transfer in
+ * or out of it, and even the all-accounts view missed repayments and money
+ * moved to accounts outside Koinkat.
+ *
+ * Only effects on `accountIds` count, so a transfer between two accounts in
+ * the set nets to zero (up to fees and FX), and one leaving the set counts
+ * once.
  */
-async function netProfitSinceYear(params: {
-  year: number;
-  accountId?: string;
+async function balanceFlowsSince(params: {
+  fromDate: string;
+  accountIds: ReadonlySet<string>;
   targetCurrency: string;
-}): Promise<Big> {
+}): Promise<{
+  total: Big;
+  byMonth: Map<string, Big>;
+  unconvertibleCurrencies: Set<string>;
+}> {
   const koinkatAccountId = requireActiveKoinkatAccountId();
   const db = await getDb();
-  const conditions: string[] = [
-    't.koinkat_account_id = ?',
-    't.date >= ?',
-    "t.type IN ('income', 'expense')",
-    't.transfer_pair_id IS NULL',
-    TX_EXCLUDE_REPAYMENT,
-    // Exclude bank-pending rows from all aggregations until they book.
-    TX_BOOKED_ONLY,
-  ];
-  const values: unknown[] = [koinkatAccountId, `${params.year}-01-01`];
-  if (params.accountId) {
-    conditions.push('t.account_id = ?');
-    values.push(params.accountId);
-  }
   const rows = await db.select<
-    {
-      type: string;
-      amount_in_account_ccy: string;
-      account_currency: string;
-    }[]
+    (BalanceEffectRow & { date: string; account_currency: string; dest_currency: string | null })[]
   >(
-    // Split-expense: use the user's net share on split parents, matching
-    // every other aggregation. Selecting gross here once skewed the
-    // Summary starting balance whenever a split parent existed.
-    `SELECT t.type, ${TX_NET_AMOUNT_AS}, a.currency AS account_currency
+    `SELECT t.date, t.type, t.status, t.account_id, t.destination_account_id,
+            t.amount_in_account_ccy, t.amount_in_dest_ccy,
+            a.currency AS account_currency, d.currency AS dest_currency
        FROM transactions t
        JOIN accounts a ON a.id = t.account_id
-      WHERE ${conditions.join(' AND ')}`,
-    values,
+       LEFT JOIN accounts d ON d.id = t.destination_account_id
+      WHERE t.koinkat_account_id = ?
+        AND t.date >= ?
+        AND ${TX_BOOKED_ONLY}`,
+    [koinkatAccountId, params.fromDate],
   );
+
   const rates = await getLatestCachedRates();
   let total = new Big('0');
+  const byMonth = new Map<string, Big>();
+  const unconvertibleCurrencies = new Set<string>();
   for (const r of rows) {
-    // Signed on purpose: a split reimbursed for more than it cost has a
-    // negative net, and abs() would report that as positive spending.
-    const amt = dec(r.amount_in_account_ccy);
-    const converted = tryConvert(
-      amt,
-      r.account_currency,
-      params.targetCurrency,
-      rates,
-    );
-    if (converted === null) continue;
-    if (r.type === 'income') total = total.plus(converted);
-    else total = total.minus(converted);
+    const month = r.date.slice(0, 7);
+    for (const effect of balanceEffects(r)) {
+      if (!params.accountIds.has(effect.accountId)) continue;
+      const currency =
+        effect.accountId === r.account_id ? r.account_currency : r.dest_currency;
+      if (!currency) continue;
+      const converted = tryConvert(effect.delta, currency, params.targetCurrency, rates);
+      if (converted === null) {
+        // Same rule as the balances themselves: an unconvertible currency
+        // is left out of both, so the identity below still holds.
+        unconvertibleCurrencies.add(currency.toLowerCase());
+        continue;
+      }
+      total = total.plus(converted);
+      byMonth.set(month, (byMonth.get(month) ?? new Big('0')).plus(converted));
+    }
   }
-  return total;
+  return { total, byMonth, unconvertibleCurrencies };
 }
 
 /**
@@ -801,19 +804,20 @@ export async function buildYearlySummary(params: {
   );
   const currentBalance = dec(overview.totalBalance);
 
-  // Starting balance = current balance − net profit accrued from the start
-  // of `params.year` through today. This includes profit earned in LATER
-  // years too, because the current balance already reflects them.
+  // Starting balance = current balance minus everything that moved these
+  // accounts from the start of `params.year` through today (later years
+  // included: the current balance already reflects them). Each month's
+  // balance then adds that month's movements.
   //
-  // Previously this subtracted only `netProfit` (the selected year's net),
-  // which was wrong whenever the user had transactions in years after the
-  // one they were looking at.
-  const profitSinceYear = await netProfitSinceYear({
-    year: params.year,
-    accountId: params.accountId,
+  // Movements, not profit: income minus expense leaves out transfers,
+  // repayments and the part of a split others paid back, all of which move
+  // a balance. Using profit made both figures drift.
+  const flows = await balanceFlowsSince({
+    fromDate: `${params.year}-01-01`,
+    accountIds: new Set(relevantAccounts.map((a) => a.id)),
     targetCurrency: params.preferredCurrency,
   });
-  const startingBalance = currentBalance.minus(profitSinceYear);
+  const startingBalance = currentBalance.minus(flows.total);
 
   // Build running balance row by row
   let runningBalance = new Big(startingBalance.toFixed(2));
@@ -824,7 +828,8 @@ export async function buildYearlySummary(params: {
     const income = dec(cf.income);
     const expense = dec(cf.expense);
     const profit = income.minus(expense);
-    runningBalance = runningBalance.plus(profit);
+    const monthKey = `${params.year}-${String(cf.month).padStart(2, '0')}`;
+    runningBalance = runningBalance.plus(flows.byMonth.get(monthKey) ?? new Big('0'));
 
     let changePct: number | null = null;
     if (prevBalance !== null && !prevBalance.eq(new Big('0'))) {
@@ -865,7 +870,13 @@ export async function buildYearlySummary(params: {
       startingBalance: qCent(startingBalance).toFixed(2),
       currentBalance: qCent(currentBalance).toFixed(2),
       contributingCurrencies,
-      unconvertibleCurrencies,
+      unconvertibleCurrencies: [
+        ...new Set([
+          ...unconvertibleCurrencies,
+          ...overview.unconvertibleCurrencies,
+          ...flows.unconvertibleCurrencies,
+        ]),
+      ].sort(),
     },
     chartPayload,
   };

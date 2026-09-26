@@ -299,7 +299,9 @@ export function Summary() {
                         title={
                           h === 'Balance Δ'
                             ? 'Month-over-month change of your total balance'
-                            : undefined
+                            : h === 'Balance'
+                              ? 'Balance at the end of the month. Transfers and money paid back to you move it too, so it can change by more or less than the month’s profit.'
+                              : undefined
                         }
                         style={{
                           color: 'var(--text-secondary)',
