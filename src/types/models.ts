@@ -186,6 +186,13 @@ export interface Transaction {
    * eventLinkPinned). Auto-matching never overrides a locked row.
    */
   recurringLocked: boolean;
+  /**
+   * IBAN of the other side of a bank entry (migration v15): the creditor's
+   * account for money going out, the debtor's for money coming in.
+   * Normalized. When it matches another linked account in the workspace,
+   * the row is a transfer between the user's own accounts.
+   */
+  counterpartyIban: string | null;
   // Joined fields (optional)
   category?: Category;
   account?: Account;
@@ -470,6 +477,7 @@ export interface TransactionRow {
   pending_fingerprint: string | null;
   recurring_series_id: string | null;
   recurring_locked: number;
+  counterparty_iban?: string | null;
 }
 
 export interface ApiConfigRow {
@@ -831,5 +839,6 @@ export function toTransaction(row: TransactionRow): Transaction {
     pendingFingerprint: row.pending_fingerprint ?? null,
     recurringSeriesId: row.recurring_series_id ?? null,
     recurringLocked: row.recurring_locked === 1,
+    counterpartyIban: row.counterparty_iban ?? null,
   };
 }

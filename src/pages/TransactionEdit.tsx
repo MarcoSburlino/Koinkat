@@ -8,6 +8,8 @@ import { CurrencyPicker } from '../components/ui/CurrencyPicker';
 import { CategoryPicker } from '../components/ui/CategoryPicker';
 import { BudgetEventPicker } from '../components/ui/BudgetEventPicker';
 import { PageHeader } from '../components/layout/PageHeader';
+import { TransferStatusPanel } from '../components/TransferStatusPanel';
+import { useAppStore } from '../stores/app-store';
 import * as transactionService from '../services/transaction-service';
 import * as accountService from '../services/account-service';
 import * as recurringService from '../services/recurring-service';
@@ -18,6 +20,8 @@ import type { RecurrenceCadence } from '../types/enums';
 export function TransactionEdit() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const settings = useAppStore((s) => s.settings);
+  const refreshPendingReviewCount = useAppStore((s) => s.refreshPendingReviewCount);
   // Loaded data
   const [transaction, setTransaction] = useState<Transaction | null>(null);
   const [accounts, setAccounts] = useState<Account[]>([]);
@@ -106,6 +110,20 @@ export function TransactionEdit() {
   // suggestion effect's null-check made picking "No event" snap back.
 
   const isTransfer = transaction?.type === 'transfer';
+
+  /**
+   * Marking or undoing a transfer rewrites the row's transfer and category
+   * columns on the server; re-read them so a later Save doesn't write the
+   * stale category back.
+   */
+  async function handleTransferChanged() {
+    if (!id) return;
+    const txn = await transactionService.getTransactionById(id);
+    if (!txn) return;
+    setTransaction(txn);
+    setCategoryId(txn.categoryId ?? null);
+    void refreshPendingReviewCount();
+  }
 
   function typeLabel(type: string): string {
     return type.charAt(0).toUpperCase() + type.slice(1);
@@ -260,6 +278,15 @@ export function TransactionEdit() {
               {typeLabel(transaction.type)}
             </div>
           </div>
+
+          {!isTransfer && (
+            <TransferStatusPanel
+              transaction={transaction}
+              preferredCurrency={settings.preferredCurrency}
+              decimalSeparator={settings.decimalSeparator}
+              onChanged={() => void handleTransferChanged()}
+            />
+          )}
 
           {/* ── Income / Expense fields ─────────────────────────────── */}
           {!isTransfer && (

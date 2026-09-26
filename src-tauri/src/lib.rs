@@ -104,6 +104,12 @@ pub fn run() {
             sql: include_str!("../../src/db/migration-v14.sql"),
             kind: MigrationKind::Up,
         },
+        Migration {
+            version: 15,
+            description: "Transfer detection between own accounts",
+            sql: include_str!("../../src/db/migration-v15.sql"),
+            kind: MigrationKind::Up,
+        },
     ];
 
     let mut builder = tauri::Builder::default();

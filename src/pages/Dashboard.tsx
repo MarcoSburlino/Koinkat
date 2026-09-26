@@ -27,6 +27,7 @@ import { Modal } from '../components/ui/Modal';
 import { InfoBanner } from '../components/ui/InfoBanner';
 import { PageHeader } from '../components/layout/PageHeader';
 import { useAppStore } from '../stores/app-store';
+import { useDataChanged } from '../hooks/useDataChanged';
 import { useBankStore, FX_UNAVAILABLE_MSG, SYNC_INCOMPLETE_MSG } from '../stores/bank-store';
 import { ensureTodayRates } from '../services/exchange-rate-service';
 import { useKoinkatAccountStore } from '../stores/koinkat-account-store';
@@ -74,6 +75,7 @@ export function Dashboard() {
   });
   const settings = useAppStore((s) => s.settings);
   const pendingReviewCount = useAppStore((s) => s.pendingReviewCount);
+  const transferSuggestionCount = useAppStore((s) => s.transferSuggestionCount);
   const refreshPendingReviewCount = useAppStore(
     (s) => s.refreshPendingReviewCount,
   );
@@ -164,6 +166,13 @@ export function Dashboard() {
     loadConnections().catch(console.warn);
     refreshPendingReviewCount().catch(console.warn);
   }, [load, loadConfig, loadConnections, refreshPendingReviewCount]);
+
+  // Any finished sync - the startup auto-sync included, which this page
+  // used to load BEFORE - refreshes balances and cards in place. The sync
+  // buttons below therefore only start the sync.
+  useDataChanged(() => {
+    load().catch(console.warn);
+  });
 
   async function handleExitSandbox() {
     try {
@@ -297,12 +306,7 @@ export function Dashboard() {
               </div>
               <Button
                 variant="ghost"
-                onClick={() =>
-                  startSync()
-                    .then(load)
-                    .then(() => refreshPendingReviewCount())
-                    .catch(console.error)
-                }
+                onClick={() => startSync().catch(console.error)}
                 disabled={isSyncing}
               >
                 <RefreshCw size={16} className={isSyncing ? 'animate-spin' : ''} />
@@ -311,12 +315,7 @@ export function Dashboard() {
               {isBankDriven && (
                 <Button
                   variant="ghost"
-                  onClick={() =>
-                    startFullResync()
-                      .then(load)
-                      .then(() => refreshPendingReviewCount())
-                      .catch(console.error)
-                  }
+                  onClick={() => startFullResync().catch(console.error)}
                   disabled={isSyncing}
                   title="Clear delta cursor and re-fetch the last 180 days of transactions for every linked account."
                 >
@@ -384,12 +383,7 @@ export function Dashboard() {
           </div>
           <Button
             variant="ghost"
-            onClick={() =>
-              startSync()
-                .then(load)
-                .then(() => refreshPendingReviewCount())
-                .catch(console.error)
-            }
+            onClick={() => startSync().catch(console.error)}
             disabled={isSyncing}
           >
             Retry
@@ -476,7 +470,7 @@ export function Dashboard() {
       {/* Review queue notification - appears when the categorization
           engine has flagged bank-imported transactions that need user
           confirmation or correction. */}
-      {pendingReviewCount > 0 && (
+      {(pendingReviewCount > 0 || transferSuggestionCount > 0) && (
         <div
           className="flex items-center gap-3 rounded-lg px-4 py-3 mb-6"
           style={{
@@ -499,8 +493,9 @@ export function Dashboard() {
                 fontWeight: 'var(--fw-medium)',
               }}
             >
-              {pendingReviewCount} transaction
-              {pendingReviewCount !== 1 ? 's' : ''} need your review
+              {pendingReviewCount > 0
+                ? `${pendingReviewCount} transaction${pendingReviewCount !== 1 ? 's' : ''} need your review`
+                : `${transferSuggestionCount} possible transfer${transferSuggestionCount !== 1 ? 's' : ''} to confirm`}
             </p>
             <p
               style={{
@@ -508,8 +503,12 @@ export function Dashboard() {
                 fontSize: 'var(--fs-body-sm)',
               }}
             >
-              We categorized them automatically. Confirm or correct each one
-              to train the system.
+              {pendingReviewCount > 0
+                ? 'We categorized them automatically. Confirm or correct each one to train the system.'
+                : 'Money moved between your own accounts is not income or spending.'}
+              {pendingReviewCount > 0 &&
+                transferSuggestionCount > 0 &&
+                ` Also ${transferSuggestionCount} possible transfer${transferSuggestionCount !== 1 ? 's' : ''} between your accounts.`}
             </p>
           </div>
           <Button variant="primary" onClick={() => navigate('/review')}>
@@ -1172,6 +1171,8 @@ function MonthPulseCard({
     currency: string;
   } | null>(null);
   const [loaded, setLoaded] = useState(false);
+  // Re-read after a sync, like the rest of the Dashboard.
+  const dataVersion = useAppStore((s) => s.dataVersion);
 
   useEffect(() => {
     let cancelled = false;
@@ -1206,7 +1207,7 @@ function MonthPulseCard({
     return () => {
       cancelled = true;
     };
-  }, [year, month, preferredCurrency]);
+  }, [year, month, preferredCurrency, dataVersion]);
 
   if (!loaded) return null;
 

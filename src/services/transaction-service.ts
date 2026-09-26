@@ -104,8 +104,16 @@ export interface ListTransactionsFilters {
   macroCategoryId?: string;
   /** Only rows with `category_id IS NULL`. */
   uncategorized?: boolean;
-  /** Only rows where `needs_review = 1` (used by the /review queue). */
+  /**
+   * Only rows waiting in the /review queue: `needs_review = 1` and not part
+   * of a transfer (see `getPendingReviewCount`).
+   */
   needsReview?: boolean;
+  /**
+   * Leave out rows that are part of a transfer, so a drill-down list agrees
+   * with the income/expense total it sits under.
+   */
+  excludeTransfers?: boolean;
   /** Only rows where `split_status = 'open'` (parent split expenses still pending reimbursement). */
   openSplitsOnly?: boolean;
   /** Only split-parent rows (`split_status IS NOT NULL` - both open and settled). */
@@ -2159,6 +2167,11 @@ export async function listTransactions(
 
   if (filters.needsReview) {
     whereClauses.push('t.needs_review = 1');
+    whereClauses.push('t.transfer_pair_id IS NULL');
+  }
+
+  if (filters.excludeTransfers) {
+    whereClauses.push('t.transfer_pair_id IS NULL');
   }
 
   if (filters.openSplitsOnly) {
