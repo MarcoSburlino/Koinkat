@@ -38,7 +38,7 @@
     "@tauri-apps/plugin-sql": "^2.4.0",
     "big.js": "^7.0.1",
     "date-fns": "^4",
-    "jose": "^6.2.2",
+    "jose": "^6.2.12",
     "lucide-react": "^1.47",
     "react": "^19",
     "react-dom": "^19",
