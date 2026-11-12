@@ -32,6 +32,13 @@ jobs:
           "
       - run: npm run typecheck
       - run: npm run test
+      # The read-only MCP server (mcp/) is its own package. Its built bundle
+      # ships as an app resource, so the committed copy must match the source.
+      - run: npm ci --prefix mcp
+      - run: npm --prefix mcp run typecheck
+      - run: npm --prefix mcp test
+      - name: Committed MCP bundle matches mcp/
+        run: npm run mcp:check
       - name: Production bundle (includes mock-leak scanner)
         run: npm run build
 
@@ -101,6 +108,8 @@ jobs:
         run: npm audit || true
       - name: npm audit (shipped dependencies - blocks on high and critical)
         run: npm audit --omit=dev --audit-level=high
+      - name: npm audit (MCP server dependencies, inlined into the shipped bundle)
+        run: npm audit --prefix mcp --omit=dev --audit-level=high
       - name: Cache cargo-audit
         id: cache-cargo-audit
         uses: actions/cache@v6

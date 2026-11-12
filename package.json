@@ -25,7 +25,9 @@
     "licenses:check": "node scripts/generate-third-party-licenses.mjs --check",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:ui": "vitest --ui"
+    "test:ui": "vitest --ui",
+    "mcp:bundle": "node scripts/sync-mcp-bundle.mjs",
+    "mcp:check": "node scripts/sync-mcp-bundle.mjs --check"
   },
   "dependencies": {
     "@fontsource/dm-sans": "^5.3.0",

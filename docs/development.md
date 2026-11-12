@@ -183,6 +183,27 @@ places: `src-tauri/src/lib.rs` (the app) and `MIGRATIONS` in
 `src/test/sqlite-harness.ts` (the tests); `src/test/migrations.test.ts`
 fails if they disagree.
 
+The read-only MCP server in `mcp/` checks the schema version it opens. A new
+migration also needs that check raised in `mcp/src/database.ts`, then
+`npm run mcp:bundle` to rebuild the copy the app ships; otherwise the AI
+assistant refuses the database.
+
+## The MCP server (`mcp/`)
+
+`mcp/` is the read-only Koinkat MCP server that the optional AI assistant
+uses. It is its own Node package (Node 22.13 or newer):
+
+```bash
+cd mcp && npm ci && npm test   # build, then MCP stdio + synthetic SQLite tests
+npm run mcp:bundle             # from the root: rebuild the single-file bundle
+```
+
+`mcp:bundle` writes `src-tauri/resources/assistant/koinkat-mcp.mjs` and
+`koinkat-mcp-NOTICES.md` (licences of the packages it inlines, which
+`npm run licenses` folds into `THIRD-PARTY-LICENSES.md`). Both are
+committed; CI rebuilds them with `npm run mcp:check` and fails on any
+difference. Tests build their databases from the migrations in `src/db/`.
+
 ## Money & exchange rates
 
 - All monetary values are stored and computed as `big.js` decimals via the

@@ -146,7 +146,7 @@ Who answers is your choice, and it is your own subscription that pays:
 | Local model | Ollama, LM Studio or llama.cpp with a tool-calling model | Nowhere: `127.0.0.1` only |
 
 All three also need **Node.js 22.13 or newer**, which runs the read-only
-[Koinkat MCP server](https://github.com/MarcoSburlino/koinkat-mcp)
+[Koinkat MCP server](mcp/)
 bundled with the app.
 
 How it is kept safe:

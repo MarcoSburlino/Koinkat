@@ -11,8 +11,7 @@ deployed. Enable Banking application setup and the live import pilot are pending
   scheme, Demo guide and sandbox-only HTTP checks are implemented.
 - Callback commit `f5ad698` is published on `main` and GitHub Pages reports
   `built`. Its new routing code is present on the public page. Deployment
-  used `/home/sbu/Projects/.worktrees/koinkat-callback-demo`, branch
-  `feat/demo-callback-publish`, based directly on the public branch so the
+  used a separate worktree on branch `feat/demo-callback-publish`, based directly on the public branch so the
   original checkout's local guidance commit was not inadvertently published.
 - Passed: app/test type checking, 370 tests across 37 files, both frontend
   builds including mock-leak checks, and 9 callback script tests.

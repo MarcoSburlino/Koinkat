@@ -16,6 +16,7 @@ uses [Semantic Versioning](https://semver.org/).
   file and browser tools switched off. Chats are saved in the workspace
   and included in backups. Settings can also connect the MCP server to
   your own Claude Code or Codex. Needs Node.js 22.13 or newer.
+  The MCP server's source now lives in this repository, in `mcp/`.
 - Budgets shows a spending pace chart for the month: what you have spent
   day by day against an on-track line to your limit, with a projection to
   month end for the current month.

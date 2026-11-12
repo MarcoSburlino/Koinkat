@@ -1,0 +1,32 @@
+{
+  "name": "koinkat-mcp",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Workspace-scoped MCP reads and decimal calculations for Koinkat",
+  "license": "GPL-3.0-or-later",
+  "type": "module",
+  "engines": {
+    "node": ">=22.13.0"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.test.json",
+    "test": "npm run build && tsx --test test/*.test.ts",
+    "start": "node dist/cli.js",
+    "demo": "tsx scripts/create-demo.ts",
+    "smoke": "npm run build && tsx scripts/smoke-test.ts",
+    "bundle": "npm run build && esbuild src/cli.ts --bundle --platform=node --format=esm --target=node22.13 --outfile=dist/koinkat-mcp.mjs --metafile=dist/meta.json --legal-comments=eof --banner:js=\"import { createRequire as __kkCreateRequire } from 'node:module'; const require = __kkCreateRequire(import.meta.url);\" && node scripts/bundle-notices.mjs"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "1.32.2",
+    "big.js": "7.0.1",
+    "zod": "4.6.7"
+  },
+  "devDependencies": {
+    "@types/big.js": "7.0.0",
+    "@types/node": "22.20.5",
+    "esbuild": "0.25.12",
+    "tsx": "4.23.15",
+    "typescript": "7.0.2"
+  }
+}

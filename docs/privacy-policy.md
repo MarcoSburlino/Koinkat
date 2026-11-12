@@ -99,7 +99,7 @@ below, are reached through your own browser rather than by the app:
 
    In every case the assistant can only read and calculate. It reads
    your data through the read-only Koinkat MCP server
-   (<https://github.com/MarcoSburlino/koinkat-mcp>), which never sees
+   (its source is in the `mcp/` folder of this repository), which never sees
    bank credentials, keys or API configuration. Settings also offers to
    register that server in your own Claude Code or Codex; from then on
    those programs can read the workspace in any session, under your
