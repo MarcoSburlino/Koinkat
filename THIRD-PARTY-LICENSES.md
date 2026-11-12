@@ -2571,7 +2571,7 @@ This project is released under the MIT license, but the vendor'ed in libraries i
 
 ## Rust dependencies
 
-- Apache License 2.0 (305)
+- Apache License 2.0 (304)
 - MIT License (130)
 - ISC License (23)
 - Unicode License v3 (19)
@@ -3804,7 +3804,6 @@ Applies to:
 - `windows-result` 0.3.4 - https://github.com/microsoft/windows-rs
 - `windows-strings` 0.4.2 - https://github.com/microsoft/windows-rs
 - `windows-sys` 0.48.0 - https://github.com/microsoft/windows-rs
-- `windows-sys` 0.52.0 - https://github.com/microsoft/windows-rs
 - `windows-sys` 0.59.0 - https://github.com/microsoft/windows-rs
 - `windows-sys` 0.60.2 - https://github.com/microsoft/windows-rs
 - `windows-sys` 0.61.2 - https://github.com/microsoft/windows-rs
@@ -8455,7 +8454,7 @@ Applies to:
 - `ring` 0.17.14 - https://github.com/briansmith/ring
 - `rustc_version` 0.4.1 - https://github.com/djc/rustc-version-rs
 - `rustix` 1.1.4 - https://github.com/bytecodealliance/rustix
-- `rustls` 0.23.45 - https://github.com/rustls/rustls
+- `rustls` 0.23.46 - https://github.com/rustls/rustls
 - `scopeguard` 1.2.0 - https://github.com/bluss/scopeguard
 - `serde_with` 3.21.0 - https://github.com/jonasbb/serde_with/
 - `serde_with_macros` 3.21.0 - https://github.com/jonasbb/serde_with/
@@ -12195,7 +12194,7 @@ express Statement of Purpose.
 
 Applies to:
 
-- `webpki-roots` 1.0.8 - https://github.com/rustls/webpki-roots
+- `webpki-roots` 1.0.12 - https://github.com/rustls/webpki-roots
 
 <details>
 <summary>Licence text</summary>
@@ -13147,7 +13146,7 @@ CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 Applies to:
 
-- `rustls-webpki` 0.103.15 - https://github.com/rustls/webpki
+- `rustls-webpki` 0.103.17 - https://github.com/rustls/webpki
 
 <details>
 <summary>Licence text</summary>
