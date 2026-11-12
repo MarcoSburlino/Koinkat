@@ -7,14 +7,28 @@ import { Link } from 'react-router-dom';
 import { format, subDays } from 'date-fns';
 import {
   Landmark,
-  ArrowRight,
   Clock,
   RotateCcw,
   LogOut,
   Download,
   CircleAlert,
   History,
+  Check,
+  ChevronRight,
+  DatabaseBackup,
+  Info,
+  MessagesSquare,
+  Moon,
+  SlidersHorizontal,
+  Sun,
 } from 'lucide-react';
+import {
+  SettingsNav,
+  SettingsSection,
+  SettingsRow,
+  SegmentedControl,
+  type SettingsNavItem,
+} from '../components/settings/SettingsLayout';
 import { save, open as openDialog } from '@tauri-apps/plugin-dialog';
 import { open as openUrl } from '@tauri-apps/plugin-shell';
 import { writeTextFile, readTextFile } from '@tauri-apps/plugin-fs';
@@ -22,7 +36,6 @@ import { exportDatabaseSnapshot } from '../db/database';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
-import { Select } from '../components/ui/Select';
 import { Modal } from '../components/ui/Modal';
 import { InfoBanner } from '../components/ui/InfoBanner';
 import { BankSetupGuide } from '../components/BankSetupGuide';
@@ -47,6 +60,8 @@ import { verifyCredentials } from '../services/enable-banking-service';
 import type { Theme, DecimalSeparator, BankEnvironment } from '../types/enums';
 import type { BankConnection } from '../types/models';
 
+type PrefField = 'currency' | 'format' | 'theme';
+
 export function Settings() {
   const settings = useAppStore((s) => s.settings);
   const setSettings = useAppStore((s) => s.setSettings);
@@ -67,8 +82,8 @@ export function Settings() {
   const [currency, setCurrency] = useState(settings.preferredCurrency);
   const [theme, setTheme] = useState<Theme>(settings.theme);
   const [decSep, setDecSep] = useState<DecimalSeparator>(settings.decimalSeparator);
-  const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
+  const [savedField, setSavedField] = useState<PrefField | null>(null);
+  const [prefError, setPrefError] = useState<string | null>(null);
 
   // Per-connection floor cache (min sync_start_date across its linked accounts).
   const [floors, setFloors] = useState<Record<string, string | null>>({});
@@ -245,401 +260,331 @@ export function Settings() {
     }
   }, [connections, loadFloors]);
 
-  async function handleSave() {
-    setSaving(true);
-    setSaved(false);
+  /**
+   * Save one preference immediately (no Save button). Writes to the active
+   * workspace's row; the koinkat-account store is reloaded so the header
+   * chip and theme follow at once.
+   */
+  async function persistPref(
+    field: PrefField,
+    changes: Partial<{ preferredCurrency: string; theme: Theme; decimalSeparator: DecimalSeparator }>,
+  ) {
+    setPrefError(null);
     try {
-      const changes = {
-        preferredCurrency: currency,
-        theme,
-        decimalSeparator: decSep,
-      };
-      // Writes to the active koinkat account's row, not a user-level record.
       await updateSettings(changes);
-      setSettings({ ...settings, ...changes });
-      // Keep the koinkat-account store in sync so the Header chip and
-      // theme-reactive code see the new values immediately.
+      setSettings({ ...useAppStore.getState().settings, ...changes });
       await loadActiveKoinkatAccount();
-      setSaved(true);
-      setTimeout(() => setSaved(false), 2000);
-    } finally {
-      setSaving(false);
+      setSavedField(field);
+      setTimeout(() => setSavedField((f) => (f === field ? null : f)), 2000);
+    } catch (e) {
+      setPrefError(e instanceof Error ? e.message : String(e));
     }
   }
 
-  const connectionLabel = !isConfigured
-    ? 'Not connected'
-    : isDemoMode
-      ? 'Sandbox'
-      : 'Connected';
+  const hasBank = !!activeKoinkatAccount && activeKoinkatAccount.connectionType !== 'manual';
+  const navItems: SettingsNavItem[] = [
+    { id: 'general', label: 'General', icon: SlidersHorizontal },
+    ...(hasBank ? [{ id: 'bank', label: 'Bank connection', icon: Landmark }] : []),
+    { id: 'assistant', label: 'AI assistant', icon: MessagesSquare },
+    { id: 'data', label: 'Backups & data', icon: DatabaseBackup },
+    { id: 'about', label: 'About', icon: Info },
+  ];
+  const saved = (field: PrefField) =>
+    savedField === field ? (
+      <span className="inline-flex items-center gap-1" style={{ color: 'var(--success)' }}>
+        <Check size={13} /> Saved
+      </span>
+    ) : null;
 
   return (
     <div>
       <PageHeader
         serif
-        label="Settings"
-        title="Account preferences"
+        label="Setup"
+        title="Settings"
         subtitle={
           activeKoinkatAccount
-            ? `Preferences scoped to ${activeKoinkatAccount.name}. Each workspace has its own theme and currency.`
-            : 'Preferences scoped to this koinkat account. Each workspace has its own theme and currency.'
+            ? `Settings apply to the workspace "${activeKoinkatAccount.name}" unless marked "All workspaces".`
+            : 'Settings apply to this workspace unless marked "All workspaces".'
         }
       />
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
-        <Card>
-          <p className="uppercase mb-4" style={UPPERCASE_LABEL}>
-            Preferences
-          </p>
-          <div className="flex flex-col gap-5">
-            <CurrencyPicker
-              label="Preferred currency"
-              value={currency}
-              onChange={setCurrency}
-            />
+      <div className="grid grid-cols-1 lg:grid-cols-[200px_minmax(0,1fr)] gap-8 items-start">
+        <SettingsNav items={navItems} />
 
-            <Select
-              label="Theme"
-              value={theme}
-              onChange={(e) => setTheme(e.target.value as Theme)}
-              options={[
-                { value: 'light', label: 'Light' },
-                { value: 'dark', label: 'Dark' },
-              ]}
-            />
-
-            <Select
-              label="Decimal separator"
-              value={decSep}
-              onChange={(e) => setDecSep(e.target.value as DecimalSeparator)}
-              options={[
-                { value: '.', label: '1,234.56 (dot)' },
-                { value: ',', label: '1.234,56 (comma)' },
-              ]}
-            />
-
-            <div className="flex items-center gap-3 pt-2">
-              <Button onClick={handleSave} disabled={saving}>
-                {saving ? 'Saving...' : 'Save changes'}
-              </Button>
-              {saved && (
-                <span className="text-sm" style={{ color: 'var(--success)' }}>
-                  Saved!
-                </span>
-              )}
-            </div>
-          </div>
-        </Card>
-
-        {/* Link to bank linking for sandbox/linked koinkat accounts */}
-        {activeKoinkatAccount && activeKoinkatAccount.connectionType !== 'manual' && (
-          <div className="flex flex-col gap-2">
-            <Link to="/bank-link" className="block">
-              <Card>
-                <div className="flex items-center gap-4">
-                  <div
-                    className="w-11 h-11 rounded-lg shrink-0 flex items-center justify-center"
-                    style={{ backgroundColor: 'var(--input-bg)' }}
-                  >
-                    <Landmark size={22} style={{ color: 'var(--primary)' }} />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold" style={{ color: 'var(--text)' }}>
-                      Bank connection
-                    </p>
-                    <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
-                      {connectionLabel} - link another bank to this workspace.
-                    </p>
-                  </div>
-                  <ArrowRight size={18} style={{ color: 'var(--text-muted)' }} />
-                </div>
-              </Card>
-            </Link>
-            <button
-              type="button"
-              onClick={() => setGuideOpen(true)}
-              className="text-xs underline cursor-pointer self-start"
-              style={{ color: 'var(--primary)' }}
+        <div className="min-w-0 max-w-4xl">
+          {/* ── General ─────────────────────────────────────────── */}
+          <SettingsSection
+            id="general"
+            title="General"
+            description="How amounts and the app look. Changes save as you make them."
+            scope="workspace"
+          >
+            <SettingsRow
+              label="Main currency"
+              help="Net worth, totals and charts are shown in this currency. Accounts keep their own."
+              status={saved('currency')}
             >
-              How to get Enable Banking credentials
-            </button>
-          </div>
-        )}
-      </div>
-
-      {/* Edit Enable Banking credentials in-place (without recreating the
-          workspace). Recovers from the case where the redirect URL was saved
-          as koinkat://auth-callback and EB now rejects /auth requests with
-          REDIRECT_URI_NOT_ALLOWED. */}
-      {activeKoinkatAccount && activeKoinkatAccount.connectionType !== 'manual' && (
-        <BankCredentialsCard onOpenGuide={() => setGuideOpen(true)} />
-      )}
-
-      {/* Per-connection management - pull older history + full resync override */}
-      {activeKoinkatAccount &&
-        activeKoinkatAccount.connectionType !== 'manual' &&
-        connections.length > 0 && (
-          <Card className="mt-6">
-            <p
-              className="uppercase mb-3"
-              style={UPPERCASE_LABEL}
-            >
-              Connected banks · sync settings
-            </p>
-            {isSyncing && (
-              <p
-                className="mb-3"
-                style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-body-sm)' }}
-              >
-                Syncing - importing transactions… this can take a while for
-                long histories.
-              </p>
-            )}
-            {lastSyncError && (
-              <p
-                className="mb-3 text-sm break-words"
-                style={{ color: 'var(--danger)' }}
-              >
-                Last sync failed: {lastSyncError}
-              </p>
-            )}
-            {syncResult && !isSyncing && (
-              <p
-                className="mb-3 text-sm"
-                style={{ color: 'var(--text)' }}
-              >
-                {syncResult}
-              </p>
-            )}
-            <div className="flex flex-col gap-3">
-              {connections.map((c) => (
-                <div
-                  key={c.id}
-                  className="flex items-center justify-between gap-3 p-3 rounded"
-                  style={{
-                    border: '1px solid var(--border)',
-                    backgroundColor: 'var(--input-bg)',
+              <div className="md:w-[320px]">
+                <CurrencyPicker
+                  value={currency}
+                  onChange={(c) => {
+                    setCurrency(c);
+                    void persistPref('currency', { preferredCurrency: c });
                   }}
-                >
-                  <div className="flex-1 min-w-0">
-                    <p
-                      className="truncate"
-                      style={{ color: 'var(--text)', fontSize: 'var(--fs-body)', fontWeight: 'var(--fw-medium)' }}
-                    >
-                      {c.aspspName}{' '}
-                      <span style={{ color: 'var(--text-muted)', fontWeight: 'var(--fw-regular)' }}>
-                        · {c.aspspCountry}
-                      </span>
-                    </p>
-                    <p style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-rate)' }}>
-                      Status: {c.status}
-                      {' · '}
-                      {floors[c.id]
-                        ? `Import floor: ${floors[c.id]}`
-                        : 'Import floor: default (180 days)'}
-                      {c.lastSyncedAt && ` · Last synced ${c.lastSyncedAt}`}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-2 shrink-0">
-                    {c.status !== 'active' && (
-                      <Link to="/bank-link">
-                        <Button
-                          variant="primary"
-                          title="Bank consent expires after at most 180 days. Re-linking the same bank reuses your existing accounts and preserves all transaction history."
-                        >
-                          Reconnect
-                        </Button>
-                      </Link>
-                    )}
-                    <Button
-                      variant="secondary"
-                      disabled={isSyncing || c.status !== 'active'}
-                      onClick={() => setPullOlderTarget(c)}
-                    >
-                      <Clock size={14} /> Pull older history
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      disabled={isSyncing || disconnecting}
-                      onClick={() => { setDisconnectError(null); setDisconnectTarget(c); }}
-                      title="Remove this bank connection. Its accounts become manual and all transaction history is kept."
-                    >
-                      Remove
-                    </Button>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <div
-              className="mt-4 pt-4"
-              style={{ borderTop: '1px solid var(--border)' }}
-            >
-              <p
-                className="mb-2"
-                style={{
-                  color: 'var(--text)',
-                  fontSize: 'var(--fs-body-sm)',
-                  fontWeight: 'var(--fw-medium)',
+                />
+              </div>
+            </SettingsRow>
+            <SettingsRow label="Number format" help="How decimals and thousands are written." status={saved('format')}>
+              <SegmentedControl
+                label="Number format"
+                value={decSep}
+                onChange={(v) => {
+                  setDecSep(v);
+                  void persistPref('format', { decimalSeparator: v });
                 }}
-              >
-                Re-pull everything from scratch
-              </p>
-              <p
-                className="mb-3"
-                style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-rate)' }}
-              >
-                Re-import every transaction from 180 days ago (or as far back as each
-                bank allows), ignoring any import floor you've set. Use only if your
-                categorizations are in bad shape and you want a clean slate;
-                confirmed transactions will be flagged for review again.
-              </p>
-              <Button
-                variant="ghost"
-                disabled={isSyncing}
-                onClick={() => setFullResyncConfirmOpen(true)}
-              >
-                <RotateCcw size={14} /> Re-pull everything from scratch
+                options={[
+                  { value: ',', label: <span className="amount">1.234,56</span> },
+                  { value: '.', label: <span className="amount">1,234.56</span> },
+                ]}
+              />
+            </SettingsRow>
+            <SettingsRow label="Appearance" status={saved('theme')}>
+              <SegmentedControl
+                label="Appearance"
+                value={theme}
+                onChange={(v) => {
+                  setTheme(v);
+                  void persistPref('theme', { theme: v });
+                }}
+                options={[
+                  { value: 'light', label: <span className="inline-flex items-center gap-1.5"><Sun size={14} /> Light</span> },
+                  { value: 'dark', label: <span className="inline-flex items-center gap-1.5"><Moon size={14} /> Dark</span> },
+                ]}
+              />
+            </SettingsRow>
+            <SettingsRow
+              label="Switch workspace"
+              help="Go back to the list of workspaces. Nothing is deleted."
+            >
+              <Button variant="secondary" onClick={() => void exitWorkspace()}>
+                <LogOut size={14} /> Workspace list
               </Button>
-            </div>
-          </Card>
-        )}
+            </SettingsRow>
+            {prefError && (
+              <SettingsRow label={<span style={{ color: 'var(--danger)' }}>Could not save</span>} help={prefError} />
+            )}
+          </SettingsSection>
 
-      {/* AI assistant (opt-in) */}
-      <AssistantSettingsCard />
+          {/* ── Bank connection ─────────────────────────────────── */}
+          {hasBank && (
+            <SettingsSection
+              id="bank"
+              title="Bank connection"
+              description={
+                !isConfigured
+                  ? 'Enable Banking is not set up yet: add your credentials below.'
+                  : isDemoMode
+                    ? 'Enable Banking sandbox: test banks with made-up data.'
+                    : 'Linked to your banks through Enable Banking.'
+              }
+              scope="workspace"
+            >
+              <SettingsRow
+                label="Connected banks"
+                help={
+                  connections.length === 0
+                    ? 'No bank linked yet.'
+                    : 'Bank consent lasts up to 180 days; reconnecting keeps all history.'
+                }
+                stacked
+              >
+                {isSyncing && (
+                  <p className="mb-3" style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-body-sm)' }}>
+                    Importing transactions... long histories take a while.
+                  </p>
+                )}
+                {lastSyncError && (
+                  <p className="mb-3 break-words" style={{ color: 'var(--danger)', fontSize: 'var(--fs-body-sm)' }}>
+                    Last sync failed: {lastSyncError}
+                  </p>
+                )}
+                {syncResult && !isSyncing && (
+                  <p className="mb-3" style={{ color: 'var(--text)', fontSize: 'var(--fs-body-sm)' }}>
+                    {syncResult}
+                  </p>
+                )}
+                <div className="flex flex-col gap-2">
+                  {connections.map((c) => (
+                    <div
+                      key={c.id}
+                      className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 rounded-lg"
+                      style={{ backgroundColor: 'var(--surface-alt)' }}
+                    >
+                      <div className="flex-1 min-w-0">
+                        <p className="flex items-center gap-2" style={{ color: 'var(--text)', fontWeight: 'var(--fw-medium)' }}>
+                          <span className="truncate">{c.aspspName}</span>
+                          <span style={{ color: 'var(--text-muted)', fontWeight: 'var(--fw-regular)', fontSize: 'var(--fs-body-sm)' }}>
+                            {c.aspspCountry}
+                          </span>
+                          <span className="kk-chip" data-tone={c.status === 'active' ? 'income' : 'warning'}>
+                            {c.status === 'active' ? 'Active' : c.status === 'expired' ? 'Expired' : c.status}
+                          </span>
+                        </p>
+                        <p className="mt-0.5" style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-body-sm)' }}>
+                          {c.lastSyncedAt ? `Last synced ${format(new Date(c.lastSyncedAt), 'd MMM yyyy, HH:mm')}` : 'Not synced yet'}
+                          {' · '}
+                          {floors[c.id] ? `History from ${floors[c.id]}` : 'Last 180 days'}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-1 shrink-0">
+                        {c.status !== 'active' && (
+                          <Link to="/bank-link">
+                            <Button variant="primary">Reconnect</Button>
+                          </Link>
+                        )}
+                        <Button
+                          variant="ghost"
+                          disabled={isSyncing || c.status !== 'active'}
+                          onClick={() => setPullOlderTarget(c)}
+                          title="Import transactions from further back"
+                        >
+                          <Clock size={14} /> Older history
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          disabled={isSyncing || disconnecting}
+                          onClick={() => {
+                            setDisconnectError(null);
+                            setDisconnectTarget(c);
+                          }}
+                          title="Its accounts become manual; all transactions are kept."
+                        >
+                          Remove
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div className="flex flex-wrap gap-2 mt-3">
+                  <Link to="/bank-link">
+                    <Button variant="secondary">
+                      <Landmark size={14} /> Link another bank
+                    </Button>
+                  </Link>
+                  <Button variant="ghost" onClick={() => setGuideOpen(true)}>
+                    Setup guide
+                  </Button>
+                </div>
+              </SettingsRow>
 
-      {/* Backup & export */}
-      <Card className="mt-6">
-        <p
-          className="uppercase mb-3"
-          style={UPPERCASE_LABEL}
-        >
-          Backup &amp; export
-        </p>
-        <p
-          className="mb-4"
-          style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-rate)' }}
-        >
-          Your data lives only on this device. Export regularly so you can
-          restore from another machine if needed.
-        </p>
+              <SettingsRow label="Enable Banking credentials" help="Application ID, private key and redirect URL. Rarely needed after setup." stacked>
+                <details className="kk-details">
+                  <summary className="kk-disclosure" aria-label="Show credentials">
+                    <span>Show credentials</span>
+                    <ChevronRight size={14} aria-hidden className="kk-disclosure-chevron" />
+                  </summary>
+                  <div className="mt-4">
+                    <BankCredentialsCard bare onOpenGuide={() => setGuideOpen(true)} />
+                  </div>
+                </details>
+              </SettingsRow>
 
-        {exportError && (
-          <p
-            className="mb-3 text-sm"
-            style={{ color: 'var(--danger)' }}
+              {connections.length > 0 && (
+                <SettingsRow
+                  label="Re-import everything"
+                  help="Fetches the last 180 days again from every bank. Only for a clean slate: reviewed transactions go back to Review."
+                >
+                  <Button variant="ghost" disabled={isSyncing} onClick={() => setFullResyncConfirmOpen(true)}>
+                    <RotateCcw size={14} /> Re-import...
+                  </Button>
+                </SettingsRow>
+              )}
+            </SettingsSection>
+          )}
+
+          {/* ── AI assistant ────────────────────────────────────── */}
+          <SettingsSection
+            id="assistant"
+            title="AI assistant"
+            description="Ask about your money in plain language. Read-only, off until you turn it on."
+            scope="workspace"
           >
-            {exportError}
-          </p>
-        )}
-        {exportSuccess && (
-          <p
-            className="mb-3 text-sm"
-            style={{ color: 'var(--success)' }}
+            <AssistantSettingsCard embedded />
+          </SettingsSection>
+
+          {/* ── Backups & data ──────────────────────────────────── */}
+          <SettingsSection
+            id="data"
+            title="Backups & data"
+            description="Everything lives only on this computer."
+            scope="app"
           >
-            {exportSuccess}
-          </p>
-        )}
+            {(exportError || exportSuccess) && (
+              <SettingsRow
+                label={
+                  <span style={{ color: exportError ? 'var(--danger)' : 'var(--success)' }}>
+                    {exportError ? 'Export failed' : 'Done'}
+                  </span>
+                }
+                help={exportError ?? exportSuccess}
+              />
+            )}
+            <SettingsRow
+              label="Automatic backups"
+              help={`A full copy every day you use Koinkat, after each bank sync and before deleting a user or workspace. The newest ${BACKUPS_TO_KEEP} are kept, and offered back if the database is ever empty.`}
+              status={
+                <span style={{ color: 'var(--text-secondary)' }}>
+                  {backups === null
+                    ? 'Backups could not be listed.'
+                    : backups.length === 0
+                      ? 'No backups yet.'
+                      : `${backups.length} kept · newest ${format(backups[0].takenAt, 'd MMM yyyy, HH:mm')}`}
+                </span>
+              }
+            >
+              <div className="flex flex-wrap gap-2 md:justify-end">
+                <Button variant="secondary" onClick={() => void handleBackupNow()} disabled={isBackingUp}>
+                  <History size={14} /> {isBackingUp ? 'Backing up...' : 'Back up now'}
+                </Button>
+                {backupsDir && <CopyPathButton path={backupsDir} variant="ghost" />}
+              </div>
+            </SettingsRow>
+            <SettingsRow
+              label="Export this workspace"
+              help="A JSON file of this workspace's data, to keep or to read in other tools. Bank credentials are left out."
+            >
+              <Button variant="secondary" onClick={handleExportJson} disabled={isExportingJson}>
+                <Download size={14} /> {isExportingJson ? 'Exporting...' : 'Export JSON'}
+              </Button>
+            </SettingsRow>
+            <SettingsRow
+              label="Export everything"
+              help="The whole database, every workspace: a complete backup to move to another computer. Keep it as private as the app itself."
+            >
+              <Button variant="secondary" onClick={handleExportDb} disabled={isExportingDb}>
+                <Download size={14} /> {isExportingDb ? 'Exporting...' : 'Export database'}
+              </Button>
+            </SettingsRow>
+          </SettingsSection>
 
-        <div className="flex flex-col gap-4">
-          <div className="flex flex-col gap-1">
-            <div>
-              <Button onClick={handleExportJson} disabled={isExportingJson}>
-                <Download size={14} />{' '}
-                {isExportingJson ? 'Exporting…' : 'Export as JSON'}
-              </Button>
-            </div>
-            <p style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-rate)' }}>
-              Active workspace only. Excludes Enable Banking credentials for
-              security.
-            </p>
-          </div>
-          <div className="flex flex-col gap-1">
-            <div>
-              <Button
-                variant="secondary"
-                onClick={handleExportDb}
-                disabled={isExportingDb}
-              >
-                <Download size={14} />{' '}
-                {isExportingDb ? 'Exporting…' : 'Export database file'}
-              </Button>
-            </div>
-            <p style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-rate)' }}>
-              Entire database - all workspaces. The full nuclear-option backup.
-              The Enable Banking private key normally lives in your OS
-              keychain (not in this file), but treat the export as sensitive:
-              it holds all your financial data, and on systems without a
-              keychain the key is inside it too.
-            </p>
-          </div>
-          <div className="flex flex-col gap-2">
-            <p className="text-sm font-semibold" style={{ color: 'var(--text)' }}>
-              Automatic backups
-            </p>
-            <p style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-rate)' }}>
-              Koinkat copies the whole database into a backups folder next to
-              it every day you use it - refreshed after each bank sync - and
-              before you delete a user or a workspace. It keeps the newest{' '}
-              {BACKUPS_TO_KEEP}. If Koinkat ever opens to an empty
-              database, it offers these back. They stay on this device, as
-              sensitive as the database itself.
-            </p>
-            <p style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-rate)' }}>
-              {backups === null
-                ? 'Backups could not be listed.'
-                : backups.length === 0
-                  ? 'No backups yet.'
-                  : `${backups.length} kept · newest ${format(backups[0].takenAt, 'd MMM yyyy, HH:mm')}`}
-            </p>
-            <div className="flex flex-wrap gap-2">
-              <Button
-                variant="secondary"
-                onClick={() => void handleBackupNow()}
-                disabled={isBackingUp}
-              >
-                <History size={14} /> {isBackingUp ? 'Backing up…' : 'Back up now'}
-              </Button>
-              {backupsDir && <CopyPathButton path={backupsDir} variant="ghost" />}
-            </div>
-          </div>
+          {/* ── About ───────────────────────────────────────────── */}
+          <SettingsSection id="about" title="About">
+            <SettingsRow
+              label={`Koinkat ${__APP_VERSION__}`}
+              help={`Free software under GPL-3.0-or-later, with no warranty. Source for this version: github.com/MarcoSburlino/Koinkat, tag v${__APP_VERSION__}.`}
+            >
+              <div className="flex flex-wrap gap-2 md:justify-end">
+                <Button variant="ghost" onClick={openGpl}>
+                  Licence
+                </Button>
+                <Button variant="ghost" onClick={openLicenses}>
+                  Third-party licences
+                </Button>
+              </div>
+            </SettingsRow>
+          </SettingsSection>
         </div>
-      </Card>
-
-      {/* About & licences */}
-      <Card className="mt-6">
-        <p className="uppercase mb-3" style={UPPERCASE_LABEL}>
-          About
-        </p>
-        <p
-          className="mb-4"
-          style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-rate)' }}
-        >
-          Koinkat {__APP_VERSION__}. Free software under GPL-3.0-or-later,
-          provided with no warranty. It bundles third-party code and typefaces
-          under their own licences. Both this licence and that notice ship as
-          files alongside the application. Source for this exact version is at
-          github.com/MarcoSburlino/Koinkat, tagged v{__APP_VERSION__}.
-        </p>
-        <div className="flex flex-wrap gap-2">
-          <Button variant="secondary" onClick={openGpl}>
-            Licence (GPL-3.0)
-          </Button>
-          <Button variant="secondary" onClick={openLicenses}>
-            Third-party licences
-          </Button>
-        </div>
-      </Card>
-
-      {/* Leave this workspace */}
-      <div className="mt-8 flex flex-col items-start gap-1.5">
-        <Button variant="ghost" onClick={() => void exitWorkspace()}>
-          <LogOut size={14} /> Leave this workspace
-        </Button>
-        <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
-          Returns you to the workspace hub. All data stays on this device -
-          nothing is deleted.
-        </p>
       </div>
 
       {/* Koinkat's own licence, loaded on demand - see openGpl. */}
@@ -927,7 +872,7 @@ function PullOlderHistoryModal({
   );
 }
 
-function BankCredentialsCard({ onOpenGuide }: { onOpenGuide: () => void }) {
+function BankCredentialsCard({ onOpenGuide, bare = false }: { onOpenGuide: () => void; bare?: boolean }) {
   const [loaded, setLoaded] = useState(false);
   const [appId, setAppId] = useState('');
   // Holds ONLY a freshly picked .pem file's content, transiently until the
@@ -1078,32 +1023,28 @@ function BankCredentialsCard({ onOpenGuide }: { onOpenGuide: () => void }) {
 
   if (!loaded) {
     return (
-      <Card className="mt-6">
-        <p style={{ color: 'var(--text-muted)' }}>Loading bank credentials...</p>
-      </Card>
+      <p className={bare ? '' : 'mt-6'} style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-body-sm)' }}>
+        Loading bank credentials...
+      </p>
     );
   }
 
   const showCoinkatWarning = redirectUrl.trim().startsWith('koinkat://');
 
   return (
-    <Card className="mt-6">
-      <p
-        className="uppercase mb-3"
-        style={UPPERCASE_LABEL}
-      >
-        Bank credentials
-      </p>
-      <p
-        className="mb-4"
-        style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-rate)' }}
-      >
-        Edit the Enable Banking API credentials for this workspace. The redirect
-        URL must exactly match what you registered on Enable Banking. Environment:{' '}
-        <strong style={{ color: 'var(--text)' }}>{environment}</strong>.
+    <CredentialsFrame bare={bare}>
+      {!bare && (
+        <p className="uppercase mb-3" style={UPPERCASE_LABEL}>
+          Bank credentials
+        </p>
+      )}
+      <p className="mb-4" style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-body-sm)' }}>
+        Your Enable Banking application ({environment}). The redirect URL must
+        match the one registered there exactly.
       </p>
 
-      <div className="flex flex-col gap-5">
+      <div className={`flex flex-col gap-5 ${bare ? 'max-w-2xl' : ''}`}>
+        {!bare && (
         <button
           type="button"
           onClick={onOpenGuide}
@@ -1112,6 +1053,7 @@ function BankCredentialsCard({ onOpenGuide }: { onOpenGuide: () => void }) {
         >
           Need help getting these? Open the setup guide
         </button>
+        )}
 
         <Input
           label="Application ID"
@@ -1121,9 +1063,9 @@ function BankCredentialsCard({ onOpenGuide }: { onOpenGuide: () => void }) {
         />
 
         <div className="flex flex-col gap-1.5">
-          <label className="text-sm font-medium" style={{ color: 'var(--text)' }}>
-            Private Key
-          </label>
+          <span className="font-medium" style={{ color: 'var(--text-secondary)', fontSize: 'var(--fs-body-sm)' }}>
+            Private key
+          </span>
           <div className="flex items-center gap-3 flex-wrap">
             <Button variant="secondary" onClick={handlePickPem}>
               {pemHadInitialValue ? 'Replace .pem file...' : 'Choose .pem file...'}
@@ -1201,6 +1143,11 @@ function BankCredentialsCard({ onOpenGuide }: { onOpenGuide: () => void }) {
           </Button>
         </div>
       </div>
-    </Card>
+    </CredentialsFrame>
   );
+}
+
+/** Module-level so the form keeps its identity (and input focus) across renders. */
+function CredentialsFrame({ bare, children }: { bare: boolean; children: React.ReactNode }) {
+  return bare ? <div>{children}</div> : <Card className="mt-6">{children}</Card>;
 }

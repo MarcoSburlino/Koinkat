@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { Bot, Check, CircleAlert, Copy, Cpu, RefreshCw, Sparkles, Terminal } from 'lucide-react';
 import { fetch as tauriFetch } from '@tauri-apps/plugin-http';
@@ -46,7 +46,16 @@ const CLAUDE_MODELS = [
  * their data goes; the confirmation is stored (`consented_at`) and the
  * service refuses to turn the assistant on without it.
  */
-export function AssistantSettingsCard() {
+/**
+ * Embedded = inside a Settings section, which already draws the frame and
+ * the "AI assistant" heading. Module-level (not defined inside the card)
+ * so React keeps the same component between renders and inputs keep focus.
+ */
+function Frame({ embedded, children }: { embedded: boolean; children: ReactNode }) {
+  return embedded ? <div className="p-5">{children}</div> : <Card className="mt-6">{children}</Card>;
+}
+
+export function AssistantSettingsCard({ embedded = false }: { embedded?: boolean } = {}) {
   const { settings, env, detecting, save, detect } = useAssistantStore();
   const [consentOpen, setConsentOpen] = useState(false);
   const [understood, setUnderstood] = useState(false);
@@ -103,20 +112,34 @@ export function AssistantSettingsCard() {
   // ── Off: one clear explanation and a single way in ─────────────────
   if (!settings.enabled) {
     return (
-      <Card className="mt-6">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div className="max-w-2xl">
-            <p className="uppercase mb-2" style={UPPERCASE_LABEL}>
-              AI assistant
-            </p>
-            <p style={{ color: 'var(--text)', fontSize: 'var(--fs-body)' }}>
-              Ask questions about your money in plain language: "how much did I spend on food in
-              October?", "am I on track this month?".
-            </p>
-            <p className="mt-1" style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-body-sm)' }}>
-              Uses your own Claude Code or Codex subscription, or a model running on this computer.
-              Off until you turn it on. Read-only: it can't change anything.
-            </p>
+      <Frame embedded={embedded}>
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div className="flex-1 min-w-[260px] max-w-2xl">
+            {!embedded && (
+              <p className="uppercase mb-2" style={UPPERCASE_LABEL}>
+                AI assistant
+              </p>
+            )}
+            {embedded ? (
+              <>
+                <p style={{ color: 'var(--text)', fontSize: 'var(--fs-body)', fontWeight: 'var(--fw-medium)' }}>Off</p>
+                <p className="mt-0.5" style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-body-sm)' }}>
+                  Answers come from your own Claude Code or Codex subscription, or a model on this computer.
+                  You'll see exactly where your data goes before anything is turned on.
+                </p>
+              </>
+            ) : (
+              <>
+                <p style={{ color: 'var(--text)', fontSize: 'var(--fs-body)' }}>
+                  Ask questions about your money in plain language: "how much did I spend on food in
+                  October?", "am I on track this month?".
+                </p>
+                <p className="mt-1" style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-body-sm)' }}>
+                  Uses your own Claude Code or Codex subscription, or a model running on this computer.
+                  Off until you turn it on. Read-only: it can't change anything.
+                </p>
+              </>
+            )}
           </div>
           <Button variant="secondary" onClick={() => setConsentOpen(true)}>
             <Bot size={16} /> Set up the assistant
@@ -139,7 +162,7 @@ export function AssistantSettingsCard() {
             })
           }
         />
-      </Card>
+      </Frame>
     );
   }
 
@@ -148,13 +171,15 @@ export function AssistantSettingsCard() {
   const found = env ? { 'claude-code': env.claude, codex: env.codex, local: null } : null;
 
   return (
-    <Card className="mt-6">
+    <Frame embedded={embedded}>
       <div className="flex flex-wrap items-start justify-between gap-3 mb-4">
         <div>
-          <p className="uppercase" style={UPPERCASE_LABEL}>
-            AI assistant
-          </p>
-          <p className="mt-1" style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-body-sm)' }}>
+          {!embedded && (
+            <p className="uppercase" style={UPPERCASE_LABEL}>
+              AI assistant
+            </p>
+          )}
+          <p className={embedded ? '' : 'mt-1'} style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-body-sm)' }}>
             On for this workspace · read-only ·{' '}
             <Link to="/assistant" style={{ color: 'var(--nav-active-fg)' }}>
               open the assistant
@@ -387,7 +412,7 @@ export function AssistantSettingsCard() {
           })
         }
       />
-    </Card>
+    </Frame>
   );
 }
 

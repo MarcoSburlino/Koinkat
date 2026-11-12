@@ -411,6 +411,9 @@ html.dark {
 .kk-prose td { border-bottom: 1px solid var(--border); padding: 6px 10px 6px 0; font-variant-numeric: tabular-nums; }
 .kk-prose a { color: var(--nav-active-fg); text-decoration: underline; text-underline-offset: 3px; }
 
+/* ── Settings rows: hairline between rows inside a section ─────────── */
+.kk-settings-row + .kk-settings-row { border-top: 1px solid var(--border); }
+
 /* ── Tables ──────────────────────────────────────────────────────────
    Every data table gets the same quiet row hover, so rows read as
    targets without each page wiring its own mouse handlers. */
@@ -520,6 +523,9 @@ button.kk-chip:disabled { cursor: default; }
   transition: transform var(--dur-quick) var(--ease-standard);
 }
 [aria-expanded="true"] > .kk-disclosure-chevron { transform: rotate(90deg); }
+.kk-details > summary { list-style: none; display: inline-flex; gap: 6px; }
+.kk-details > summary::-webkit-details-marker { display: none; }
+.kk-details[open] > summary .kk-disclosure-chevron { transform: rotate(90deg); }
 
 /* ── Select ──────────────────────────────────────────────────────────
    appearance:none so WebKitGTK (Linux) stops drawing its own grey GTK
