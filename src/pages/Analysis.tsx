@@ -14,6 +14,9 @@ import {
 } from 'lucide-react';
 import { dec } from '../domain/money';
 import { Card } from '../components/ui/Card';
+import { StatTile } from '../components/ui/StatTile';
+import { SegmentedBar, type Segment } from '../components/charts/SegmentedBar';
+import { categoricalColor, categoricalInk, CATEGORICAL_SLOTS } from '../lib/chart-style';
 import { InfoBanner } from '../components/ui/InfoBanner';
 import { Select } from '../components/ui/Select';
 import { PageHeader } from '../components/layout/PageHeader';
@@ -274,10 +277,40 @@ export function Analysis() {
     label: String(y),
   }));
   const hasData = rows.length > 0;
-  const typeColor = type === 'expense' ? 'var(--expense)' : 'var(--income)';
   const typeNoun = type === 'expense' ? 'expense' : 'income';
   const totalLabel = type === 'expense' ? 'Total spent' : 'Total earned';
   const topCategory = rows.length > 0 ? rows[0] : null;
+
+  // Segmented bar: top six positive categories in rank order, the rest
+  // summed into "Other". Big for the sums and shares; toNumber() only for
+  // the CSS width. A negative net (over-reimbursed split) draws nothing.
+  const segments: Segment[] = (() => {
+    const positive = rows.filter((r) => dec(r.amount).gt(0));
+    const whole = positive.reduce((acc, r) => acc.plus(dec(r.amount)), dec('0'));
+    if (!whole.gt(0)) return [];
+    const head = positive.slice(0, CATEGORICAL_SLOTS);
+    const tail = positive.slice(CATEGORICAL_SLOTS);
+    const segs: Segment[] = head.map((r, i) => ({
+      key: r.macroId ?? UNCATEGORIZED_KEY,
+      label: r.macroName,
+      amount: r.amount,
+      share: dec(r.amount).div(whole).times(100).toNumber(),
+      color: categoricalColor(i),
+      ink: categoricalInk(i),
+    }));
+    if (tail.length > 0) {
+      const rest = tail.reduce((acc, r) => acc.plus(dec(r.amount)), dec('0'));
+      segs.push({
+        key: '__other__',
+        label: `Other (${tail.length})`,
+        amount: rest.toFixed(2),
+        share: rest.div(whole).times(100).toNumber(),
+        color: categoricalColor(CATEGORICAL_SLOTS),
+        ink: categoricalInk(CATEGORICAL_SLOTS),
+      });
+    }
+    return segs;
+  })();
 
   // ── Previous-period comparison ─────────────────────────────────
   const nowDate = new Date();
@@ -305,9 +338,34 @@ export function Analysis() {
     <div>
       <PageHeader
         serif
-        label="Overview"
+        label="Insights"
         title="Analysis"
-        subtitle="Visualize how your money is distributed across categories."
+        subtitle="Where your money goes, category by category."
+        right={
+          <>
+            <Select
+              aria-label="Type"
+              className="h-9"
+              options={TYPE_OPTIONS}
+              value={type}
+              onChange={(e) => setFilter('type', e.target.value)}
+            />
+            <Select
+              aria-label="Month"
+              className="h-9"
+              options={MONTH_OPTIONS}
+              value={String(month)}
+              onChange={(e) => setFilter('month', e.target.value)}
+            />
+            <Select
+              aria-label="Year"
+              className="h-9"
+              options={yearOptions}
+              value={String(year)}
+              onChange={(e) => setFilter('year', e.target.value)}
+            />
+          </>
+        }
       />
 
       {/* One-time tip: the drill-down drawer is the page's best feature
@@ -316,44 +374,6 @@ export function Analysis() {
       <InfoBanner storageKey="koinkat.tip.analysisDrill" className="mb-6">
         Click any category row to see the transactions behind the number.
       </InfoBanner>
-
-      {/* ── Filters ─────────────────────────────────────────────── */}
-      <Card className="mb-6">
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <Select
-            label="Year"
-            options={yearOptions}
-            value={String(year)}
-            onChange={(e) => setFilter('year', e.target.value)}
-          />
-          <Select
-            label="Month"
-            options={MONTH_OPTIONS}
-            value={String(month)}
-            onChange={(e) => setFilter('month', e.target.value)}
-          />
-          <Select
-            label="Type"
-            options={TYPE_OPTIONS}
-            value={type}
-            onChange={(e) => setFilter('type', e.target.value)}
-          />
-        </div>
-        <div className="mt-4 flex justify-end">
-          <Link
-            to="/categories"
-            className="inline-flex items-center gap-1.5 hover:underline"
-            style={{
-              color: 'var(--primary)',
-              fontSize: 'var(--fs-body-sm)',
-              fontWeight: 'var(--fw-medium)',
-            }}
-          >
-            Manage categories
-            <ArrowRight size={14} strokeWidth={1.75} />
-          </Link>
-        </div>
-      </Card>
 
       {/* ── Body ────────────────────────────────────────────────── */}
       {loading ? (
@@ -413,130 +433,65 @@ export function Analysis() {
         <>
           {/* ── KPI grid ──────────────────────────────────────── */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-3">
-            <Card>
-              <p className="uppercase mb-2" style={labelStyles}>
-                {totalLabel}
-              </p>
-              <div className="flex items-baseline" data-privacy-field>
-                <span
-                  className="amount amount-md"
-                  style={{ color: typeColor }}
-                >
-                  {formatAmount(total, settings.decimalSeparator)}
-                </span>
-                <span className="currency-code">
-                  {settings.preferredCurrency}
-                </span>
-              </div>
-              {type === 'expense' && dec(nonBudgeted).gt(0) && (
-                <p
-                  className="mt-1"
-                  style={{
-                    color: 'var(--text-muted)',
-                    fontSize: 'var(--fs-body-sm)',
-                  }}
-                >
-                  Excluded from budget{' '}
-                  <span data-privacy-field>
-                    {formatAmount(nonBudgeted, settings.decimalSeparator)}{' '}
-                    {settings.preferredCurrency}
+            <StatTile
+              label={totalLabel}
+              amount={total}
+              currency={settings.preferredCurrency}
+              decimalSeparator={settings.decimalSeparator}
+              tone={type === 'income' ? 'income' : 'expense'}
+              hint={
+                type === 'expense' && dec(nonBudgeted).gt(0) ? (
+                  <>
+                    <span data-privacy-field className="amount">
+                      {formatAmount(nonBudgeted, settings.decimalSeparator)} {settings.preferredCurrency}
+                    </span>{' '}
+                    not in the budget
+                  </>
+                ) : undefined
+              }
+            />
+            <StatTile label="Transactions" value={count} />
+            <StatTile
+              label={`vs ${prevLabel}`}
+              value={
+                deltaPct !== null ? (
+                  <span className="inline-flex items-center gap-1.5" style={{ color: deltaColor }}>
+                    {deltaPct >= 0 ? <TrendingUp size={16} /> : <TrendingDown size={16} />}
+                    {deltaPct >= 0 ? '+' : ''}
+                    {deltaPct.toFixed(1)}%
                   </span>
-                </p>
-              )}
-            </Card>
-
-            <Card>
-              <p className="uppercase mb-2" style={labelStyles}>
-                Transactions
-              </p>
-              <div className="flex items-baseline" data-privacy-field>
-                <span
-                  className="amount amount-md"
-                  style={{ color: 'var(--text)' }}
-                >
-                  {count}
-                </span>
-              </div>
-            </Card>
-
-            <Card>
-              <p className="uppercase mb-2" style={labelStyles}>
-                vs {prevLabel}
-              </p>
-              {deltaPct !== null ? (
-                <>
-                  <div className="flex items-center gap-1.5">
-                    {deltaPct >= 0 ? (
-                      <TrendingUp size={16} style={{ color: deltaColor }} />
-                    ) : (
-                      <TrendingDown size={16} style={{ color: deltaColor }} />
-                    )}
-                    <span
-                      className="amount amount-md"
-                      style={{ color: deltaColor }}
-                    >
-                      {deltaPct >= 0 ? '+' : ''}
-                      {deltaPct.toFixed(1)}%
-                    </span>
-                  </div>
-                  <p
-                    className="mt-1"
-                    style={{
-                      color: 'var(--text-muted)',
-                      fontSize: 'var(--fs-body-sm)',
-                    }}
-                  >
+                ) : (
+                  <span style={{ color: 'var(--text-muted)' }}>-</span>
+                )
+              }
+              hint={
+                deltaPct !== null ? (
+                  <>
                     {prevLabel}:{' '}
-                    <span data-privacy-field>
-                      {formatAmount(prevTotal!, settings.decimalSeparator)}{' '}
-                      {settings.preferredCurrency}
+                    <span data-privacy-field className="amount">
+                      {formatAmount(prevTotal!, settings.decimalSeparator)} {settings.preferredCurrency}
                     </span>
-                    {periodInProgress && ' · period in progress'}
-                  </p>
-                </>
-              ) : (
-                <span
-                  style={{
-                    color: 'var(--text-muted)',
-                    fontSize: 'var(--fs-body-sm)',
-                  }}
-                >
-                  No data for {prevLabel} to compare against.
-                </span>
-              )}
-            </Card>
-
-            <Card>
-              <p className="uppercase mb-2" style={labelStyles}>
-                Top category
-              </p>
-              {topCategory ? (
-                <div className="flex items-center gap-2 min-w-0">
-                  <div
-                    className="w-2.5 h-2.5 rounded-full shrink-0"
-                    style={{ backgroundColor: 'var(--viz-1)' }}
-                  />
-                  <span
-                    className="truncate flex-1"
-                    style={{
-                      color: 'var(--text)',
-                      fontSize: 'var(--fs-body)',
-                      fontWeight: 'var(--fw-medium)',
-                    }}
-                  >
-                    {topCategory.macroName}
+                    {periodInProgress && ' · still in progress'}
+                  </>
+                ) : (
+                  `Nothing in ${prevLabel} to compare with.`
+                )
+              }
+            />
+            <StatTile
+              label="Top category"
+              value={
+                topCategory ? (
+                  <span className="flex items-center gap-2 min-w-0" style={{ fontFamily: 'var(--font-sans)' }}>
+                    <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: categoricalColor(0) }} />
+                    <span className="truncate">{topCategory.macroName}</span>
                   </span>
-                  <span
-                    className="amount amount-sm shrink-0"
-                    style={{ color: 'var(--text-muted)' }}
-                  >
-                    {topCategory.percentage.toFixed(1)}%
-                  </span>
-                </div>
-              ) : (
-                <span style={{ color: 'var(--text-muted)' }}>-</span>
-              )}
-            </Card>
+                ) : (
+                  '-'
+                )
+              }
+              hint={topCategory ? `${topCategory.percentage.toFixed(1)}% of the total` : undefined}
+            />
           </div>
 
           {/* Multi-currency hints */}
@@ -551,7 +506,7 @@ export function Analysis() {
               Aggregated across{' '}
               {contributingCurrencies
                 .map((c) => c.toUpperCase())
-                .join(', ')}{' '}
+                .join(', ')}
               , converted to {settings.preferredCurrency} at today's rates.
             </p>
           )}
@@ -579,7 +534,7 @@ export function Analysis() {
                 Could not convert transactions in{' '}
                 {unconvertibleCurrencies
                   .map((c) => c.toUpperCase())
-                  .join(', ')}{' '}
+                  .join(', ')}
                 . Exchange rates missing.
               </p>
             </div>
@@ -589,9 +544,30 @@ export function Analysis() {
 
           {/* ── Breakdown table (full width) ─────────────────── */}
           <Card>
-              <p className="uppercase mb-3" style={labelStyles}>
-                Breakdown by category
-              </p>
+              <div className="flex flex-wrap items-baseline justify-between gap-2 mb-4">
+                <p className="uppercase" style={labelStyles}>
+                  By category
+                </p>
+                <Link
+                  to="/categories"
+                  className="inline-flex items-center gap-1 hover:underline"
+                  style={{ color: 'var(--nav-active-fg)', fontSize: 'var(--fs-body-sm)' }}
+                >
+                  Manage categories <ArrowRight size={13} />
+                </Link>
+              </div>
+              {/* Part-to-whole at a glance: the top six categories, the
+                  rest folded into "Other" (never a 7th generated hue). */}
+              <div className="mb-5">
+                <SegmentedBar
+                  segments={segments}
+                  currency={settings.preferredCurrency}
+                  decimalSeparator={settings.decimalSeparator}
+                  onSelect={(key) => {
+                    if (key !== '__other__') toggleDrawer(key as DrawerKey);
+                  }}
+                />
+              </div>
               <div className="overflow-x-auto">
                 <table className="w-full" style={{ tableLayout: 'fixed' }}>
                   <colgroup>
@@ -635,7 +611,7 @@ export function Analysis() {
                       const drawerKey: DrawerKey = row.macroId ?? UNCATEGORIZED_KEY;
                       const isExpanded = expanded === drawerKey;
                       const drawer = drawerData[drawerKey];
-                      const colorVar = `var(--viz-${(i % 8) + 1})`;
+                      const colorVar = categoricalColor(i);
                       return (
                         <Fragment key={drawerKey}>
                           <tr
@@ -1083,8 +1059,7 @@ function DrawerContent({ drawer, decimalSeparator }: DrawerContentProps) {
               <td className="py-2 px-3 text-right whitespace-nowrap">
                 <button
                   onClick={() => navigate(`/transactions/${txn.id}/edit`)}
-                  className="p-1 rounded transition-opacity hover:opacity-70 cursor-pointer"
-                  style={{ color: 'var(--text-muted)' }}
+                  className="kk-icon-btn"
                   title="Edit transaction"
                   aria-label="Edit transaction"
                 >

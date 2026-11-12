@@ -623,8 +623,8 @@ function ExistingKoinkatAccountCard({
         <button
           type="button"
           onClick={onDelete}
-          className="p-2 rounded transition-colors hover:opacity-80 cursor-pointer shrink-0"
-          style={{ color: 'var(--danger)' }}
+          className="kk-icon-btn shrink-0"
+          data-tone="danger"
           aria-label={`Delete ${account.name}`}
         >
           <Trash2 size={16} />

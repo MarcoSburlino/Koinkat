@@ -69,7 +69,7 @@ export function AccountEdit() {
       <Card className="max-w-2xl">
         <form onSubmit={handleSubmit} className="flex flex-col gap-5">
           <Input
-            label="Account Name"
+            label="Account name"
             value={name}
             onChange={(e) => setName(e.target.value)}
             error={errors.name}

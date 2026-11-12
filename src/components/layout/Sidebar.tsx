@@ -26,14 +26,31 @@ interface NavItem {
 // `/rules` route for internal use (debugging the categorization engine,
 // manual rule edits during development), but we don't want to expose it
 // as a user-facing navigation target.
-const NAV_ITEMS: NavItem[] = [
-  { to: '/', label: 'Dashboard', icon: LayoutDashboard },
-  { to: '/review', label: 'Review', icon: ListChecks, badge: 'review' },
-  { to: '/transactions', label: 'Transactions', icon: ArrowLeftRight },
-  { to: '/analysis', label: 'Analysis', icon: ChartPie },
-  { to: '/summary', label: 'Summary', icon: ChartColumn },
-  { to: '/budgets', label: 'Budgets', icon: Wallet },
-  { to: '/categories', label: 'Categories', icon: Layers },
+//
+// Grouped so the sidebar reads as three jobs: the money itself, what it
+// means, and how it is organised. Each page's PageHeader kicker repeats
+// its group name (see NAV_GROUP_LABEL) so the two always agree.
+export const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
+  {
+    label: 'Money',
+    items: [
+      { to: '/', label: 'Dashboard', icon: LayoutDashboard },
+      { to: '/review', label: 'Review', icon: ListChecks, badge: 'review' },
+      { to: '/transactions', label: 'Transactions', icon: ArrowLeftRight },
+    ],
+  },
+  {
+    label: 'Insights',
+    items: [
+      { to: '/budgets', label: 'Budgets', icon: Wallet },
+      { to: '/analysis', label: 'Analysis', icon: ChartPie },
+      { to: '/summary', label: 'Summary', icon: ChartColumn },
+    ],
+  },
+  {
+    label: 'Setup',
+    items: [{ to: '/categories', label: 'Categories', icon: Layers }],
+  },
 ];
 
 // Settings always sits at the bottom of the sidebar, separated from the
@@ -66,7 +83,7 @@ export function Sidebar() {
             style={{
               backgroundColor:
                 'color-mix(in srgb, var(--primary) 18%, transparent)',
-              color: 'var(--primary)',
+              color: 'var(--nav-active-fg)',
               fontSize: 'var(--fs-rate)',
               fontWeight: 'var(--fw-medium)',
               fontFamily: 'var(--font-mono)',
@@ -87,8 +104,23 @@ export function Sidebar() {
         borderColor: 'var(--border)',
       }}
     >
-      <nav className="flex flex-col gap-0.5">
-        {NAV_ITEMS.map((item) => renderNavLink(item))}
+      <nav className="flex flex-col gap-5" aria-label="Main">
+        {NAV_GROUPS.map((group) => (
+          <div key={group.label} className="flex flex-col gap-0.5">
+            <p
+              className="uppercase px-3 mb-1"
+              style={{
+                color: 'var(--text-muted)',
+                fontSize: 'var(--fs-rate)',
+                letterSpacing: 'var(--ls-uppercase)',
+                fontWeight: 'var(--fw-medium)',
+              }}
+            >
+              {group.label}
+            </p>
+            {group.items.map((item) => renderNavLink(item))}
+          </div>
+        ))}
       </nav>
 
       {/* Footer - pinned to the bottom of the sidebar. */}

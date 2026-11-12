@@ -105,21 +105,42 @@
   --z-toast:          1100;
   --z-tooltip:        1110;
 
-  /* ── Data visualization (light defaults, overridden in dark) ─ */
-  --viz-1: #1A5E35;
-  --viz-2: #3472CA;
-  --viz-3: #D4880F;
-  --viz-4: #C23B2A;
-  --viz-5: #7C3AED;
-  --viz-6: #0D9488;
-  --viz-7: #DB2777;
-  --viz-8: #64748B;
+  /* ── Data visualization (light defaults, overridden in dark) ─
+     Categorical order validated with the dataviz palette checker
+     (lightness band, chroma floor, adjacent CVD + normal-vision
+     separation) against --surface in BOTH themes. Six slots: a 7th
+     category folds into "Other" (--viz-other), never a generated hue.
+     --viz-7 / --viz-8 are legacy aliases kept for older call sites. */
+  --viz-1: #2E8050;   /* green  - brand */
+  --viz-2: #C98A12;   /* gold   - brand accent */
+  --viz-3: #2A78D6;   /* blue */
+  --viz-4: #E0662F;   /* orange */
+  --viz-5: #6B5BD6;   /* violet */
+  --viz-6: #D0558C;   /* magenta */
+  --viz-other: #8E918D;
+  /* Label ink inside each fill: the higher-contrast of white / near-black
+     (measured: green 4.9 w, gold 6.3 k, blue 4.4 w, orange 5.4 k,
+     violet 5.1 w, magenta 4.7 k, other 5.8 k). */
+  --on-viz-1: #FFFFFF;
+  --on-viz-2: #17130A;
+  --on-viz-3: #FFFFFF;
+  --on-viz-4: #17130A;
+  --on-viz-5: #FFFFFF;
+  --on-viz-6: #17130A;
+  --on-viz-other: #17130A;
+  --viz-7: var(--viz-6);
+  --viz-8: var(--viz-other);
 
-  --chart-grid:       var(--border);
-  --chart-grid-width: 0.5px;
-  --chart-bar-radius: 3px;
-  --chart-bar-width:  60%;
+  /* Chart chrome: solid hairlines, recessive. Bars are capped and
+     rounded only at the data end (see components/charts). */
+  --chart-grid:       color-mix(in srgb, var(--border) 80%, transparent);
+  --chart-grid-width: 1px;
+  --chart-bar-radius: 4px;
+  --chart-bar-max:    24px;
+  --chart-area-opacity: 0.12;
   --chart-tooltip-bg: var(--surface);
+  /* Budget allowance column: a pale step of the brand green. */
+  --chart-allowance: color-mix(in srgb, var(--viz-1) 16%, var(--surface-alt));
 
   /* ── Account colors (9 options, equal optical weight) ────── */
   --acct-blue:    #2563EB;
@@ -257,15 +278,22 @@ html.dark {
   --elev-2: none;
   --elev-3: 0 10px 30px rgba(0, 0, 0, 0.5);
 
-  /* Viz palette brightened for dark backgrounds */
-  --viz-1: #4BC47D;
-  --viz-2: #60A5FA;
-  --viz-3: #FBBF24;
-  --viz-4: #F87171;
-  --viz-5: #A78BFA;
-  --viz-6: #2DD4BF;
-  --viz-7: #F472B6;
-  --viz-8: #94A3B8;
+  /* Viz palette stepped for the dark surface (same hues, validated
+     against #151A18 - not an automatic flip). */
+  --viz-1: #3A9A63;
+  --viz-2: #B8820E;
+  --viz-3: #3987E5;
+  --viz-4: #D95926;
+  --viz-5: #8A7FE6;
+  --viz-6: #D55181;
+  --viz-other: #6F746F;
+  --on-viz-1: #17130A;
+  --on-viz-2: #17130A;
+  --on-viz-3: #17130A;
+  --on-viz-4: #17130A;
+  --on-viz-5: #17130A;
+  --on-viz-6: #17130A;
+  --on-viz-other: #FFFFFF;
 
   /* Legacy button tokens */
   --btn-primary-bg:       var(--primary);
@@ -367,6 +395,131 @@ html.dark {
   background: var(--primary);
   border-radius: 2px;
 }
+
+/* ── Tables ──────────────────────────────────────────────────────────
+   Every data table gets the same quiet row hover, so rows read as
+   targets without each page wiring its own mouse handlers. */
+tbody tr { transition: background-color var(--dur-quick) var(--ease-standard); }
+tbody tr:hover { background-color: color-mix(in srgb, var(--surface-alt) 70%, transparent); }
+
+/* ── Chips ──────────────────────────────────────────────────────────
+   Small status/meta pill. Neutral by default; data-tone tints it. */
+.kk-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 20px;
+  padding: 0 8px;
+  border-radius: var(--radius-full);
+  font-size: var(--fs-rate);
+  font-weight: var(--fw-medium);
+  line-height: 1;
+  white-space: nowrap;
+  color: var(--text-secondary);
+  background: var(--surface-alt);
+  border: 1px solid transparent;
+}
+button.kk-chip:not(:disabled) { cursor: pointer; }
+button.kk-chip:not(:disabled):hover { filter: brightness(1.08); }
+button.kk-chip:disabled { cursor: default; }
+.kk-chip[data-tone="primary"] {
+  color: var(--nav-active-fg);
+  background: color-mix(in srgb, var(--primary) 14%, transparent);
+}
+.kk-chip[data-tone="accent"] {
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+}
+.kk-chip[data-tone="warning"] {
+  color: var(--warning);
+  background: color-mix(in srgb, var(--warning) 14%, transparent);
+}
+.kk-chip[data-tone="danger"] {
+  color: var(--danger);
+  background: color-mix(in srgb, var(--danger) 12%, transparent);
+}
+.kk-chip[data-tone="income"] {
+  color: var(--income);
+  background: color-mix(in srgb, var(--income) 12%, transparent);
+}
+.kk-chip[data-tone="expense"] {
+  color: var(--expense);
+  background: color-mix(in srgb, var(--expense) 12%, transparent);
+}
+
+/* ── Icon buttons (row/card actions) ────────────────────────────────
+   Muted at rest so a column of them doesn't shout; destructive ones
+   turn red only on hover/focus, not permanently. */
+.kk-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-1);
+  color: var(--text-muted);
+  background: transparent;
+  cursor: pointer;
+  transition:
+    background var(--dur-quick) var(--ease-standard),
+    color var(--dur-quick) var(--ease-standard);
+}
+.kk-icon-btn:hover { background: var(--surface-alt); color: var(--text); }
+.kk-icon-btn[data-tone="danger"]:hover,
+.kk-icon-btn[data-tone="danger"]:focus-visible {
+  background: color-mix(in srgb, var(--danger) 12%, transparent);
+  color: var(--danger);
+}
+.kk-icon-btn:disabled { opacity: 0.4; pointer-events: none; }
+
+/* ── Text actions (links that read as small buttons) ─────────────── */
+.kk-text-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 6px;
+  border-radius: var(--radius-1);
+  color: var(--text-secondary);
+  font-size: var(--fs-body-sm);
+  text-decoration: none;
+  cursor: pointer;
+  transition:
+    background var(--dur-quick) var(--ease-standard),
+    color var(--dur-quick) var(--ease-standard);
+}
+.kk-text-action:hover { background: var(--surface-alt); color: var(--text); }
+
+/* ── Disclosure rows ("By category", "Per-month table") ─────────────── */
+.kk-disclosure {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  color: var(--text-secondary);
+  font-size: var(--fs-body-sm);
+  font-weight: var(--fw-medium);
+}
+.kk-disclosure:hover { color: var(--text); }
+.kk-disclosure-chevron {
+  transition: transform var(--dur-quick) var(--ease-standard);
+}
+[aria-expanded="true"] > .kk-disclosure-chevron { transform: rotate(90deg); }
+
+/* ── Select ──────────────────────────────────────────────────────────
+   appearance:none so WebKitGTK (Linux) stops drawing its own grey GTK
+   widget and black arrow; the chevron below follows the theme text. */
+.kk-select {
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: linear-gradient(45deg, transparent 50%, var(--text-muted) 50%),
+    linear-gradient(135deg, var(--text-muted) 50%, transparent 50%);
+  background-position: calc(100% - 17px) 50%, calc(100% - 12px) 50%;
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
+}
+.kk-select:hover { border-color: var(--border-strong) !important; }
+.kk-select option { background: var(--surface); color: var(--text); }
 
 /* ── Modal ──────────────────────────────────────────────────────────── */
 @keyframes kk-backdrop-in {

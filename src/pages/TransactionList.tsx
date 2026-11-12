@@ -525,7 +525,7 @@ export function TransactionList() {
     <div>
       <PageHeader
         serif
-        label="Overview"
+        label="Money"
         title="Transactions"
         subtitle="Browse, search and edit every movement across your accounts."
         right={
@@ -702,20 +702,23 @@ export function TransactionList() {
 
       {/* Filters */}
       <Card className="mb-6">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-4 2xl:grid-cols-8 gap-3">
           <Select
+            className="h-9"
             label="Account"
             value={accountId}
             onChange={(e) => setFilter('accountId', e.target.value)}
             options={accountOptions}
           />
           <Select
+            className="h-9"
             label="Type"
             value={type}
             onChange={(e) => setFilter('type', e.target.value)}
             options={TYPE_OPTIONS}
           />
           <Select
+            className="h-9"
             label="Year"
             value={yearParam}
             onChange={(e) => setFilter('year', e.target.value)}
@@ -725,30 +728,35 @@ export function TransactionList() {
             ]}
           />
           <Select
+            className="h-9"
             label="Month"
             value={month}
             onChange={(e) => setFilter('month', e.target.value)}
             options={MONTH_OPTIONS}
           />
           <Select
+            className="h-9"
             label="Category"
             value={categoryFilter}
             onChange={(e) => setFilter('category', e.target.value)}
             options={categoryOptions}
           />
           <Select
+            className="h-9"
             label="Split"
             value={splitFilter}
             onChange={(e) => setFilter('splits', e.target.value)}
             options={SPLIT_OPTIONS}
           />
           <Select
+            className="h-9"
             label="Recurring"
             value={recurringOnly ? '1' : ''}
             onChange={(e) => setFilter('recurring', e.target.value)}
             options={RECURRING_OPTIONS}
           />
           <Select
+            className="h-9"
             label="Sort"
             value={sort}
             onChange={(e) => setFilter('sort', e.target.value)}
@@ -905,8 +913,7 @@ export function TransactionList() {
                         <div className="flex items-center gap-1 justify-end">
                           <button
                             onClick={() => navigate(`/transactions/${txn.id}/edit`)}
-                            className="p-1 rounded transition-opacity hover:opacity-70 cursor-pointer"
-                            style={{ color: 'var(--text-muted)' }}
+                            className="kk-icon-btn"
                             title="Edit transaction"
                             aria-label="Edit transaction"
                           >
@@ -914,8 +921,7 @@ export function TransactionList() {
                           </button>
                           <button
                             onClick={() => setDeleteTarget(txn)}
-                            className="p-1 rounded transition-opacity hover:opacity-70 cursor-pointer"
-                            style={{ color: 'var(--danger)' }}
+                            className="kk-icon-btn" data-tone="danger"
                             title="Delete transaction"
                           >
                             <Trash2 size={14} />
@@ -1026,8 +1032,7 @@ export function TransactionList() {
                       <div className="flex items-center gap-1 justify-end">
                         <button
                           onClick={() => navigate(`/transactions/${txn.id}/edit`)}
-                          className="p-1 rounded transition-opacity hover:opacity-70 cursor-pointer"
-                          style={{ color: 'var(--text-muted)' }}
+                          className="kk-icon-btn"
                           title="Edit transaction"
                           aria-label="Edit transaction"
                         >
@@ -1035,8 +1040,7 @@ export function TransactionList() {
                         </button>
                         <button
                           onClick={() => setDeleteTarget(txn)}
-                          className="p-1 rounded transition-opacity hover:opacity-70 cursor-pointer"
-                          style={{ color: 'var(--danger)' }}
+                          className="kk-icon-btn" data-tone="danger"
                           title="Delete transaction"
                         >
                           <Trash2 size={14} />

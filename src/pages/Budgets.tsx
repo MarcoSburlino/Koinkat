@@ -3,25 +3,14 @@ import { monthFilterOptions } from '../lib/date-constants';
 import { UPPERCASE_LABEL,UPPERCASE_LABEL_SM } from '../lib/label-styles';
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
-  ComposedChart,
-  Bar,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  ResponsiveContainer,
-} from 'recharts';
-import { chartTooltipStyle, chartAxisStyle, chartGridStyle } from '../lib/chart-style';
-import {
   parseISO,
   format as formatDate,
   startOfMonth,
   addMonths,
   eachMonthOfInterval,
 } from 'date-fns';
-import { Pencil, Trash2, Archive, ArchiveRestore, Plus, CircleAlert, Repeat2, Clock } from 'lucide-react';
+import { Pencil, Trash2, Archive, ArchiveRestore, Plus, CircleAlert, Repeat2, Clock, ChevronRight } from 'lucide-react';
+import { categoricalColor } from '../lib/chart-style';
 
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
@@ -35,8 +24,8 @@ import { PageHeader } from '../components/layout/PageHeader';
 
 import { useAppStore } from '../stores/app-store';
 import { useDataChanged } from '../hooks/useDataChanged';
-import { formatAmount, formatMoney } from '../lib/format';
-import { MONTH_NAMES_SHORT } from '../lib/date-constants';
+import { formatAmount } from '../lib/format';
+import { MONTH_NAMES, MONTH_NAMES_SHORT } from '../lib/date-constants';
 import { dec, qCent } from '../domain/money';
 import * as budgetService from '../services/budget-service';
 import * as recurringService from '../services/recurring-service';
@@ -56,7 +45,13 @@ import type {
 import type { BudgetEvent, RecurringSeries } from '../types/models';
 import type { BudgetRhythm, RecurrenceCadence } from '../types/enums';
 import { getPercentageColor } from '../lib/budget-colors';
-import { monthPace } from '../lib/budget-pace';
+import { monthPace, projectMonthEnd, localIsoDate } from '../lib/budget-pace';
+import { Meter } from '../components/ui/Meter';
+import { StatTile } from '../components/ui/StatTile';
+import { ChartCard } from '../components/charts/ChartCard';
+import { ChartLegend } from '../components/charts/ChartLegend';
+import { MonthPaceChart } from '../components/charts/MonthPaceChart';
+import { AnnualBudgetChart } from '../components/charts/AnnualBudgetChart';
 
 // ── Constants ───────────────────────────────────────────────────────────
 
@@ -311,6 +306,30 @@ export function Budgets() {
     };
   }, [focusedMonthKey, focusedBudgetCcy, dataVersion]);
 
+  // Per-day spending for the focused month's pace chart. Same rows and
+  // conversion as the period total, so the chart ends where the card does.
+  const [focusedDaily, setFocusedDaily] =
+    useState<budgetService.PeriodDailySpending | null>(null);
+  useEffect(() => {
+    if (!focusedPeriodId) {
+      setFocusedDaily(null);
+      return;
+    }
+    let cancelled = false;
+    budgetService
+      .calculatePeriodDailySpending(focusedPeriodId)
+      .then((res) => {
+        if (!cancelled) setFocusedDaily(res);
+      })
+      .catch((err) => {
+        console.error('[Budgets] daily spending failed:', err);
+        if (!cancelled) setFocusedDaily(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [focusedPeriodId, dataVersion]);
+
   const activeEvents = useMemo(
     () => events.filter((e) => !e.isExpired),
     [events],
@@ -421,7 +440,7 @@ export function Budgets() {
     <div>
       <PageHeader
         serif
-        label="Overview"
+        label="Insights"
         title="Budgets"
         subtitle="Track monthly spending against your limits and events."
         right={
@@ -564,6 +583,7 @@ export function Budgets() {
                   foldingEvents={foldingEvents}
                   foldingEventSpending={eventSpending}
                   nonBudgetedAmount={nonBudgetedFocused}
+                  daily={focusedDaily?.periodStart === focusedPeriod.periodStart.slice(0, 10) ? focusedDaily : null}
                   onEditLimit={() => setEditPeriod(focusedPeriod)}
                   onEditBudgetLimit={() => setEditBudgetOpen(true)}
                   onDeleteBudget={() => setDeleteBudgetOpen(true)}
@@ -574,30 +594,24 @@ export function Budgets() {
             {/* Annual breakdown - chart always visible, table behind a dropdown. */}
             {yearlyData && (
               <>
-                <Card className="mb-4">
-                  <p
-                    className="uppercase mb-3"
-                    style={UPPERCASE_LABEL}
-                  >
-                    Annual breakdown
-                  </p>
-                  {/* Most finance charts draw bars as SPENDING - here the
-                      bars are the allowance, so say so or users invert it. */}
-                  <p
-                    className="mb-3"
-                    style={{
-                      color: 'var(--text-muted)',
-                      fontSize: 'var(--fs-body-sm)',
-                    }}
-                  >
-                    Bars show your budget for each month (usual limit + extra
-                    from events); the line is what you actually spent.
-                  </p>
-                  <AnnualBreakdownChart
+                <ChartCard
+                  className="mb-4"
+                  title={`${yearlyData.budget.year} at a glance`}
+                  hint="Pale columns are your budget for each month, the bar inside is what you spent. Click a month to focus it."
+                  legend={[
+                    { label: 'Spent', color: 'var(--viz-1)' },
+                    { label: 'Over', color: 'var(--expense)' },
+                    { label: 'Budget', color: 'var(--chart-allowance)' },
+                    { label: 'From events', color: 'color-mix(in srgb, var(--viz-2) 55%, var(--chart-allowance))' },
+                  ]}
+                >
+                  <AnnualBudgetChart
                     yearlyData={yearlyData}
                     decimalSeparator={settings.decimalSeparator}
+                    focusedPeriodId={focusedPeriodId}
+                    onSelectPeriod={setFocusedPeriodId}
                   />
-                </Card>
+                </ChartCard>
 
                 <Collapsible
                   open={breakdownOpen}
@@ -748,6 +762,7 @@ function Collapsible({
     <Card className="mb-4">
       <button
         onClick={onToggle}
+        aria-expanded={open}
         className="w-full flex items-center justify-between cursor-pointer"
         style={{ color: 'var(--text)' }}
       >
@@ -757,9 +772,7 @@ function Collapsible({
         >
           {label}
         </span>
-        <span style={{ color: 'var(--text-muted)', fontSize: 12 }}>
-          {open ? '▼' : '▶'}
-        </span>
+        <ChevronRight size={16} aria-hidden className="kk-disclosure-chevron" style={{ color: 'var(--text-muted)' }} />
       </button>
       {open && <div className="mt-4">{children}</div>}
     </Card>
@@ -775,6 +788,7 @@ function FocusedMonthCard({
   foldingEvents,
   foldingEventSpending,
   nonBudgetedAmount,
+  daily,
   onEditLimit,
   onEditBudgetLimit,
   onDeleteBudget,
@@ -786,6 +800,8 @@ function FocusedMonthCard({
   foldingEventSpending: SpendingMap;
   /** Off-budget spend for this month (is_budgeted = 0), in budgetCurrency. */
   nonBudgetedAmount?: string;
+  /** Per-day series for the pace chart; null while loading or on failure. */
+  daily: budgetService.PeriodDailySpending | null;
   onEditLimit: () => void;
   onEditBudgetLimit: () => void;
   onDeleteBudget?: () => void;
@@ -793,17 +809,10 @@ function FocusedMonthCard({
   const monthIdx = getMonthIndex(period.periodStart);
   const year = period.periodStart.slice(0, 4);
   const pctColor = getPercentageColor(period.percentage);
-  const clampedPct = Math.min(Math.max(0, period.percentage), 100);
-  // Money math in Big (invariant: no float arithmetic on amounts);
-  // toNumber() only at the final CSS-width boundary.
-  const baseLimitD = dec(period.baseLimit);
-  const effLimitD = dec(period.effectiveLimit);
-  const eventShare = effLimitD.gt(0)
-    ? effLimitD.minus(baseLimitD).div(effLimitD).times(100).toNumber()
-    : 0;
-  const baseShare = 100 - eventShare;
   const perCurrencyKeys = Object.keys(period.spentPerCurrency);
   const multiCurrency = perCurrencyKeys.length > 1;
+  const remainingD = dec(period.remaining);
+  const isOver = remainingD.lt(0);
 
   // Pace context - 60% spent is fine on the 25th and alarming on the 5th,
   // but the percentage alone can't say which. Only meaningful when the
@@ -811,166 +820,209 @@ function FocusedMonthCard({
   // shared monthPace helper so this card and the Dashboard month card
   // can never drift.
   const now = new Date();
-  const isCurrentMonth =
-    period.periodStart.slice(0, 7) ===
-    `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  const today = localIsoDate(now);
+  const isCurrentMonth = period.periodStart.slice(0, 7) === today.slice(0, 7);
+  const isFutureMonth = period.periodStart.slice(0, 7) > today.slice(0, 7);
   const pace = monthPace(period.remaining, now);
-  const monthElapsedPct = pace.monthElapsedPct;
   const safePerDay = isCurrentMonth ? pace.safePerDay : null;
+  const projected = daily && isCurrentMonth ? projectMonthEnd(daily.days, today)?.total ?? null : null;
+  const projectedOver = projected !== null && dec(projected).gt(dec(period.effectiveLimit));
 
   return (
     <Card className="mb-4">
-      <div className="flex items-start justify-between mb-3">
+      {/* Header: month + limit on the left, actions on the right. */}
+      <div className="flex flex-wrap items-start justify-between gap-3 mb-5">
         <div>
-          <p
-            className="uppercase"
-            style={UPPERCASE_LABEL}
-          >
-            {MONTH_LABELS[monthIdx]} {year} · monthly limit
+          <p className="uppercase flex items-center gap-2" style={UPPERCASE_LABEL}>
+            {MONTH_NAMES[monthIdx]} {year}
             {period.isCustomized && (
               <span
+                className="normal-case"
                 style={{
-                  marginLeft: 8,
-                  color: 'var(--primary)',
+                  color: 'var(--accent)',
                   fontSize: 'var(--fs-rate)',
+                  letterSpacing: 0,
+                  padding: '1px 8px',
+                  borderRadius: 'var(--radius-full)',
+                  border: '1px solid color-mix(in srgb, var(--accent) 45%, transparent)',
                 }}
                 title="Custom limit for this month only"
               >
-                ★ custom limit
+                Custom limit
               </span>
             )}
           </p>
-          <div className="flex items-baseline gap-2 mt-1">
+          <div className="flex items-baseline gap-2 mt-2" data-privacy-field>
             <span
               className="amount"
-              data-privacy-field
               style={{
-                color: 'var(--text)',
-                fontFamily: 'var(--font-head)',
-                fontSize: 'var(--fs-h1)',
+                color: isOver ? 'var(--danger)' : 'var(--text)',
+                fontSize: '2rem',
                 fontWeight: 'var(--fw-semibold)',
+                lineHeight: 1.1,
               }}
             >
-              {formatAmount(period.effectiveLimit, decimalSeparator)}
+              {formatAmount(remainingD.abs().toFixed(2), decimalSeparator)}
             </span>
             <span className="currency-code">{budgetCurrency}</span>
+            <span style={{ color: 'var(--text-secondary)', fontSize: 'var(--fs-body)' }}>
+              {isOver ? 'over the limit of' : 'left of'}{' '}
+              <span className="amount">{formatAmount(period.effectiveLimit, decimalSeparator)}</span>
+            </span>
           </div>
-          <p
-            className="mt-0.5"
-            data-privacy-field
-            style={{
-              color: 'var(--text-muted)',
-              fontSize: 'var(--fs-rate)',
-            }}
-          >
-            {formatAmount(period.baseLimit, decimalSeparator)} usual limit
-            {dec(period.eventContribution).gt(0) && (
-              <> + {formatAmount(period.eventContribution, decimalSeparator)} extra from events</>
-            )}
-          </p>
+          {dec(period.eventContribution).gt(0) && (
+            <p
+              className="mt-1"
+              data-privacy-field
+              style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-body-sm)' }}
+            >
+              <span className="amount">{formatAmount(period.baseLimit, decimalSeparator)}</span> usual limit +{' '}
+              <span className="amount">{formatAmount(period.eventContribution, decimalSeparator)}</span> from events
+            </p>
+          )}
         </div>
-        <div
-          style={{
-            color: pctColor,
-            fontFamily: 'var(--font-head)',
-            fontSize: 'var(--fs-h2)',
-            fontWeight: 'var(--fw-semibold)',
-          }}
+        <div className="flex items-center gap-1">
+          <Button variant="secondary" onClick={onEditLimit}>
+            <Pencil size={14} /> Edit {MONTH_LABELS[monthIdx]}
+          </Button>
+          <Button variant="ghost" onClick={onEditBudgetLimit} title="Change the usual monthly limit">
+            Usual limit
+          </Button>
+          {onDeleteBudget && (
+            <Button variant="ghost" onClick={onDeleteBudget} aria-label="Delete budget" title="Delete budget">
+              <Trash2 size={14} />
+            </Button>
+          )}
+        </div>
+      </div>
+
+      {/* Meter: severity fill + "today" tick for the current month. */}
+      <div className="flex items-center gap-3 mb-5">
+        <div className="flex-1">
+          <Meter
+            pct={period.percentage}
+            marker={isCurrentMonth ? pace.monthElapsedPct : null}
+            markerLabel={`Today - ${pace.monthElapsedPct.toFixed(0)}% of the month gone`}
+            label={`Spent ${period.percentage.toFixed(0)}% of the monthly limit`}
+          />
+        </div>
+        <span
+          className="amount shrink-0"
+          style={{ color: pctColor, fontSize: 'var(--fs-body-sm)', fontWeight: 'var(--fw-semibold)', minWidth: 48, textAlign: 'right' }}
         >
-          {period.percentage.toFixed(1)}%
-        </div>
+          {period.percentage.toFixed(0)}%
+        </span>
       </div>
 
-      {/* Progress bar (two-tone) */}
+      {/* Stat row. Current month: the numbers a budgeter acts on (safe per
+          day, where the month is heading). Other months: the totals. */}
       <div
-        className="h-2 rounded-full overflow-hidden mb-3 relative"
-        style={{ backgroundColor: 'var(--surface-alt)' }}
+        className="grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-4 pb-5 mb-5"
+        style={{ borderBottom: '1px solid var(--border)' }}
       >
-        <div
-          className="h-full"
-          style={{
-            width: `${clampedPct}%`,
-            backgroundColor: pctColor,
-            transition: 'width var(--dur-std) var(--ease-standard)',
-          }}
-        />
-        {/* Base/event split indicator */}
-        {eventShare > 0 && (
-          <div
-            className="absolute top-0 bottom-0"
-            style={{
-              left: `${baseShare}%`,
-              width: 1,
-              backgroundColor: 'var(--border)',
-              opacity: 0.6,
-            }}
-          />
+        <StatTile bare label="Spent" amount={period.spent} currency={budgetCurrency} decimalSeparator={decimalSeparator} />
+        {isCurrentMonth ? (
+          <>
+            <StatTile
+              bare
+              label="Safe per day"
+              amount={safePerDay}
+              currency={budgetCurrency}
+              decimalSeparator={decimalSeparator}
+              tone={safePerDay ? 'default' : 'danger'}
+              hint={`${pace.daysLeft} day${pace.daysLeft === 1 ? '' : 's'} left, today included`}
+            />
+            <StatTile
+              bare
+              label="Projected"
+              amount={projected}
+              currency={budgetCurrency}
+              decimalSeparator={decimalSeparator}
+              tone={projectedOver ? 'expense' : 'default'}
+              hint={
+                projected === null
+                  ? 'Calculating...'
+                  : projectedOver
+                    ? 'A typical day from here takes you over'
+                    : 'A typical day from here keeps you under'
+              }
+            />
+          </>
+        ) : (
+          <>
+            <StatTile
+              bare
+              label={isOver ? 'Over by' : 'Left'}
+              amount={remainingD.abs().toFixed(2)}
+              currency={budgetCurrency}
+              decimalSeparator={decimalSeparator}
+              tone={isOver ? 'danger' : 'default'}
+            />
+            <StatTile bare label="Used" value={`${period.percentage.toFixed(1)}%`} />
+          </>
         )}
-        {/* "Today" pace tick - lets the user compare spent-% against
-            elapsed-% of the month in one glance. Current month only. */}
-        {isCurrentMonth && (
-          <div
-            className="absolute top-0 bottom-0"
-            title={`Today - ${monthElapsedPct.toFixed(0)}% of the month gone`}
-            style={{
-              left: `${monthElapsedPct}%`,
-              width: 2,
-              backgroundColor: 'var(--text)',
-              opacity: 0.5,
-            }}
-          />
-        )}
+        <StatTile bare label="Limit" amount={period.effectiveLimit} currency={budgetCurrency} decimalSeparator={decimalSeparator} tone="muted" />
       </div>
 
-      {/* Summary triad. For the current month the third slot is "Safe per
-          day" (remaining ÷ days left incl. today) - the number a budgeter
-          actually acts on; the monthly limit is already the hero figure
-          above. Past/future months keep the limit. */}
-      <div className="grid grid-cols-3 gap-3 text-center mb-3">
-        <KPI label="Spent" value={period.spent} currency={budgetCurrency} decimalSeparator={decimalSeparator} color="var(--expense)" />
-        <KPI label="Remaining" value={period.remaining} currency={budgetCurrency} decimalSeparator={decimalSeparator} color={dec(period.remaining).gte(0) ? 'var(--text)' : 'var(--danger)'} />
-        {isCurrentMonth ? (
-          <KPI
-            label="Safe per day"
-            value={safePerDay ?? '0.00'}
-            currency={budgetCurrency}
-            decimalSeparator={decimalSeparator}
-            color={safePerDay ? 'var(--text)' : 'var(--danger)'}
-          />
-        ) : (
-          <KPI label="Monthly limit" value={period.effectiveLimit} currency={budgetCurrency} decimalSeparator={decimalSeparator} color="var(--text)" />
-        )}
-      </div>
+      {/* Pace chart - how the month unfolded (or is unfolding). */}
+      {!isFutureMonth && (
+        <div className="mb-4">
+          <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+            <p className="uppercase" style={UPPERCASE_LABEL_SM}>
+              Spending pace
+            </p>
+            <ChartLegend
+              items={[
+                { label: 'Spent so far', color: 'var(--viz-1)', kind: 'line' },
+                { label: 'On track', color: 'var(--text-muted)', kind: 'dash' },
+                ...(isCurrentMonth ? [{ label: 'Projected', color: 'var(--viz-1)', kind: 'dash' as const }] : []),
+              ]}
+            />
+          </div>
+          <div data-privacy-field>
+            {daily ? (
+              <MonthPaceChart
+                daily={daily}
+                limit={period.effectiveLimit}
+                currency={budgetCurrency}
+                decimalSeparator={decimalSeparator}
+                today={today}
+              />
+            ) : (
+              <div style={{ height: 220 }} className="rounded" aria-hidden>
+                <div className="h-full w-full rounded" style={{ backgroundColor: 'var(--surface-alt)', opacity: 0.4 }} />
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Off-budget spend for this month (excluded from the limit above) */}
       {nonBudgetedAmount && nonBudgetedAmount !== '0.00' && (
         <p
-          className="mb-3"
+          className="mb-2"
           style={{
             color: 'var(--text-muted)',
             fontSize: 'var(--fs-body-sm)',
           }}
         >
-          Excluded from budget this month:{' '}
-          <span data-privacy-field>
+          Not counted this month:{' '}
+          <span data-privacy-field className="amount">
             {formatAmount(nonBudgetedAmount, decimalSeparator)} {budgetCurrency}
           </span>{' '}
-          <span style={{ fontSize: 'var(--fs-rate)' }}>
-            (one-offs you unchecked "Budgeted" on)
-          </span>
+          (one-offs with "Budgeted" turned off)
         </p>
       )}
 
       {multiCurrency && (
         <p
-          className="mb-3 italic"
+          className="mb-2"
           style={{
             color: 'var(--text-muted)',
-            fontSize: 'var(--fs-rate)',
+            fontSize: 'var(--fs-body-sm)',
           }}
         >
-          Spending sourced from{' '}
-          {perCurrencyKeys.map((c) => c.toUpperCase()).join(', ')},
+          Spending in {perCurrencyKeys.map((c) => c.toUpperCase()).join(', ')},
           converted to {budgetCurrency}.
         </p>
       )}
@@ -978,16 +1030,16 @@ function FocusedMonthCard({
       {/* Rolling-up events */}
       {foldingEvents.length > 0 && (
         <div
-          className="mb-3 pt-3"
+          className="pt-4 mt-2"
           style={{ borderTop: '1px solid var(--border)' }}
         >
           <p
-            className="uppercase mb-2"
+            className="uppercase mb-3"
             style={UPPERCASE_LABEL_SM}
           >
-            Rolling up this month
+            Events in this month's budget
           </p>
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-3">
             {foldingEvents.map((ev) => {
               const sp = foldingEventSpending[ev.id] ?? { total: '0.00', perCurrency: {} };
               // Big for the amount division; toNumber() only at the final
@@ -996,100 +1048,29 @@ function FocusedMonthCard({
               const pct = limD.gt(0)
                 ? dec(sp.total).div(limD).times(100).toNumber()
                 : 0;
-              const clamped = Math.min(Math.max(0, pct), 100);
               return (
-                <div key={ev.id} className="flex items-center gap-3">
-                  <span
-                    style={{ color: 'var(--text)', fontSize: 'var(--fs-body-sm)' }}
-                  >
-                    • {ev.name}
+                <div key={ev.id} className="grid grid-cols-[minmax(0,1fr)_auto] gap-x-4 gap-y-1.5 items-baseline">
+                  <span style={{ color: 'var(--text)', fontSize: 'var(--fs-body-sm)', fontWeight: 'var(--fw-medium)' }}>
+                    {ev.name}
                   </span>
                   <span
-                    className="flex-1 amount"
+                    className="amount"
                     data-privacy-field
-                    style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-rate)' }}
+                    style={{ color: 'var(--text-secondary)', fontSize: 'var(--fs-rate)' }}
                   >
-                    {formatAmount(sp.total, decimalSeparator)} /{' '}
-                    {formatAmount(ev.limitAmount, decimalSeparator)}{' '}
+                    {formatAmount(sp.total, decimalSeparator)} / {formatAmount(ev.limitAmount, decimalSeparator)}
                     <span className="currency-code">{ev.currency}</span>
                   </span>
-                  <div
-                    className="w-24 h-1 rounded-full overflow-hidden"
-                    style={{ backgroundColor: 'var(--surface-alt)' }}
-                  >
-                    <div
-                      className="h-full"
-                      style={{
-                        width: `${clamped}%`,
-                        backgroundColor: getPercentageColor(pct),
-                      }}
-                    />
+                  <div className="col-span-2">
+                    <Meter pct={pct} size="xs" label={`${ev.name}: ${pct.toFixed(0)}% used`} />
                   </div>
-                  <span
-                    style={{
-                      color: getPercentageColor(pct),
-                      fontSize: 'var(--fs-rate)',
-                      minWidth: 42,
-                      textAlign: 'right',
-                    }}
-                  >
-                    {pct.toFixed(0)}%
-                  </span>
                 </div>
               );
             })}
           </div>
         </div>
       )}
-
-      <div className="flex gap-3">
-        <Button variant="secondary" onClick={onEditLimit}>
-          Edit {MONTH_LABELS[monthIdx]}'s limit
-        </Button>
-        <Button variant="ghost" onClick={onEditBudgetLimit}>
-          Edit budget baseline
-        </Button>
-        {onDeleteBudget && (
-          <Button variant="ghost" onClick={onDeleteBudget}>
-            <Trash2 size={14} /> Delete budget
-          </Button>
-        )}
-      </div>
     </Card>
-  );
-}
-
-function KPI({
-  label,
-  value,
-  currency,
-  decimalSeparator,
-  color,
-}: {
-  label: string;
-  value: string;
-  currency: string;
-  decimalSeparator: string;
-  color: string;
-}) {
-  return (
-    <div>
-      <p
-        className="mb-0.5 uppercase"
-        style={UPPERCASE_LABEL_SM}
-      >
-        {label}
-      </p>
-      <div className="flex items-baseline justify-center" data-privacy-field>
-        <span
-          className="amount amount-sm"
-          style={{ color }}
-        >
-          {formatAmount(value, decimalSeparator)}
-        </span>
-        <span className="currency-code">{currency}</span>
-      </div>
-    </div>
   );
 }
 
@@ -1140,7 +1121,7 @@ function EventsSection({
           className="uppercase"
           style={UPPERCASE_LABEL}
         >
-          Events · Active
+          Events
         </p>
         <Button variant="ghost" onClick={onCreate}>
           <Plus size={14} /> New event
@@ -1217,7 +1198,6 @@ function EventCard({
   const pct = limitD.gt(0)
     ? dec(spent).div(limitD).times(100).toNumber()
     : 0;
-  const clampedPct = Math.min(Math.max(0, pct), 100);
   const perCurrencyKeys = Object.keys(spending.perCurrency);
   const multiCurrency = perCurrencyKeys.length > 1;
   const mutedStyle: React.CSSProperties = event.isExpired ? { opacity: 0.55 } : {};
@@ -1253,200 +1233,115 @@ function EventCard({
 
   return (
     <div
-      className="rounded-lg p-4"
+      className="kk-event-card rounded-lg p-4"
       style={{
-        backgroundColor: 'var(--card-bg, var(--surface))',
-        border: '1px solid var(--border)',
+        backgroundColor: 'var(--surface)',
+        border: `1px solid ${foldsIntoFocusedMonth ? 'color-mix(in srgb, var(--primary) 40%, var(--border))' : 'var(--border)'}`,
         ...mutedStyle,
       }}
     >
       <div className="flex items-start justify-between gap-3 mb-3">
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2">
-            <h3
-              className="truncate"
-              style={{
-                color: 'var(--text)',
-                fontSize: 'var(--fs-body)',
-                fontWeight: 'var(--fw-semibold)',
-              }}
-            >
-              {event.name}
-            </h3>
-            {foldsIntoFocusedMonth && (
-              <button
-                onClick={onFoldBadgeClick}
-                className="px-1.5 py-0.5 rounded cursor-pointer hover:opacity-80 transition-opacity"
-                style={{
-                  backgroundColor: 'color-mix(in srgb, var(--primary) 18%, transparent)',
-                  color: 'var(--primary)',
-                  fontSize: 'var(--fs-rate)',
-                  fontWeight: 'var(--fw-medium)',
-                }}
-                title="Jump to focused month"
-              >
-                ● folds in
-              </button>
-            )}
-          </div>
+          <h3
+            className="truncate"
+            style={{
+              color: 'var(--text)',
+              fontSize: 'var(--fs-body)',
+              fontWeight: 'var(--fw-semibold)',
+            }}
+          >
+            {event.name}
+          </h3>
           {event.description && (
             <p
               className="mt-0.5 truncate"
-              style={{
-                color: 'var(--text-muted)',
-                fontSize: 'var(--fs-body-sm)',
-              }}
+              style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-body-sm)' }}
             >
               {event.description}
             </p>
           )}
-          <p
-            className="mt-0.5"
-            style={{
-              color: 'var(--text-muted)',
-              fontSize: 'var(--fs-rate)',
-            }}
-          >
-            {hasDates
-              ? `${formatDayLabel(event.startDate!)} – ${formatDayLabel(event.endDate!)}`
-              : 'Undated'}
-          </p>
+          <div className="mt-1 flex flex-wrap items-center gap-1.5">
+            <span style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-rate)' }}>
+              {hasDates
+                ? `${formatDayLabel(event.startDate!)} - ${formatDayLabel(event.endDate!)}`
+                : 'No dates'}
+            </span>
+            {event.sumToBudget && event.sumToMonth && (
+              <button
+                type="button"
+                onClick={foldsIntoFocusedMonth ? onFoldBadgeClick : undefined}
+                disabled={!foldsIntoFocusedMonth}
+                className="kk-chip"
+                data-tone={foldsIntoFocusedMonth ? 'primary' : undefined}
+                title={
+                  foldsIntoFocusedMonth
+                    ? 'Counts in the month you are looking at - jump to it'
+                    : 'Its limit and spending count in this month'
+                }
+              >
+                Counts in {formatMonthLabel(event.sumToMonth)}
+              </button>
+            )}
+          </div>
         </div>
 
-        <div className="flex items-center gap-1 shrink-0">
+        <div className="flex items-center shrink-0 -mr-1.5">
           {onEdit && (
-            <button
-              onClick={onEdit}
-              className="p-1.5 rounded transition-opacity hover:opacity-80 cursor-pointer"
-              style={{ color: 'var(--text-muted)' }}
-              title="Edit"
-            >
+            <button onClick={onEdit} className="kk-icon-btn" aria-label={`Edit ${event.name}`} title="Edit">
               <Pencil size={14} />
             </button>
           )}
           {onExpire && (
-            <button
-              onClick={() => void onExpire()}
-              className="p-1.5 rounded transition-opacity hover:opacity-80 cursor-pointer"
-              style={{ color: 'var(--text-muted)' }}
-              title="Archive"
-            >
+            <button onClick={() => void onExpire()} className="kk-icon-btn" aria-label={`Archive ${event.name}`} title="Archive">
               <Archive size={14} />
             </button>
           )}
           {onReactivate && (
-            <button
-              onClick={() => void onReactivate()}
-              className="p-1.5 rounded transition-opacity hover:opacity-80 cursor-pointer"
-              style={{ color: 'var(--text-muted)' }}
-              title="Reactivate"
-            >
+            <button onClick={() => void onReactivate()} className="kk-icon-btn" aria-label={`Reactivate ${event.name}`} title="Reactivate">
               <ArchiveRestore size={14} />
             </button>
           )}
-          <button
-            onClick={onDelete}
-            className="p-1.5 rounded transition-opacity hover:opacity-80 cursor-pointer"
-            style={{ color: 'var(--danger)' }}
-            title="Delete"
-          >
+          <button onClick={onDelete} className="kk-icon-btn" data-tone="danger" aria-label={`Delete ${event.name}`} title="Delete">
             <Trash2 size={14} />
           </button>
         </div>
       </div>
 
-      {event.sumToBudget && event.sumToMonth && (
-        <p
-          className="mb-2"
-          style={{
-            color: 'var(--text-muted)',
-            fontSize: 'var(--fs-rate)',
-          }}
-        >
-          Summed into {formatMonthLabel(event.sumToMonth)} budget
-        </p>
-      )}
-
-      <div className="mb-3">
-        <div className="flex items-center justify-between mb-1">
-          <span
-            className="amount"
-            data-privacy-field
-            style={{
-              color: 'var(--text)',
-              fontSize: 'var(--fs-body-sm)',
-            }}
-          >
-            {formatAmount(spent, decimalSeparator)} /{' '}
-            {formatAmount(event.limitAmount, decimalSeparator)}{' '}
+      <div className="flex items-baseline justify-between gap-2 mb-2" data-privacy-field>
+        <span className="flex items-baseline gap-1.5">
+          <span className="amount" style={{ color: 'var(--text)', fontSize: 'var(--fs-amount-md)', fontWeight: 'var(--fw-semibold)' }}>
+            {formatAmount(spent, decimalSeparator)}
+          </span>
+          <span style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-body-sm)' }}>
+            of <span className="amount">{formatAmount(event.limitAmount, decimalSeparator)}</span>
             <span className="currency-code">{event.currency}</span>
           </span>
-          <span
-            style={{
-              color: getPercentageColor(pct),
-              fontSize: 'var(--fs-rate)',
-              fontWeight: 'var(--fw-medium)',
-            }}
-          >
-            {pct.toFixed(1)}%
-          </span>
-        </div>
-        <div
-          className="h-1.5 rounded-full overflow-hidden"
-          style={{ backgroundColor: 'var(--surface-alt)' }}
-        >
-          <div
-            className="h-full rounded-full"
-            style={{
-              width: `${clampedPct}%`,
-              backgroundColor: getPercentageColor(pct),
-              transition: 'width var(--dur-std) var(--ease-standard)',
-            }}
-          />
-        </div>
-      </div>
-
-      <p
-        className="text-center"
-        style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-rate)' }}
-      >
-        Remaining:{' '}
+        </span>
         <span
-          className="amount amount-sm"
-          data-privacy-field
-          style={{
-            color: remDec.gt(0) ? 'var(--income)' : 'var(--danger)',
-          }}
+          className="amount"
+          style={{ color: getPercentageColor(pct), fontSize: 'var(--fs-body-sm)', fontWeight: 'var(--fw-semibold)' }}
         >
-          {formatAmount(remaining.toFixed(2), decimalSeparator)}
+          {pct.toFixed(0)}%
+        </span>
+      </div>
+      <Meter pct={pct} size="sm" label={`${event.name}: ${pct.toFixed(0)}% of its limit used`} />
+      <p className="mt-2" style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-body-sm)' }}>
+        <span className="amount" data-privacy-field style={{ color: remDec.gt(0) ? 'var(--text-secondary)' : 'var(--danger)' }}>
+          {formatAmount(remaining.toFixed(2), decimalSeparator)} {event.currency}
         </span>{' '}
-        <span className="currency-code">{event.currency}</span>
-        {multiCurrency && (
-          <span className="ml-2 italic">
-            · spent across {perCurrencyKeys.map((c) => c.toUpperCase()).join(', ')}
-          </span>
-        )}
+        left
+        {multiCurrency && <> · spent in {perCurrencyKeys.map((c) => c.toUpperCase()).join(', ')}</>}
       </p>
 
       {/* Per-event category breakdown (same grouping as Analysis). */}
       <button
         onClick={() => setBdOpen((o) => !o)}
-        className="mt-3 w-full flex items-center justify-between cursor-pointer"
+        aria-expanded={bdOpen}
+        className="kk-disclosure mt-3 pt-3 w-full"
+        style={{ borderTop: '1px solid var(--border)' }}
       >
-        <span
-          className="uppercase"
-          style={{
-            color: 'var(--text-secondary)',
-            fontSize: 'var(--fs-rate)',
-            letterSpacing: 'var(--ls-uppercase)',
-            fontWeight: 'var(--fw-medium)',
-          }}
-        >
-          Breakdown by category
-        </span>
-        <span style={{ color: 'var(--text-muted)', fontSize: 11 }}>
-          {bdOpen ? '▼' : '▶'}
-        </span>
+        <span>By category</span>
+        <ChevronRight size={14} aria-hidden className="kk-disclosure-chevron" />
       </button>
       {bdOpen && (
         <div className="mt-2 flex flex-col gap-2">
@@ -1460,7 +1355,7 @@ function EventCard({
             </p>
           ) : (
             bdRows.map((row, i) => {
-              const colorVar = `var(--viz-${(i % 8) + 1})`;
+              const colorVar = categoricalColor(i);
               return (
                 <div key={row.macroId ?? '__uncat__'} className="flex flex-col gap-1">
                   <div className="flex items-center gap-2">
@@ -1522,84 +1417,6 @@ function EventCard({
 }
 
 // ── Annual breakdown (chart + table) ────────────────────────────────────
-
-function AnnualBreakdownChart({
-  yearlyData,
-  decimalSeparator,
-}: {
-  yearlyData: YearlyBudgetData;
-  decimalSeparator: string;
-}) {
-  const chartData = useMemo(() => {
-    const currentMonth = new Date().toISOString().slice(0, 7); // YYYY-MM
-    // display-boundary: geometry only. Recharts needs JS numbers; these are
-    // terminal coercions of already-quantized strings, with NO arithmetic
-    // performed on the floats.
-    return yearlyData.periods.map((p) => ({
-      name: MONTH_LABELS[getMonthIndex(p.periodStart)],
-      baseLimit: parseFloat(p.baseLimit),
-      eventContribution: parseFloat(p.eventContribution),
-      // Spend line stops at the current month - future months have no spend
-      // yet and a line dropping to 0 would mislead.
-      spent:
-        p.periodStart.slice(0, 7) > currentMonth ? null : parseFloat(p.spent),
-    }));
-  }, [yearlyData.periods]);
-
-  return (
-    <div className="w-full mb-4" style={{ height: 280 }}>
-      <ResponsiveContainer width="100%" height="100%">
-        <ComposedChart data={chartData} barCategoryGap="20%">
-          <CartesianGrid {...chartGridStyle} vertical={false} />
-          <XAxis
-            dataKey="name"
-            {...chartAxisStyle}
-          />
-          <YAxis
-            {...chartAxisStyle}
-          />
-          <Tooltip
-            formatter={(value: number) =>
-              formatMoney(
-                String(value),
-                yearlyData.budget.currency,
-                decimalSeparator as ',' | '.',
-              )
-            }
-            {...chartTooltipStyle}
-          />
-          <Legend wrapperStyle={{ fontSize: 'var(--fs-body-sm)' }} />
-          {/* Stacked allocation: base monthly budget + events on top. */}
-          <Bar
-            dataKey="baseLimit"
-            name="Monthly budget"
-            stackId="alloc"
-            fill="var(--primary)"
-          />
-          <Bar
-            dataKey="eventContribution"
-            name="Events"
-            stackId="alloc"
-            fill="var(--viz-2)"
-            radius={[3, 3, 0, 0]}
-          />
-          {/* Actual spend, drawn over the bars; stops at the current month. */}
-          <Line
-            type="linear"
-            dataKey="spent"
-            name="Spent"
-            stroke="var(--text)"
-            strokeWidth={2}
-            dot={{ r: 3, fill: 'var(--text)', strokeWidth: 0 }}
-            activeDot={{ r: 4 }}
-            connectNulls={false}
-            isAnimationActive={false}
-          />
-        </ComposedChart>
-      </ResponsiveContainer>
-    </div>
-  );
-}
 
 function AnnualBreakdownTable({
   yearlyData,
@@ -1827,13 +1644,13 @@ function CreateBudgetModal({
     <Modal open={open} onClose={onClose} title={`Create budget for ${year}`}>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Select
-          label="Start Month"
+          label="Start month"
           value={startMonth}
           onChange={(e) => setStartMonth(e.target.value)}
           options={MONTH_OPTIONS}
         />
         <Select
-          label="End Month"
+          label="End month"
           value={endMonth}
           onChange={(e) => setEndMonth(e.target.value)}
           options={MONTH_OPTIONS}
@@ -1845,7 +1662,7 @@ function CreateBudgetModal({
           options={RHYTHM_OPTIONS}
         />
         <Input
-          label="Limit Amount"
+          label="Limit amount"
           type="number"
           min="0"
           step="0.01"
@@ -1928,7 +1745,7 @@ function EditPeriodModal({
     >
       <div className="flex flex-col gap-4">
         <Input
-          label="Limit Amount"
+          label="Limit amount"
           type="number"
           min="0"
           step="0.01"
@@ -2130,10 +1947,10 @@ function CreateEventModal({
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
         <Input label="Name" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Trip to Japan" />
         <Input label="Description" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Optional" />
-        <Input label="Limit Amount" type="number" min="0" step="0.01" value={limit} onChange={(e) => setLimit(e.target.value)} placeholder="e.g. 1500" />
+        <Input label="Limit amount" type="number" min="0" step="0.01" value={limit} onChange={(e) => setLimit(e.target.value)} placeholder="e.g. 1500" />
         <CurrencyPicker label="Currency" value={currency} onChange={setCurrency} />
-        <Input label="Start Date" type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
-        <Input label="End Date" type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
+        <Input label="Start date" type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
+        <Input label="End date" type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
       </div>
       <div className="flex flex-col gap-3 mb-3">
         <label
@@ -2298,10 +2115,10 @@ function EditEventModal({
       <div className="flex flex-col gap-3 mb-4">
         <Input label="Name" value={name} onChange={(e) => setName(e.target.value)} />
         <Input label="Description" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Optional" />
-        <Input label="Limit Amount" type="number" min="0" step="0.01" value={limit} onChange={(e) => setLimit(e.target.value)} />
+        <Input label="Limit amount" type="number" min="0" step="0.01" value={limit} onChange={(e) => setLimit(e.target.value)} />
         <div className="grid grid-cols-2 gap-3">
-          <Input label="Start Date" type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
-          <Input label="End Date" type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
+          <Input label="Start date" type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
+          <Input label="End date" type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
         </div>
         <label
           className="flex flex-col gap-1 cursor-pointer"
@@ -2551,25 +2368,25 @@ function RecurringCostsSection({
   const hasRows = data.rows.length > 0;
 
   return (
-    /* px-5 matches the Card's p-5 inset so this chrome-free section's text
-       column lines up with the Events card content above it. */
-    <div className="mt-6 px-5">
+    <div
+      className="mb-4 p-5"
+      style={{
+        borderRadius: 'var(--radius-2)',
+        backgroundColor: 'var(--surface)',
+        border: '1px solid var(--border)',
+        boxShadow: 'var(--elev-1)',
+      }}
+    >
       {actionErr && (
         <p className="text-sm mb-2" style={{ color: 'var(--danger)' }}>
           {actionErr}
         </p>
       )}
       <div className="flex items-center gap-2 mb-3">
-        <Repeat2 size={16} aria-hidden style={{ color: 'var(--viz-3, #7c3aed)' }} />
-        <h3
-          style={{
-            color: 'var(--text)',
-            fontSize: 'var(--fs-body)',
-            fontWeight: 'var(--fw-semibold)',
-          }}
-        >
+        <Repeat2 size={14} aria-hidden style={{ color: 'var(--text-muted)' }} />
+        <p className="uppercase" style={UPPERCASE_LABEL}>
           Recurring costs
-        </h3>
+        </p>
       </div>
 
       {!hasRows ? (
@@ -2602,8 +2419,7 @@ function RecurringCostsSection({
                 key={row.series.id}
                 className="rounded-lg p-3"
                 style={{
-                  backgroundColor: 'var(--card-bg, var(--surface))',
-                  border: '1px solid var(--border)',
+                  backgroundColor: 'var(--surface-alt)',
                 }}
               >
                 <div className="flex items-start justify-between gap-2">
@@ -2638,8 +2454,7 @@ function RecurringCostsSection({
                   <div className="flex items-center gap-1 shrink-0">
                     <button
                       onClick={() => setEditing(row.series)}
-                      className="p-1.5 rounded transition-opacity hover:opacity-80 cursor-pointer"
-                      style={{ color: 'var(--text-muted)' }}
+                      className="kk-icon-btn"
                       title="Edit"
                     >
                       <Pencil size={14} />

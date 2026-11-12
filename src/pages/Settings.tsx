@@ -287,9 +287,12 @@ export function Settings() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
         <Card>
+          <p className="uppercase mb-4" style={UPPERCASE_LABEL}>
+            Preferences
+          </p>
           <div className="flex flex-col gap-5">
             <CurrencyPicker
-              label="Preferred Currency"
+              label="Preferred currency"
               value={currency}
               onChange={setCurrency}
             />
@@ -305,7 +308,7 @@ export function Settings() {
             />
 
             <Select
-              label="Decimal Separator"
+              label="Decimal separator"
               value={decSep}
               onChange={(e) => setDecSep(e.target.value as DecimalSeparator)}
               options={[

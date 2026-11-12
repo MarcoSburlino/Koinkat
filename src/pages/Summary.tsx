@@ -1,8 +1,10 @@
 import { UPPERCASE_LABEL } from '../lib/label-styles';
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
-import { chartTooltipStyle, chartAxisStyle, chartGridStyle } from '../lib/chart-style';
+import { ChartCard } from '../components/charts/ChartCard';
+import { CashflowChart } from '../components/charts/CashflowChart';
+import { TrendChart } from '../components/charts/TrendChart';
+import { StatTile } from '../components/ui/StatTile';
 import { dec } from '../domain/money';
 import { TrendingUp, TrendingDown, ChevronRight } from 'lucide-react';
 import { Card } from '../components/ui/Card';
@@ -11,7 +13,7 @@ import { Select } from '../components/ui/Select';
 import { PageHeader } from '../components/layout/PageHeader';
 import { useAppStore } from '../stores/app-store';
 import { useDataChanged } from '../hooks/useDataChanged';
-import { formatAmount, formatMoney } from '../lib/format';
+import { formatAmount } from '../lib/format';
 import * as accountService from '../services/account-service';
 import { availableYears, buildYearlySummary, sumNonBudgetedExpenses } from '../services/reporting-service';
 import type { Account } from '../types/models';
@@ -100,13 +102,19 @@ export function Summary() {
     loadSummary();
   }, [loadSummary]);
 
-  // Build chart data from payload
-  const chartData = data
-    ? data.chartPayload.labels.map((label, i) => ({
-        month: label,
-        Income: data.chartPayload.income[i],
-        Expenses: data.chartPayload.expense[i],
-      }))
+  // Chart data from the string rows (the numeric chartPayload is only
+  // geometry; tooltips must format the exact decimal strings).
+  const cashflowMonths = data
+    ? data.rows.map((r) => ({ label: r.label, income: r.income, expense: r.expense }))
+    : [];
+  // Balance trend: month-end balances up to the current month of the
+  // current year (future months would repeat the last balance as a flat,
+  // made-up tail).
+  const now = new Date();
+  const balancePoints = data
+    ? data.rows
+        .filter((r) => selectedYear < now.getFullYear() || r.month <= now.getMonth() + 1)
+        .map((r) => ({ label: r.label, value: r.balance }))
     : [];
 
   // Filter options
@@ -143,36 +151,36 @@ export function Summary() {
     <div>
       <PageHeader
         serif
-        label="Overview"
+        label="Insights"
         title="Yearly summary"
         subtitle="How your income, spending and balance moved across the year."
+        right={
+          <>
+            <Select
+              aria-label="Account"
+              className="h-9"
+              options={accountOptions}
+              value={selectedAccountId}
+              onChange={(e) => setSelectedAccountId(e.target.value)}
+            />
+            <Select
+              aria-label="Year"
+              className="h-9"
+              options={yearOptions}
+              value={String(selectedYear)}
+              onChange={(e) => setSelectedYear(Number(e.target.value))}
+            />
+          </>
+        }
       />
 
       {/* One-time tip: month rows drill into Analysis, which is otherwise
           only discoverable by hovering. Sits directly under the header,
           same slot as the other pages' tips. */}
       <InfoBanner storageKey="koinkat.tip.summaryDrill" className="mb-6">
-        Click a month in the table below to see that month's spending by
-        category.
+        Click a month in the chart or the table to see that month's spending
+        by category.
       </InfoBanner>
-
-      {/* Filters - carded, matching the Analysis page's filter treatment. */}
-      <Card className="mb-6">
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <Select
-            label="Year"
-            options={yearOptions}
-            value={String(selectedYear)}
-            onChange={(e) => setSelectedYear(Number(e.target.value))}
-          />
-          <Select
-            label="Account"
-            options={accountOptions}
-            value={selectedAccountId}
-            onChange={(e) => setSelectedAccountId(e.target.value)}
-          />
-        </div>
-      </Card>
 
       {loading ? (
         <Card>
@@ -194,37 +202,46 @@ export function Summary() {
         </Card>
       ) : (
         <>
-          {/* Metrics bar */}
+          {/* Totals */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-3">
-            <MetricCard
+            <StatTile
               label="Starting balance"
               amount={data.totals.startingBalance}
               currency={settings.preferredCurrency}
               decimalSeparator={settings.decimalSeparator}
+              hint="On 1 January"
             />
-            <MetricCard
-              label="Total income"
+            <StatTile
+              label="Money in"
               amount={data.totals.income}
               currency={settings.preferredCurrency}
               decimalSeparator={settings.decimalSeparator}
-              tint="var(--income)"
+              tone="income"
             />
-            <MetricCard
-              label="Total expenses"
+            <StatTile
+              label="Money out"
               amount={data.totals.expense}
               currency={settings.preferredCurrency}
               decimalSeparator={settings.decimalSeparator}
-              tint="var(--expense)"
-              subLabel="Excluded from budget"
-              subAmount={dec(nonBudgeted).gt(0) ? nonBudgeted : undefined}
+              tone="expense"
+              hint={
+                dec(nonBudgeted).gt(0) ? (
+                  <>
+                    <span data-privacy-field className="amount">
+                      {formatAmount(nonBudgeted, settings.decimalSeparator)} {settings.preferredCurrency}
+                    </span>{' '}
+                    not in the budget
+                  </>
+                ) : undefined
+              }
             />
-            <MetricCard
-              label="Net profit"
+            <StatTile
+              label="Kept"
               amount={data.totals.profit}
               currency={settings.preferredCurrency}
               decimalSeparator={settings.decimalSeparator}
-              tint={profitPositive ? 'var(--income)' : 'var(--expense)'}
-              subText={savingsRateText ?? undefined}
+              tone={profitPositive ? 'income' : 'expense'}
+              hint={savingsRateText ?? undefined}
             />
           </div>
 
@@ -239,46 +256,42 @@ export function Summary() {
               Aggregated across{' '}
               {data.totals.contributingCurrencies
                 .map((c) => c.toUpperCase())
-                .join(', ')}{' '}
+                .join(', ')}
               , converted to {settings.preferredCurrency} at today's rates.
             </p>
           )}
 
-          {/* Bar chart */}
-          <Card className="mb-6">
-            <p
-              className="uppercase mb-4"
-              style={UPPERCASE_LABEL}
+          <div className="grid grid-cols-1 xl:grid-cols-[3fr_2fr] gap-4 mb-6">
+            <ChartCard
+              title="Money in and out"
+              hint="Click a month to see where the money went."
+              legend={[
+                { label: 'In', color: 'var(--income)' },
+                { label: 'Out', color: 'var(--expense)' },
+              ]}
             >
-              Monthly income vs expenses
-            </p>
-            <div className="w-full" style={{ height: 320 }}>
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={chartData} barGap={4}>
-                  <CartesianGrid {...chartGridStyle} />
-                  <XAxis
-                    dataKey="month"
-                    {...chartAxisStyle}
-                  />
-                  <YAxis
-                    {...chartAxisStyle}
-                    width={70}
-                  />
-                  <Tooltip
-                    formatter={(value: number) =>
-                      formatMoney(String(value), settings.preferredCurrency, settings.decimalSeparator)
-                    }
-                    {...chartTooltipStyle}
-                  />
-                  <Legend
-                    wrapperStyle={{ color: 'var(--text-muted)', fontSize: 'var(--fs-body-sm)' }}
-                  />
-                  <Bar dataKey="Income" fill="var(--income)" radius={[3, 3, 0, 0]} />
-                  <Bar dataKey="Expenses" fill="var(--expense)" radius={[3, 3, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          </Card>
+              <CashflowChart
+                months={cashflowMonths}
+                currency={settings.preferredCurrency}
+                decimalSeparator={settings.decimalSeparator}
+                onSelectMonth={(i) =>
+                  navigate(`/analysis?year=${selectedYear}&month=${data.rows[i].month}&type=expense`)
+                }
+              />
+            </ChartCard>
+            <ChartCard
+              title="Balance"
+              hint="At the end of each month, across the selected accounts."
+            >
+              <TrendChart
+                points={balancePoints}
+                currency={settings.preferredCurrency}
+                decimalSeparator={settings.decimalSeparator}
+                seriesLabel="Balance"
+                height={280}
+              />
+            </ChartCard>
+          </div>
 
           {/* Monthly breakdown table */}
           <Card>
@@ -426,72 +439,5 @@ export function Summary() {
         </>
       )}
     </div>
-  );
-}
-
-// ── Inline metric card for the top row ────────────────────────────────────
-
-interface MetricCardProps {
-  label: string;
-  amount: string;
-  currency: string;
-  decimalSeparator: string;
-  /** Optional color tint for the amount (income / expense / primary). */
-  tint?: string;
-  /** Optional secondary line below the amount (e.g. "Excluded from budget"). */
-  subLabel?: string;
-  /** Decimal-string amount for the secondary line; renders it when set. */
-  subAmount?: string;
-  /** Free-text secondary line (e.g. the savings rate). */
-  subText?: string;
-}
-
-function MetricCard({
-  label,
-  amount,
-  currency,
-  decimalSeparator,
-  tint,
-  subLabel,
-  subAmount,
-  subText,
-}: MetricCardProps) {
-  return (
-    <Card>
-      <p
-        className="uppercase mb-2"
-        style={UPPERCASE_LABEL}
-      >
-        {label}
-      </p>
-      <div className="flex items-baseline" data-privacy-field>
-        <span
-          className="amount amount-md"
-          style={{ color: tint ?? 'var(--text)' }}
-        >
-          {formatAmount(amount, decimalSeparator)}
-        </span>
-        <span className="currency-code">{currency}</span>
-      </div>
-      {subAmount !== undefined && (
-        <p
-          className="mt-1"
-          style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-body-sm)' }}
-        >
-          {subLabel}{' '}
-          <span data-privacy-field>
-            {formatAmount(subAmount, decimalSeparator)} {currency}
-          </span>
-        </p>
-      )}
-      {subText !== undefined && (
-        <p
-          className="mt-1"
-          style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-body-sm)' }}
-        >
-          {subText}
-        </p>
-      )}
-    </Card>
   );
 }

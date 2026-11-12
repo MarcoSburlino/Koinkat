@@ -380,8 +380,8 @@ export function Rules() {
                       </button>
                       <button
                         onClick={() => setDeleteTarget(rule)}
-                        className="p-1 rounded cursor-pointer transition-opacity hover:opacity-70 ml-1"
-                        style={{ color: 'var(--danger)' }}
+                        className="kk-icon-btn ml-1"
+                        data-tone="danger"
                         title="Delete"
                       >
                         <Trash2 size={14} />

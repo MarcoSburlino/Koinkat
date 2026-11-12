@@ -34,7 +34,7 @@ export function Select({ label, error, options, id, className = '', onFocus, onB
       )}
       <select
         id={selectId}
-        className={`h-10 px-3 outline-none cursor-pointer transition-[border-color,box-shadow] ${className}`}
+        className={`kk-select h-10 pl-3 pr-9 outline-none cursor-pointer transition-[border-color,box-shadow] ${className}`}
         style={{
           borderRadius: 'var(--radius-1)',
           backgroundColor: 'var(--input-bg)',

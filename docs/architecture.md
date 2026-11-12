@@ -43,8 +43,12 @@ src/
 ├── vite-env.d.ts          # Compile-time flag declarations
 ├── assets/                # Static images
 ├── components/
-│   ├── layout/            # Shell, Sidebar, Header, PageHeader
-│   ├── ui/                # Button, Card, Input, Modal, Select, etc.
+│   ├── charts/            # Shared chart kit: ChartCard, ChartTooltip, ChartLegend,
+│   │                      #   MonthPaceChart, AnnualBudgetChart, CashflowChart,
+│   │                      #   TrendChart, SegmentedBar (chrome in lib/chart-style.ts)
+│   ├── dashboard/         # NetWorthCard, BalanceTrendCard
+│   ├── layout/            # Shell, Sidebar (grouped: Money/Insights/Setup), Header, PageHeader
+│   ├── ui/                # Button, Card, Input, Modal, Select, StatTile, Meter, etc.
 │   └── BankSetupGuide.tsx # First-run linked-mode walkthrough
 ├── data/
 │   └── mcc-mappings.ts    # Static MCC → category seed table

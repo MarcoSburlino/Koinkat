@@ -49,7 +49,10 @@ export function CurrencyPicker({
   return (
     <div className="flex flex-col gap-1.5" ref={containerRef}>
       {label && (
-        <span className="text-sm font-medium" style={{ color: 'var(--text)' }}>
+        <span
+          className="font-medium"
+          style={{ color: 'var(--text-secondary)', fontSize: 'var(--fs-body-sm)' }}
+        >
           {label}
         </span>
       )}
