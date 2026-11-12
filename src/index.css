@@ -8,6 +8,7 @@
    ============================================================ */
 
 :root {
+  --demo-brand: #946600;
   /* ── Typography ──────────────────────────────────────────── */
   --font-display: 'DM Serif Display', Georgia, 'Times New Roman', serif;
   --font-sans:    'DM Sans', system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
@@ -203,6 +204,7 @@ html[data-theme="light"] {
 /* ====== THEME: Dark ======================================================= */
 html[data-theme="dark"],
 html.dark {
+  --demo-brand: #f4c542;
   --bg:             #0D1210;
   --surface:        #151A18;
   --surface-alt:    #1E2422;

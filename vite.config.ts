@@ -21,23 +21,14 @@ const sqliteExecArgv: string[] = (() => {
   }
 })();
 
-// Three-build structure:
-//   mode=development : mocks on by default (KOINKAT_EB_REAL=1 switches the
-//                      session to the real EB client); debug routes + sandbox UI visible
-//   mode=demo        : mocks on by default; debug routes hidden; sandbox UI visible
-//   mode=production  : mocks impossible (build aborts if somehow enabled); debug routes removed; sandbox UI hidden
+// Development keeps offline fixtures. Demo uses real HTTP but accepts only
+// provider-verified sandbox credentials. Neither distributable ships mocks.
 export default defineConfig(({ mode }) => {
-  const mocksAllowed = mode === "development" || mode === "demo";
+  const mocksAllowed = mode === "development";
   const debugRoutesAllowed = mode === "development";
   const sandboxUiAllowed = mode === "development" || mode === "demo";
-  // Dev + demo builds activate the fixture-backed mock client by default
-  // so contributors never need a live Enable Banking session to run the
-  // app. Setting KOINKAT_EB_REAL=1 makes a development session use the
-  // real HTTP client instead (for testing against an Enable Banking
-  // sandbox application). Demo always mocks; production never mocks,
-  // regardless of the variable.
+  // The variable affects development only; installed Demo always uses HTTP.
   const mocksOnByDefault =
-    mode === "demo" ||
     (mode === "development" && process.env.KOINKAT_EB_REAL !== "1");
 
   const host = process.env.TAURI_DEV_HOST;
@@ -55,6 +46,7 @@ export default defineConfig(({ mode }) => {
       __KOINKAT_ALLOW_MOCKS__: JSON.stringify(mocksAllowed),
       __KOINKAT_ALLOW_DEBUG_ROUTES__: JSON.stringify(debugRoutesAllowed),
       __KOINKAT_ALLOW_SANDBOX_UI__: JSON.stringify(sandboxUiAllowed),
+      __KOINKAT_DEMO_APP__: JSON.stringify(mode === "demo"),
       __KOINKAT_EB_MOCK_DEFAULT__: JSON.stringify(mocksOnByDefault),
       __APP_VERSION__: JSON.stringify(pkg.version),
     },
@@ -69,6 +61,7 @@ export default defineConfig(({ mode }) => {
       },
     },
     build: {
+      outDir: mode === "demo" ? "dist-demo" : "dist",
       rollupOptions: {
         output: {
           manualChunks(id) {
@@ -98,7 +91,7 @@ function forbidMocksInProductionBundle(mode: string): Plugin {
     name: "koinkat-forbid-mocks-in-production",
     enforce: "post",
     generateBundle(_opts, bundle) {
-      if (mode !== "production") return;
+      if (mode !== "production" && mode !== "demo") return;
       for (const [name, chunk] of Object.entries(bundle)) {
         if (chunk.type !== "chunk") continue;
         const leaked = (chunk.moduleIds ?? []).filter(
@@ -106,7 +99,7 @@ function forbidMocksInProductionBundle(mode: string): Plugin {
         );
         if (leaked.length > 0) {
           throw new Error(
-            `Production bundle leaked mock code in chunk "${name}":\n  ` +
+            `${mode} bundle leaked mock code in chunk "${name}":\n  ` +
               leaked.join("\n  "),
           );
         }

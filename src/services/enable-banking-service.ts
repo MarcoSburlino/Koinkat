@@ -48,7 +48,7 @@ export { EBRateLimitError, EBApiError };
 // every `if (IS_MOCK)` branch below, and leaves the `mockService`
 // namespace import unreferenced - Rollup then tree-shakes the whole
 // `src/mocks/` chunk out of the production bundle.
-// __KOINKAT_EB_MOCK_DEFAULT__ is true only in demo builds.
+// __KOINKAT_EB_MOCK_DEFAULT__ is true only for offline development.
 const IS_MOCK = __KOINKAT_ALLOW_MOCKS__ && __KOINKAT_EB_MOCK_DEFAULT__;
 
 // ── listBanks ──────────────────────────────────────────────────────────

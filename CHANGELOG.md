@@ -6,6 +6,14 @@ uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Changed
+- Koinkat Demo now uses the real Enable Banking sandbox flow instead of
+  offline bank fixtures. It has yellow branding, a separate executable and
+  credential namespace, and its own callback scheme. Production credentials
+  are rejected using provider application metadata. Offline fixtures remain
+  available in development. The Fedora RPM and native UI have been checked;
+  installation and live sandbox verification are pending. See `docs/demo.md`.
+
 ## [0.1.7] - 2026-09-27
 
 The Summary page shows your real balances.

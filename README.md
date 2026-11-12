@@ -1082,10 +1082,13 @@ Three modes, each producing a verifiably different bundle:
 | Mode | Command | Mocks | `/rules` route | Sandbox card | Tauri ID |
 |---|---|---|---|---|---|
 | Development | `npm run tauri:dev` | on | visible | visible | `com.koinkat.app` |
-| Demo | `npm run tauri:build:demo` | on | hidden | visible | `com.koinkat.app.demo` |
+| Demo | `npm run tauri:build:demo` | forbidden | hidden | visible | `com.koinkat.app.demo` |
 | Production | `npm run tauri:build` | **build fails if leaked** | removed | hidden | `com.koinkat.app` |
 
-Demo installs side-by-side with production (different identifier). See
+Demo uses real Enable Banking sandbox requests, with yellow branding and
+separate storage, executable, credential namespace and callback scheme.
+Use `npm run tauri:dev:demo` for isolated development. See
+[`docs/demo.md`](docs/demo.md) for setup and recording instructions and
 [`docs/development.md`](docs/development.md) for the full setup and the
 three-layer defense that keeps mocks out of production binaries.
 

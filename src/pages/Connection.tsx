@@ -1,4 +1,5 @@
 import { DEFAULT_CALLBACK_URL } from '../lib/constants';
+import { IS_DEMO_APP } from '../lib/build-profile';
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -276,9 +277,9 @@ export function Connection() {
             {activeUser ? `Welcome back, ${activeUser.name}` : 'Welcome'}
           </h1>
           <p className="text-sm md:text-base max-w-2xl" style={{ color: 'var(--text-muted)' }}>
-            Pick a workspace to enter, or add a new one. Every workspace has
-            its own accounts, budgets and categories: link a real bank, try
-            the sandbox, or track things by hand.
+            {IS_DEMO_APP
+              ? 'Pick a demo workspace, or create one with Enable Banking sandbox data or fictional manual accounts.'
+              : 'Pick a workspace to enter, or add a new one. Every workspace has its own accounts, budgets and categories: link a real bank, try the sandbox, or track things by hand.'}
           </p>
         </div>
 
@@ -319,10 +320,10 @@ export function Connection() {
           </h2>
           <div
             className={`grid grid-cols-1 ${
-              __KOINKAT_ALLOW_SANDBOX_UI__ ? 'md:grid-cols-3' : 'md:grid-cols-2'
+              __KOINKAT_ALLOW_SANDBOX_UI__ && !IS_DEMO_APP ? 'md:grid-cols-3' : 'md:grid-cols-2'
             } gap-4`}
           >
-            <ModeCard
+            {!IS_DEMO_APP && <ModeCard
               icon={<Landmark size={22} style={{ color: 'var(--primary)' }} />}
               iconTint="var(--primary)"
               title="Connect a bank"
@@ -332,7 +333,7 @@ export function Connection() {
                 resetWizard();
                 setMode('linked');
               }}
-            />
+            />}
             {/* Sandbox workspace creation is hidden in production builds.
                 Existing sandbox workspaces in the DB remain fully functional -
                 only the "create a new sandbox workspace" surface is gated. */}

@@ -14,6 +14,9 @@ import '@fontsource/jetbrains-mono/500.css';
 import '@fontsource/jetbrains-mono/600.css';
 import { App } from './App';
 import './index.css';
+import { IS_DEMO_APP } from './lib/build-profile';
+
+if (IS_DEMO_APP) document.title = 'Koinkat Demo';
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>

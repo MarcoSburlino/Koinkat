@@ -25,7 +25,7 @@ bundle.
 | Mode | Command | Mocks | Debug routes | Sandbox UI | Tauri identifier |
 |---|---|---|---|---|---|
 | `development` | `npm run dev` / `npm run tauri:dev` | On by default | Visible | Visible | `com.koinkat.app` |
-| `demo` | `npm run build:demo` / `npm run tauri:build:demo` | On by default | Hidden | Visible | `com.koinkat.app.demo` |
+| `demo` | `npm run build:demo` / `npm run tauri:build:demo` | Forbidden | Hidden | Visible | `com.koinkat.app.demo` |
 | `production` | `npm run build` / `npm run tauri:build` | **Build fails if present** | Removed | Hidden | `com.koinkat.app` |
 
 ### What each flag controls
@@ -37,14 +37,22 @@ imports) where the literal is `false`.
 
 | Flag | dev | demo | prod | Purpose |
 |---|---|---|---|---|
-| `__KOINKAT_ALLOW_MOCKS__` | `true` | `true` | `false` | Whether `src/mocks/` may be imported at all |
-| `__KOINKAT_EB_MOCK_DEFAULT__` | `true` unless `KOINKAT_EB_REAL=1` | `true` | `false` | Whether the dispatcher in `src/services/enable-banking-service.ts` actually routes to the mock |
+| `__KOINKAT_ALLOW_MOCKS__` | `true` | `false` | `false` | Whether `src/mocks/` may be imported at all |
+| `__KOINKAT_EB_MOCK_DEFAULT__` | `true` unless `KOINKAT_EB_REAL=1` | `false` | `false` | Whether the dispatcher in `src/services/enable-banking-service.ts` actually routes to the mock |
+| `__KOINKAT_DEMO_APP__` | `false` | `true` | `false` | Sandbox-only provider checks, separate callback and Demo branding |
 | `__KOINKAT_ALLOW_DEBUG_ROUTES__` | `true` | `false` | `false` | Whether `/rules` is registered in the router |
 | `__KOINKAT_ALLOW_SANDBOX_UI__` | `true` | `true` | `false` | Whether the Sandbox card is rendered in the workspace-creation hub |
 
 The sandbox **runtime** stays intact across all modes - existing users with
 sandbox workspaces keep working after a production build. Only the "create
 a new sandbox workspace" UI surface is gated.
+
+Demo uses the real HTTP client, verifies `/application` reports an active
+`SANDBOX` application and blocks production workspace/credential creation.
+Use `npm run tauri:dev:demo` for isolated development; ordinary `tauri:dev`
+shares the production identifier. Demo assets go to `dist-demo/`, with a
+separate binary, icons, scheme and credential namespace. Both demo and
+production bundles run the mock-leak scanner. See [demo.md](demo.md).
 
 ### Three-layer defense that mocks never reach production
 
@@ -65,7 +73,8 @@ a new sandbox workspace" UI surface is gated.
 | `npm run dev` | Vite dev server, port 1420. Typically run via `npm run tauri:dev`. |
 | `npm run tauri:dev` | Full desktop dev - Vite + Tauri window with hot reload. |
 | `npm run build` | Production bundle (`tsc && vite build --mode production`). |
-| `npm run build:demo` | Demo bundle (`tsc && vite build --mode demo`) with mocks on for tutorials / marketing. |
+| `npm run build:demo` | Demo bundle (`tsc && vite build --mode demo`), real sandbox HTTP, no offline fixtures. |
+| `npm run tauri:dev:demo` | Isolated desktop Demo development with the Demo config and frontend mode. |
 | `npm run tauri:build` | Production Tauri installer. |
 | `npm run tauri:build:demo` | Demo Tauri installer (`com.koinkat.app.demo`), installable side-by-side with production. |
 | `npm run preview` | `vite preview` - serve `dist/` for manual QA. |
@@ -108,8 +117,9 @@ $env:KOINKAT_EB_REAL = '1'; npm run tauri:dev    # PowerShell
 KOINKAT_EB_REAL=1 npm run tauri:dev              # bash / zsh
 ```
 
-The variable only affects `development` mode: demo always mocks, and
-production never mocks regardless of it.
+The variable only affects `development` mode: demo and production never
+use offline mocks regardless of it. Prefer `tauri:dev:demo` for sandbox work
+on a laptop with a personal Koinkat install.
 
 Then, in the Connection page (account hub):
 

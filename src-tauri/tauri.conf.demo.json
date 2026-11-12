@@ -2,10 +2,39 @@
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "Koinkat Demo",
   "identifier": "com.koinkat.app.demo",
+  "mainBinaryName": "koinkat-demo",
   "build": {
+    "frontendDist": "../dist-demo",
+    "beforeDevCommand": "npm run dev:demo",
     "beforeBuildCommand": "npm run build:demo"
   },
+  "app": {
+    "enableGTKAppId": true,
+    "windows": [
+      {
+        "label": "main",
+        "title": "Koinkat Demo",
+        "width": 1280,
+        "height": 800,
+        "minWidth": 900,
+        "minHeight": 600,
+        "center": true
+      }
+    ]
+  },
+  "plugins": {
+    "deep-link": {
+      "desktop": { "schemes": ["koinkat-demo"] }
+    }
+  },
   "bundle": {
+    "icon": [
+      "icons-demo/32x32.png",
+      "icons-demo/128x128.png",
+      "icons-demo/128x128@2x.png",
+      "icons-demo/icon.icns",
+      "icons-demo/icon.ico"
+    ],
     "shortDescription": "Demo build of Koinkat for tutorials. Not for production use."
   }
 }

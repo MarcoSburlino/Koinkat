@@ -1,4 +1,5 @@
 import { DEFAULT_CALLBACK_URL } from '../lib/constants';
+import { IS_DEMO_APP } from '../lib/build-profile';
 import { UPPERCASE_LABEL } from '../lib/label-styles';
 import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
@@ -932,7 +933,7 @@ function BankCredentialsCard({ onOpenGuide }: { onOpenGuide: () => void }) {
   const [pemFileName, setPemFileName] = useState('');
   const [pemHadInitialValue, setPemHadInitialValue] = useState(false);
   const [redirectUrl, setRedirectUrl] = useState(DEFAULT_CALLBACK_URL);
-  const [environment, setEnvironment] = useState<BankEnvironment>('production');
+  const [environment, setEnvironment] = useState<BankEnvironment>(IS_DEMO_APP ? 'sandbox' : 'production');
   // Where the saved key lives: OS keychain (normal) or the local database
   // (fallback when no credential store is available). Drives a small notice.
   const [pemStorage, setPemStorage] = useState<'keychain' | 'database' | 'none'>('none');

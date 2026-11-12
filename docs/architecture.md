@@ -328,10 +328,14 @@ sidebar shell. Shell renders it directly when `view === 'accountHub'`.
   webview's own load.
 - `tauri.conf.demo.json` - a thin override merged on top via `-c`.
   Sets `productName: "Koinkat Demo"`, `identifier: "com.koinkat.app.demo"`,
-  `beforeBuildCommand: "npm run build:demo"`. Side-by-side install with
-  production.
+  binary `koinkat-demo`, separate icons, `koinkat-demo://`, the Demo frontend
+  commands and `dist-demo/`. Enables the GTK app ID for separate GNOME grouping.
+  The Fedora RPM paths have been checked against the personal app with no
+  collisions. Native onboarding and persistence passed with temporary data;
+  installation and its launcher check are pending.
 - `secrets.rs` - OS credential store (`secret_set/get/delete`) for the
-  Enable Banking private key.
+  Enable Banking private key. Trusted native app identity selects service
+  `koinkat-demo` for Demo; the personal app retains service `koinkat`.
 - `db_tx.rs` - connection-owning SQLite transactions
   (`tx_begin/execute/select/commit/rollback`). See below.
 - `Cargo.toml` - Rust deps are Tauri plugin crates (`sql`, `http`, `fs`,
@@ -402,8 +406,9 @@ against real files on every test run.
 
 ```
 vite.config.ts (define):
-    __KOINKAT_ALLOW_MOCKS__       : true (dev,demo)  | false (prod)
-    __KOINKAT_EB_MOCK_DEFAULT__   : true (dev,demo)  | false (prod)
+    __KOINKAT_ALLOW_MOCKS__       : true (dev)       | false (demo,prod)
+    __KOINKAT_EB_MOCK_DEFAULT__   : true (dev default) | false (demo,prod)
+    __KOINKAT_DEMO_APP__          : true (demo)      | false (dev,prod)
     __KOINKAT_ALLOW_DEBUG_ROUTES__: true (dev only)  | false (demo,prod)
     __KOINKAT_ALLOW_SANDBOX_UI__  : true (dev,demo)  | false (prod)
 
@@ -424,3 +429,13 @@ Defense layers in production:
   3. `forbidMocksInProductionBundle` plugin scans every emitted chunk's
      `moduleIds` and aborts the build if any `/src/mocks/` slips through.
 ```
+
+Demo runs the same mock-leak scanner. `src/lib/build-profile.ts` exposes its
+compile-time identity for branding, workspace/credential restrictions and
+callback selection. `enable-banking-service-real.ts` verifies the signed
+application's metadata reports `SANDBOX`, its matching ID and active status
+before any bank endpoint. Verification is cached for at most five minutes
+per workspace/key/credential revision. `credential-revision.ts` invalidates
+in-flight operations and cache reuse on saves and clears; workspace changes
+cancel before bank access. Production requests retain their existing behavior.
+See [demo.md](demo.md) for the provider pilot and remaining runtime checks.

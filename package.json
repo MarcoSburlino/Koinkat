@@ -11,11 +11,13 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:demo": "vite --mode demo",
     "build": "tsc && vite build --mode production",
     "build:demo": "tsc && vite build --mode demo",
     "preview": "vite preview",
     "tauri": "tauri",
     "tauri:dev": "tauri dev",
+    "tauri:dev:demo": "tauri dev --config src-tauri/tauri.conf.demo.json",
     "tauri:build": "tauri build",
     "tauri:build:demo": "tauri build --config src-tauri/tauri.conf.demo.json",
     "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.test.json",

@@ -8,6 +8,7 @@ import {
 import type { KoinkatAccount, KoinkatAccountRow } from '../types/models';
 import { toKoinkatAccount } from '../types/models';
 import type { ConnectionType, Theme, DecimalSeparator } from '../types/enums';
+import { IS_DEMO_APP } from '../lib/build-profile';
 
 // ── Seeding ──────────────────────────────────────────────────────────────
 
@@ -68,6 +69,9 @@ export async function createKoinkatAccount(params: {
   decimalSeparator: DecimalSeparator;
   theme: Theme;
 }): Promise<KoinkatAccount> {
+  if (IS_DEMO_APP && params.connectionType === 'linked') {
+    throw new Error('Use a Sandbox workspace in Koinkat Demo.');
+  }
   const name = params.name.trim();
   if (!name) throw new Error('Koinkat account name is required');
 

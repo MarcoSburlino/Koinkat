@@ -1,0 +1,81 @@
+{
+  "accounts": [
+    {
+      "info": {
+        "name": "Alex Morgan - Everyday Denmark (fictional)",
+        "currency": "DKK",
+        "cash_account_type": "CACC",
+        "usage": "PRIV",
+        "account_id": {
+          "other": {
+            "scheme_name": "BBAN",
+            "identification": "00000000000001",
+            "issuer": "Koinkat Demo"
+          }
+        }
+      },
+      "transactions": [
+        {
+          "entry_reference": "koinkat-pilot-salary-1",
+          "transaction_id": "koinkat-pilot-salary-1",
+          "transaction_amount": { "amount": "10000.00", "currency": "DKK" },
+          "credit_debit_indicator": "CRDT",
+          "status": "BOOK",
+          "booking_date": "2026-11-07",
+          "transaction_date": "2026-11-07",
+          "debtor": { "name": "North Star Studio (fictional)" },
+          "remittance_information": ["Fictional salary for sandbox testing"]
+        },
+        {
+          "entry_reference": "koinkat-pilot-rent-1",
+          "transaction_id": "koinkat-pilot-rent-1",
+          "transaction_amount": { "amount": "800.00", "currency": "DKK" },
+          "credit_debit_indicator": "DBIT",
+          "status": "BOOK",
+          "booking_date": "2026-11-08",
+          "transaction_date": "2026-11-08",
+          "creditor": { "name": "Demo Housing (fictional)" },
+          "remittance_information": ["Fictional housing payment"]
+        },
+        {
+          "entry_reference": "koinkat-pilot-cafe-1",
+          "transaction_id": "koinkat-pilot-cafe-1",
+          "transaction_amount": { "amount": "40.00", "currency": "DKK" },
+          "credit_debit_indicator": "DBIT",
+          "status": "BOOK",
+          "booking_date": "2026-11-09",
+          "transaction_date": "2026-11-09",
+          "merchant_category_code": "5814",
+          "creditor": { "name": "Yellow Cat Cafe (fictional)" },
+          "remittance_information": ["Fictional coffee purchase"]
+        },
+        {
+          "entry_reference": "koinkat-pilot-market-1",
+          "transaction_id": "koinkat-pilot-market-1",
+          "transaction_amount": { "amount": "100.00", "currency": "DKK" },
+          "credit_debit_indicator": "DBIT",
+          "status": "BOOK",
+          "booking_date": "2026-11-10",
+          "transaction_date": "2026-11-10",
+          "merchant_category_code": "5411",
+          "creditor": { "name": "Demo Market (fictional)" },
+          "remittance_information": ["Fictional grocery purchase"]
+        }
+      ],
+      "balances": [
+        {
+          "name": "Available balance",
+          "balance_type": "XPCD",
+          "reference_date": "2026-11-10",
+          "balance_amount": { "amount": "9060.00", "currency": "DKK" }
+        },
+        {
+          "name": "Closing booked balance",
+          "balance_type": "CLBD",
+          "reference_date": "2026-11-10",
+          "balance_amount": { "amount": "9060.00", "currency": "DKK" }
+        }
+      ]
+    }
+  ]
+}

@@ -6,7 +6,8 @@
 declare const __KOINKAT_ALLOW_MOCKS__: boolean;
 declare const __KOINKAT_ALLOW_DEBUG_ROUTES__: boolean;
 declare const __KOINKAT_ALLOW_SANDBOX_UI__: boolean;
-// true only in demo builds - activates the fixture-backed mock client.
+declare const __KOINKAT_DEMO_APP__: boolean;
+// Development fixtures; Demo uses the real sandbox HTTP client.
 declare const __KOINKAT_EB_MOCK_DEFAULT__: boolean;
 // App version, sourced from package.json at build time.
 declare const __APP_VERSION__: string;

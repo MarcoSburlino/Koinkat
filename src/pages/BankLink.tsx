@@ -1,4 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { IS_DEMO_APP } from '../lib/build-profile';
+import { parseAuthCallback } from '../lib/oauth-callback';
 import { useNavigate } from 'react-router-dom';
 import { Building2, ExternalLink, Plus, CircleCheckBig, LoaderCircle, ArrowLeft } from 'lucide-react';
 import { format, subDays } from 'date-fns';
@@ -304,19 +306,9 @@ export function BankLink() {
     async function subscribe() {
       const { onOpenUrl } = await import('@tauri-apps/plugin-deep-link');
       unlisten = await onOpenUrl((urls) => {
-        const urlStr = urls[0];
-        if (!urlStr?.startsWith('koinkat://auth-callback')) return;
-
-        let parsed: URL;
-        try {
-          parsed = new URL(urlStr);
-        } catch {
-          return;
-        }
-
-        const code = parsed.searchParams.get('code');
-        const incomingState = parsed.searchParams.get('state');
-        if (!code) return;
+        const callback = urls.map((url) => parseAuthCallback(url)).find(Boolean);
+        if (!callback) return;
+        const { code, state: incomingState } = callback;
 
         const savedRaw = sessionStorage.getItem('koinkat_oauth_state');
         if (!savedRaw) {
@@ -596,7 +588,8 @@ export function BankLink() {
           </InfoBanner>
         )}
         <InfoBanner storageKey="koinkat.bankLinkInfoDismissed" className="mb-4">
-          Before connecting a bank, you must first link it in the{' '}
+          {IS_DEMO_APP ? <>Choose Mock ASPSP to import the fictional data you configured in the </> :
+            <>Before connecting a bank, you must first link it in the </>}
           <button
             onClick={() => open('https://enablebanking.com/cp/applications')}
             className="underline cursor-pointer"
@@ -604,7 +597,8 @@ export function BankLink() {
           >
             Enable Banking Control Panel
           </button>
-          . Go to your Control Panel &rarr; select your app &rarr; click "Activate by linking accounts" &rarr; authenticate with each bank you want to use. Only banks you've linked there will work here.{' '}
+          {IS_DEMO_APP ? '. Sandbox applications activate automatically. ' :
+            '. Go to your Control Panel → select your app → click "Activate by linking accounts" → authenticate with each bank you want to use. Only banks you\'ve linked there will work here. '}
           New to Enable Banking?{' '}
           <button
             type="button"

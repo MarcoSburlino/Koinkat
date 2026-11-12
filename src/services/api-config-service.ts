@@ -4,6 +4,8 @@ import type { ApiConfig, ApiConfigRow } from '../types/models';
 import { toApiConfig, EMPTY_API_CONFIG } from '../types/models';
 import type { BankEnvironment } from '../types/enums';
 import { requireActiveKoinkatAccountId } from '../lib/active-koinkat-account';
+import { IS_DEMO_APP } from '../lib/build-profile';
+import { markCredentialsChanged } from '../lib/credential-revision';
 
 /**
  * Where the Enable Banking private key lives.
@@ -120,6 +122,10 @@ export async function saveCredentials(params: {
   environment: BankEnvironment;
   redirectUrl: string;
 }): Promise<void> {
+  if (IS_DEMO_APP && params.environment !== 'sandbox') {
+    throw new Error('Koinkat Demo accepts only Enable Banking sandbox credentials.');
+  }
+  markCredentialsChanged();
   const koinkatAccountId = requireActiveKoinkatAccountId();
   const isSandbox = params.environment === 'sandbox' ? 1 : 0;
 
@@ -162,6 +168,7 @@ export async function saveCredentials(params: {
 }
 
 export async function clearCredentials(exec?: DbExecutor): Promise<void> {
+  markCredentialsChanged();
   const koinkatAccountId = requireActiveKoinkatAccountId();
   const db = exec ?? (await getDb());
   pemCache.delete(koinkatAccountId);
@@ -209,6 +216,7 @@ export async function getPemStorage(): Promise<'keychain' | 'database' | 'none'>
  * active one (or may already be gone from the DB) when teardown runs.
  */
 export async function deletePemSecret(koinkatAccountId: string): Promise<void> {
+  markCredentialsChanged();
   pemCache.delete(koinkatAccountId);
   try {
     await keychainDelete(pemAccount(koinkatAccountId));
