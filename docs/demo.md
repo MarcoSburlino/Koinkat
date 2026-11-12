@@ -6,22 +6,21 @@ Sandbox application's credentials. The normal app keeps its existing identity.
 
 Implementation roadmap and current status: [demo-sandbox.md](plans/demo-sandbox.md).
 
-## Current installation handoff
+## Installed app and sandbox handoff
 
 The Fedora release RPM is built and inspected. It has no file-path overlap
 with the installed `koinkat` package. Rust compilation, six native IPC tests,
 and actual release-app onboarding, workspace/account creation and persistence
 checks passed using temporary fictional profiles. The callback is deployed.
-System installation is the next step requiring Marco's local sudo password:
+Marco installed and opened Demo on 2026-11-11. RPM verification passed, the
+running executable is `/usr/bin/koinkat-demo`, and the registered Demo handler
+targets that installed binary. A second launch focused the existing instance.
 
-```bash
-sudo dnf install '/home/sbu/Projects/Koinkat/src-tauri/target/release/bundle/rpm/Koinkat Demo-0.1.7-1.x86_64.rpm'
-```
-
-Then open **Koinkat Demo** from GNOME. The installed app should start with
-fresh onboarding; native test profiles were under `/tmp/`, not the default
-app directories. The real Enable Banking sandbox flow remains untested until
-Marco creates the application and completes browser consent below.
+The next step needs Marco's Enable Banking login: register the Sandbox
+application below, then create and verify a Sandbox workspace in Demo.
+Pause at bank selection until Mock ASPSP data is configured. Native test
+profiles were under `/tmp/`; no test records were copied into the installed
+profile. The live provider flow remains unverified.
 
 ## Build on Fedora
 
@@ -82,15 +81,16 @@ verified. No provider login or credentials have been configured by the agent.
 2. Create a **Sandbox** API application named `Koinkat Demo`. Keep browser key
    generation selected and register the exact Demo redirect URL from the table.
 3. Save the downloaded PEM privately and back it up. Note its application ID.
-4. Open Mock ASPSPs in the Control Panel and configure the pilot from
+4. Open Koinkat Demo, create a fictional local user named `Alex Morgan`, choose **Sandbox** and
+   name the workspace `Pilot`. Select DKK as its preferred currency.
+5. Enter the application ID and select the matching PEM with the file picker.
+   Keep the pre-filled redirect URL and click **Create & verify**.
+   Pause at bank selection until the next step is complete.
+6. Open Mock ASPSPs in the Control Panel and configure the pilot from
    [pilot.json](../examples/sandbox/pilot.json). It follows the provider's
    [published synthetic sample](https://enablebanking.com/sample-data/DK-Danske_Bank-synthetic-1.json).
    Its acceptance by the authenticated editor remains unverified; if that
    editor uses a different wrapper, adapt the file before continuing.
-5. Open Koinkat Demo, create a fictional local user, choose **Sandbox** and
-   name the workspace `Pilot`. Select DKK as its preferred currency.
-6. Enter the application ID and select the matching PEM with the file picker.
-   Keep the pre-filled redirect URL and click **Create & verify**.
 7. Select Denmark and **Mock ASPSP**, import the last 30 days, and complete
    simulated browser consent. Allow **Open Koinkat Demo**.
 8. Expect one fictional DKK account, four booked transactions and DKK 9,060.00.

@@ -1,9 +1,9 @@
 # Koinkat Demo with Enable Banking sandbox
 
 Status: implementation in progress, 2026-11-11. The separate Demo RPM is built,
-inspected and tested with temporary fictional profiles. The callback is
-deployed. System installation needs Marco's local sudo password; provider
-application setup and the live import pilot are still pending.
+inspected, installed and opened successfully. Temporary-profile native tests
+and installed binary/handler/single-instance checks passed. The callback is
+deployed. Enable Banking application setup and the live import pilot are pending.
 
 ## Current handoff
 
@@ -25,10 +25,14 @@ application setup and the live import pilot are still pending.
   Temporary test databases passed integrity/schema checks; personal data and
   the default installed Demo profile were not used.
 - Built RPM: `src-tauri/target/release/bundle/rpm/Koinkat Demo-0.1.7-1.x86_64.rpm`.
-- Next required user action: install that RPM using [demo.md](../demo.md).
-  The system package installation attempt returned `sudo: a password is
-  required`. After installation, verify launcher/handler paths against
-  `/usr/bin/koinkat-demo` and continue the authenticated sandbox pilot.
+- Installation confirmed: both `koinkat` and `koinkat-demo` 0.1.7-1 are
+  installed; `rpm -V koinkat-demo` reported no differences. Marco opened Demo.
+  The running binary and its registered handler both target
+  `/usr/bin/koinkat-demo`. A second launch focused the existing instance.
+- Next required user action: sign into Enable Banking, register a Sandbox
+  application using the exact Demo redirect in [demo.md](../demo.md), then
+  select its PEM privately in Demo and click Create & verify. Stop at bank
+  selection before configuring the pilot mock data.
 - Small candidate provider file: `examples/sandbox/pilot.json`, one fictional
   DKK account with four booked rows and a coherent 9,060.00 closing balance.
   Authenticated editor acceptance is still unverified. Full generation waits
@@ -235,7 +239,7 @@ The main priority is a complete working import before elaborate video work.
 | Phase | Deliverable | Owner | Depends on | Status |
 | --- | --- | --- | --- | --- |
 | 0 | Source research and agreed task roadmap | Codex | None | Complete |
-| 1 | Separate yellow Demo app and inspected package | Codex; Marco for OS prompts and visual check | 0 | Built/tested; system installation requires sudo authentication |
+| 1 | Separate yellow Demo app and inspected package | Codex; Marco for OS prompts and visual check | 0 | Complete; installed app opens and handler/instance checks passed |
 | 2 | Sandbox-only bank client and callback change ready to deploy | Codex | 1 | Complete; native tests and callback regression checks passed |
 | 3 | Reachable Demo callback and sandbox application configured | Codex + Marco | 2 | Callback deployed; sandbox application setup pending |
 | 4 | One fictional account imported through the full browser flow | Codex + Marco | 3 | Pending |
@@ -271,21 +275,21 @@ not imply the app or sandbox is already configured.
   branch or checkout, using the existing repo rather than a new project.
 - [x] Set the distinct binary, window title, launcher and yellow branding.
   Preserve the existing logo shape; check visibility on light and dark themes.
-- [ ] Separate its app directories, credential-store namespace and URL
+- [x] Separate its app directories, credential-store namespace and URL
   scheme, including startup registration and single-instance behavior.
 - [x] Add an explicit Demo development command. Audit the merged Tauri
   configuration, including arrays; never launch the ordinary development
   configuration against the personal app directories.
 - [x] Build an initial RPM and inspect its executable, desktop-file, icon
   and resource paths for collisions before installation.
-- [ ] Prepare/run the Fedora package installation when this implementation
+- [x] Prepare/run the Fedora package installation when this implementation
   phase is underway, requesting the required OS authorization at that point.
 - [x] Update the build and architecture docs with the implemented behavior.
 
 **Marco does:**
 
-- [ ] Respond to any required installation/desktop permission prompt.
-- [ ] Open the yellow Demo launcher and confirm its name and appearance.
+- [x] Respond to any required installation/desktop permission prompt.
+- [x] Open the yellow Demo launcher and confirm its name and appearance.
   Complete any visual desktop checks that Codex cannot drive with available
   tools, using Codex's short checklist.
 
@@ -326,10 +330,10 @@ Actual provider/browser behavior is still to be proven in phase 4.
 
 **Codex does:**
 
-- [ ] Deploy the prepared callback change once publication is authorized,
+- [x] Deploy the prepared callback change once publication is authorized,
   or give Marco the exact publishing steps if account access is unavailable.
-- [ ] Check the public page's Demo target and unchanged default behavior.
-- [ ] Give Marco the exact redirect URL, suggested application name and
+- [x] Check the public page's Demo target and unchanged default behavior.
+- [x] Give Marco the exact redirect URL, suggested application name and
   short Control Panel checklist. Do not ask him to invent technical values.
 - [ ] Prepare a minimal synthetic provider file with one account and a few
   transactions, adapting it to the authenticated editor contract as needed.
@@ -511,9 +515,9 @@ behavior Codex cannot directly exercise. Codex owns diagnosing failures and
 making fixes; Marco should not have to debug source code or invent API data.
 Provider-dependent checks are recorded separately from automated test passes.
 
-The next action is installing the inspected RPM with local sudo authentication.
-Native build/testing and callback deployment are complete. After installation,
-the authenticated Enable Banking setup is the next user-dependent phase.
+Installation, native checks and callback deployment are complete. The next
+user-dependent action is registering the Sandbox application and verifying
+its credentials inside the installed Demo app.
 
 ## Recording outline
 
@@ -546,8 +550,7 @@ Demo app useful. Do not delete an application until the recording is finished.
 
 ## Remaining external and runtime checks
 
-System installation requires Marco's local sudo authentication. Provider
-sign-in/consent is then needed to verify the Mock ASPSP editor/import contract,
+Provider sign-in/consent is needed to verify the Mock ASPSP editor/import contract,
 redirect-selector preservation and the full browser flow. Native build,
 package inspection and temporary-profile UI checks are complete. No personal
 application configuration or financial database has been opened or changed.

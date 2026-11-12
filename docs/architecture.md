@@ -331,8 +331,9 @@ sidebar shell. Shell renders it directly when `view === 'accountHub'`.
   binary `koinkat-demo`, separate icons, `koinkat-demo://`, the Demo frontend
   commands and `dist-demo/`. Enables the GTK app ID for separate GNOME grouping.
   The Fedora RPM paths have been checked against the personal app with no
-  collisions. Native onboarding and persistence passed with temporary data;
-  installation and its launcher check are pending.
+  collisions. Native onboarding and persistence passed with temporary data.
+  Marco confirmed the installed app opens; RPM verification, callback handler
+  path and second-launch single-instance checks passed.
 - `secrets.rs` - OS credential store (`secret_set/get/delete`) for the
   Enable Banking private key. Trusted native app identity selects service
   `koinkat-demo` for Demo; the personal app retains service `koinkat`.
