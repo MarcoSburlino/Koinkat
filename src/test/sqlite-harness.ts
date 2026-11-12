@@ -46,6 +46,7 @@ export const MIGRATIONS: ReadonlyArray<{ version: number; sql: () => string }> =
   { version: 13, sql: () => read('migration-v13.sql') },
   { version: 14, sql: () => read('migration-v14.sql') },
   { version: 15, sql: () => read('migration-v15.sql') },
+  { version: 16, sql: () => read('migration-v16.sql') },
 ];
 
 /**

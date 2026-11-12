@@ -8,7 +8,11 @@ import {
   Layers,
   ListChecks,
   Settings,
+  MessagesSquare,
 } from 'lucide-react';
+import { useEffect } from 'react';
+import { useAssistantStore } from '../../stores/assistant-store';
+import { useKoinkatAccountStore } from '../../stores/koinkat-account-store';
 import type { LucideIcon } from 'lucide-react';
 import { useAppStore } from '../../stores/app-store';
 
@@ -61,7 +65,17 @@ const FOOTER_ITEM: NavItem = {
   icon: Settings,
 };
 
+// Shown under Insights only while the assistant is on for this workspace.
+const ASSISTANT_ITEM: NavItem = { to: '/assistant', label: 'Assistant', icon: MessagesSquare };
+
 export function Sidebar() {
+  const workspaceId = useKoinkatAccountStore((s) => s.activeKoinkatAccount?.id ?? null);
+  const assistantOn = useAssistantStore((s) => s.settings?.enabled === true);
+  const loadAssistant = useAssistantStore((s) => s.load);
+  useEffect(() => {
+    if (workspaceId) void loadAssistant(workspaceId);
+  }, [workspaceId, loadAssistant]);
+
   // Rows to categorize plus transfers to confirm: both live on Review.
   const pendingReviewCount = useAppStore(
     (s) => s.pendingReviewCount + s.transferSuggestionCount,
@@ -119,6 +133,7 @@ export function Sidebar() {
               {group.label}
             </p>
             {group.items.map((item) => renderNavLink(item))}
+            {group.label === 'Insights' && assistantOn && renderNavLink(ASSISTANT_ITEM)}
           </div>
         ))}
       </nav>

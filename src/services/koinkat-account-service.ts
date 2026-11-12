@@ -1,3 +1,4 @@
+import { deleteLocalApiKey } from '../assistant/secrets';
 import { getDb, withTransaction, type DbExecutor } from '../db/database';
 import { deletePemSecret } from './api-config-service';
 import {
@@ -188,6 +189,10 @@ export async function deleteKoinkatAccount(
       [id],
     ],
     ['transactions', 'DELETE FROM transactions WHERE koinkat_account_id = ?', [id]],
+    // v16 assistant chats and settings (messages before their chats).
+    ['assistant_messages', 'DELETE FROM assistant_messages WHERE koinkat_account_id = ?', [id]],
+    ['assistant_conversations', 'DELETE FROM assistant_conversations WHERE koinkat_account_id = ?', [id]],
+    ['assistant_settings', 'DELETE FROM assistant_settings WHERE koinkat_account_id = ?', [id]],
     // v11 recurring tables. After `transactions` so the
     // `transactions.recurring_series_id ON DELETE SET NULL` FK has no rows
     // left to touch.
@@ -234,4 +239,5 @@ export async function deleteKoinkatAccount(
   // AFTER the transaction: an IPC call must not sit inside the serialize
   // queue, and a keychain failure must not resurrect the workspace.
   await deletePemSecret(id);
+  await deleteLocalApiKey(id);
 }

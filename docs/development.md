@@ -172,7 +172,7 @@ Schema files:
   `linked_accounts`, `api_configs`, `exchange_rates`, plus the
   budget / split tables).
 - `src/db/schema.sql` - legacy v1 schema, kept for reference.
-- `src/db/migration-v2.sql` … `migration-v15.sql` - incremental DDL applied
+- `src/db/migration-v2.sql` … `migration-v16.sql` - incremental DDL applied
   in order on every app boot.
 
 Migrations are managed through Tauri's SQL plugin migration runner.

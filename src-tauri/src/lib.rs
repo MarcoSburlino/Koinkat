@@ -110,6 +110,12 @@ pub fn run() {
             sql: include_str!("../../src/db/migration-v15.sql"),
             kind: MigrationKind::Up,
         },
+        Migration {
+            version: 16,
+            description: "AI assistant settings and chats",
+            sql: include_str!("../../src/db/migration-v16.sql"),
+            kind: MigrationKind::Up,
+        },
     ];
 
     let mut builder = tauri::Builder::default();

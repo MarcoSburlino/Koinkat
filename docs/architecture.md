@@ -56,7 +56,7 @@ src/
 │   ├── database.ts        # `getDb()` + `withTransaction()` + snapshot export
 │   ├── schema.sql         # Legacy v1 schema (reference only)
 │   ├── schema-v2.sql      # Current schema
-│   ├── migration-v2…v15.sql # Incremental migrations
+│   ├── migration-v2…v16.sql # Incremental migrations
 │   └── seed.ts            # Default categories + MCC rule seeding
 ├── domain/                # Pure helpers (no React, no DB)
 │   ├── money.ts           # big.js wrappers + tryConvert

@@ -396,6 +396,21 @@ html.dark {
   border-radius: 2px;
 }
 
+/* ── Assistant answers (markdown) ─────────────────────────────────── */
+.kk-prose { color: var(--text); font-size: var(--fs-body); line-height: 1.6; }
+.kk-prose > * + * { margin-top: 0.75em; }
+.kk-prose strong { font-weight: var(--fw-semibold); }
+.kk-prose ul, .kk-prose ol { padding-left: 1.25em; }
+.kk-prose ul { list-style: disc; }
+.kk-prose ol { list-style: decimal; }
+.kk-prose li + li { margin-top: 0.25em; }
+.kk-prose h1, .kk-prose h2, .kk-prose h3 { font-size: var(--fs-h3); font-weight: var(--fw-semibold); }
+.kk-prose code { font-family: var(--font-mono); font-size: 0.9em; padding: 1px 4px; border-radius: var(--radius-1); background: var(--surface-alt); }
+.kk-prose table { width: 100%; border-collapse: collapse; font-size: var(--fs-body-sm); }
+.kk-prose th { text-align: left; color: var(--text-secondary); font-weight: var(--fw-medium); border-bottom: 1px solid var(--border-strong); padding: 6px 10px 6px 0; }
+.kk-prose td { border-bottom: 1px solid var(--border); padding: 6px 10px 6px 0; font-variant-numeric: tabular-nums; }
+.kk-prose a { color: var(--nav-active-fg); text-decoration: underline; text-underline-offset: 3px; }
+
 /* ── Tables ──────────────────────────────────────────────────────────
    Every data table gets the same quiet row hover, so rows read as
    targets without each page wiring its own mouse handlers. */

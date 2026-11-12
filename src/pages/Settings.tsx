@@ -1,6 +1,7 @@
 import { DEFAULT_CALLBACK_URL } from '../lib/constants';
 import { IS_DEMO_APP } from '../lib/build-profile';
 import { UPPERCASE_LABEL } from '../lib/label-styles';
+import { AssistantSettingsCard } from '../components/assistant/AssistantSettingsCard';
 import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { format, subDays } from 'date-fns';
@@ -503,6 +504,9 @@ export function Settings() {
             </div>
           </Card>
         )}
+
+      {/* AI assistant (opt-in) */}
+      <AssistantSettingsCard />
 
       {/* Backup & export */}
       <Card className="mt-6">
