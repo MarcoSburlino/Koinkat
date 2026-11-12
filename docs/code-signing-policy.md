@@ -11,8 +11,8 @@ antivirus engines flag unsigned NSIS installers on heuristics alone.
 
 Two install routes avoid the browser download that triggers those
 warnings: installing through winget
-(`winget install MarcoSburlino.Koinkat`, once the package is accepted
-into the winget repository), and downloading the installer with
+(`winget install MarcoSburlino.Koinkat`; the package is in the winget
+repository since v0.1.0), and downloading the installer with
 `curl.exe` from PowerShell, which does not mark the file as
 internet-downloaded. The README's Windows install section has the exact
 commands for both, and the steps to proceed past the warning for a

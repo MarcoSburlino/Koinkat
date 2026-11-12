@@ -70,7 +70,7 @@ a new sandbox workspace" UI surface is gated.
 | `npm run tauri:build:demo` | Demo Tauri installer (`com.koinkat.app.demo`), installable side-by-side with production. |
 | `npm run preview` | `vite preview` - serve `dist/` for manual QA. |
 | `npm run typecheck` | `tsc --noEmit`. |
-| `npm run test` | Vitest run once. Today only covers `src/domain/money.ts`. |
+| `npm run test` | Vitest run once (domain, services, stores, lib). |
 | `npm run test:watch` | Vitest in watch mode. |
 | `npm run test:ui` | `@vitest/ui` dashboard. |
 
@@ -79,15 +79,21 @@ run it after editing any typed file.
 
 ### Testing
 
-Vitest 4.1.5 is installed. The only test file today is
-`src/domain/money.test.ts` (42 tests covering `dec`, `qCent`, `qRate`,
-`convertAmount`, `tryConvert`, `requirePositiveAmount`,
-`requireNonNegativeAmount`, plus a rounding-mode regression that pins
-half-up rounding). Tests sit beside the file they cover; vitest's
-default include glob picks them up automatically.
+Vitest 4 runs the TypeScript tests. They sit beside the file they cover
+(`*.test.ts` in `src/domain/`, `src/services/`, `src/stores/`, `src/lib/`)
+and vitest's default include glob picks them up automatically.
 
-Expanding coverage beyond money math is on the list - see
-`restructure-audit.md` "Still open".
+- **Domain tests** cover money math (`src/domain/money.test.ts`, including
+  a regression that pins half-up rounding), pending reconciliation,
+  recurring matching and import descriptions.
+- **Service tests** run against a real SQLite database:
+  `src/test/sqlite-harness.ts` builds it from the real migrations and hands
+  back a `DbExecutor`, so a test asserts effects rather than SQL strings.
+  `src/test/migrations.test.ts` fails if the harness's migration list and
+  `src-tauri/src/lib.rs` disagree.
+- **Rust tests** (`cargo test --manifest-path src-tauri/Cargo.toml`) drive
+  the transaction commands in `src-tauri/src/db_tx.rs` through Tauri's IPC
+  mock runtime (`src-tauri/tests/db_tx_ipc.rs`).
 
 ## Testing the real Enable Banking client in dev
 
@@ -156,13 +162,16 @@ Schema files:
   `linked_accounts`, `api_configs`, `exchange_rates`, plus the
   budget / split tables).
 - `src/db/schema.sql` - legacy v1 schema, kept for reference.
-- `src/db/migration-v2.sql` … `migration-v8.sql` - incremental DDL applied
+- `src/db/migration-v2.sql` … `migration-v15.sql` - incremental DDL applied
   in order on every app boot.
 
 Migrations are managed through Tauri's SQL plugin migration runner.
 **Always create a new `migration-vN.sql` rather than editing an existing
 one** - installed apps replay missing migrations on next launch, but never
-re-run ones that already succeeded.
+re-run ones that already succeeded. A new migration is registered in two
+places: `src-tauri/src/lib.rs` (the app) and `MIGRATIONS` in
+`src/test/sqlite-harness.ts` (the tests); `src/test/migrations.test.ts`
+fails if they disagree.
 
 ## Money & exchange rates
 
@@ -220,30 +229,27 @@ For a brand-new visibility class (e.g. an "admin" tier), add a fourth
 boolean to the `define` block in `vite.config.ts`, declare it in
 `src/vite-env.d.ts`, and gate uses with `if (__KOINKAT_ALLOW_…__) { … }`.
 
-## Pre-release blockers
+## Release status
 
-See [`restructure-audit.md`](./restructure-audit.md) "Still open" section
-for the items that must be resolved before a public 1.0 release. As of
-2026-05-16:
-
-- **Resolved** (since the 2026-04-28 follow-up): bundle metadata
-  icons (32 / 128 / 128@2x / .icns / .ico), category, short / long
-  description populated in `tauri.conf.json`; `copyright` / `publisher`
-  / `homepage` filled. CSP includes the jsDelivr CDN that `fx-fetch.ts`
-  needs as its primary FX host. Top-level React error boundary in
-  place; its GitHub-issues link points at the real repo. Money-math
-  test suite added. Minimal root `README.md` added.
-- **Still open**: no code-signing identity / notarization profile.
-  No LICENSE file (deferred until publication strategy is decided).
-  Test suite now covers money math, sync fallbacks, categorization, recurring matching, and keychain storage. No linter. CI + release workflows added 2026-07-02 (see below).
+Koinkat is published under GPL-3.0-or-later (`LICENSE`, declared in
+`package.json`). Releases ship installers for Windows, macOS (universal)
+and Linux, and Windows users can also install through winget. macOS
+builds are signed and notarized; Windows and Linux builds are unsigned.
+[`code-signing-policy.md`](./code-signing-policy.md) has the status per
+platform and [`signing.md`](./signing.md) the macOS setup. No linter is
+configured. [`restructure-audit.md`](./restructure-audit.md) is the
+historical pre-release audit; its note at the top says which of its
+"Still open" items still apply.
 
 ## CI and releases (added 2026-07-02)
 
 - **CI** (`.github/workflows/ci.yml`) runs on every push/PR: a version
   consistency check (package.json / tauri.conf.json / Cargo.toml must
   match), `npm run typecheck`, `npm run test`, the production bundle
-  (which includes the mock-leak scanner), and `cargo check` plus
-  `cargo test` on Ubuntu, Windows, and macOS. The three-OS Rust
+  (which includes the mock-leak scanner), a check that
+  `THIRD-PARTY-LICENSES.md` matches the lockfiles, `npm audit` and
+  `cargo audit`, and `cargo check` plus `cargo test` on Ubuntu, Windows,
+  and macOS. The three-OS Rust
   matrix exists because the shell has platform-conditional code (keychain
   backends, single-instance, deep-link registration). The Rust tests drive
   the transaction commands in `db_tx.rs` through Tauri's IPC mock runtime
@@ -252,8 +258,9 @@ for the items that must be resolved before a public 1.0 release. As of
 - **Releases** (`.github/workflows/release.yml`): push a `vX.Y.Z` tag and
   the workflow builds installers for all three platforms via
   `tauri-apps/tauri-action` and attaches them to a DRAFT GitHub release
-  for manual review. Builds are unsigned until signing secrets are
-  configured (see the comments in the workflow).
+  for manual review. macOS builds are signed and notarized when the six
+  `APPLE_*` repository secrets exist (see [`signing.md`](./signing.md));
+  Windows and Linux builds are unsigned.
 - **Dependencies**: Dependabot watches npm, cargo, and the workflow
   actions weekly (`.github/dependabot.yml`).
 - Release steps for maintainers live in `CONTRIBUTING.md`.

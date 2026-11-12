@@ -4,6 +4,13 @@
 **Scope:** Read-only audit of the repo state before restructuring for public distribution.
 **Repo root:** `C:\Users\marco\OneDrive\Desktop\Koinkat`
 
+> **Historical record.** This describes the repo as it was before the
+> public release on 2026-07-11. Most "Still open" items below were
+> resolved by then (licence, tests, CI, macOS signing). Still true today:
+> Windows builds are unsigned, `demo-service.ts` keeps its historical
+> name, and `src/db/schema.sql` remains as a reference. See `CHANGELOG.md`
+> and `docs/development.md` for the current state.
+
 ---
 
 ## 1. Files to Remove Entirely

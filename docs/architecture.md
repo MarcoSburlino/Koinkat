@@ -231,8 +231,12 @@ directly for one-off reads/writes.
 | `categorization-service` | Three-stage rule engine (user → learned → MCC). Populates `categorization_source`, `merchant_normalized`, `needs_review`. |
 | `rule-service` | CRUD over `categorization_rules` (Rules debug page + automatic learning from user confirmations). |
 | `budget-service` | Budget events, recurring budgets, budget periods. |
+| `recurring-service` | Recurring expense series: manual flag / dismiss, the import-time matcher (built on `domain/recurring-match.ts`), cadence self-correction, missed-charge detection, groupings for Analysis and Budgets. |
 | `reporting-service` | Aggregations powering Analysis, Summary, Dashboard charts. |
 | `settings-service` | Per-workspace settings persistence. |
+| `app-state-service` | Device-local key/value state (`app_state`, v12): the active user and workspace. Deliberately NOT workspace-scoped, because it decides the active workspace. |
+| `backup-service` | Automatic whole-database backups and restore (see "Automatic backups" above). Device-level, not workspace-level. |
+| `export-service` | Workspace JSON export for Settings (credentials excluded). |
 | `api-config-service` | Per-workspace Enable Banking credentials (`app_id`, `private_key_pem`, `environment`, `redirect_url`, `is_demo_mode`). |
 | `enable-banking-service` | **Dispatcher.** Single public entry point; routes to mock or real client based on compile-time flags. |
 | `enable-banking-service-real` | Real PSD2 client (RS256-signed JWTs via `jose`, HTTP via Tauri plugin). |

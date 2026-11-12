@@ -1156,6 +1156,17 @@ Koinkat/
   audit of the pre-publication restructure (2026-04-24) and follow-up.
 - [Code signing policy](docs/code-signing-policy.md) - how release
   artifacts are signed, team roles, and the privacy policy.
+- [`docs/signing.md`](docs/signing.md) - macOS signing setup and Windows
+  antivirus false positives.
+- [Privacy policy](docs/privacy-policy.md) - what Koinkat does with your
+  data.
+- [`docs/legal-review-2026-08-26.md`](docs/legal-review-2026-08-26.md),
+  [`docs/legal-open-questions.md`](docs/legal-open-questions.md) and
+  [`docs/legal-open-questions-answered-2026-08-27.md`](docs/legal-open-questions-answered-2026-08-27.md) -
+  legal review and how each open question was closed.
+- [`docs/callback/README.md`](docs/callback/README.md) - where the bank
+  callback page lives.
+- [`packaging/README.md`](packaging/README.md) - winget manifests.
 
 Don't see what you're looking for? Open an issue.
 
