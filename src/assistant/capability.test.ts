@@ -11,15 +11,8 @@ import { describe, it, expect } from 'vitest';
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { buildAssistantCapability, ARG_PATTERNS, CODEX_EXEC_ARGS, VALIDATORS, toJsRegex } from './programs';
-import {
-  claudeRunArgs,
-  codexRunArgs,
-  nodeMcpArgs,
-  registerArgs,
-  claudeMcpConfigJson,
-  type McpLaunch,
-} from './commands';
+import { buildAssistantCapability, ARG_PATTERNS, VALIDATORS, toJsRegex } from './programs';
+import { nodeMcpArgs, registerArgs, type McpLaunch } from './commands';
 
 const FILE = join(dirname(fileURLToPath(import.meta.url)), '..', '..', 'src-tauri', 'capabilities', 'assistant.json');
 const generated = JSON.stringify(buildAssistantCapability(), null, 2) + '\n';
@@ -45,19 +38,15 @@ describe('assistant capability file', () => {
     expect(readFileSync(FILE, 'utf8')).toBe(generated);
   });
 
-  it('keeps every lockdown flag fixed (never a validator slot)', () => {
-    const claude = ARG_PATTERNS.claude.run;
-    for (const flag of ['--restricted', '--strict-mcp-config', '--no-session-persistence']) {
-      expect(claude).toContain(flag);
-    }
-    expect(claude[claude.indexOf('--tools') + 1]).toBe('');
-    expect(claude[claude.indexOf('--allowedTools') + 1]).toBe('mcp__koinkat');
-    const codex = CODEX_EXEC_ARGS;
-    expect(codex[codex.indexOf('-s') + 1]).toBe('read-only');
-    for (const feature of ['shell_tool', 'browser_use', 'computer_use', 'in_app_browser', 'apps']) {
-      expect(codex.some((a, i) => a === feature && codex[i - 1] === '--disable')).toBe(true);
-    }
-    expect(codex).toContain('approval_policy="never"');
+  it('never runs a chat through Claude Code or Codex, only version checks and Connect', () => {
+    // Anthropic and OpenAI do not allow third-party apps to route requests
+    // through a user's subscription: Koinkat may only check the version and
+    // add/remove the koinkat MCP entry in the user's own config.
+    expect(Object.keys(ARG_PATTERNS.claude).sort()).toEqual(['mcp-add', 'mcp-remove', 'version']);
+    expect(Object.keys(ARG_PATTERNS.codex).sort()).toEqual(['mcp-add', 'mcp-remove', 'version']);
+    expect(Object.keys(ARG_PATTERNS.node).sort()).toEqual(['mcp', 'version']);
+    const cap = JSON.stringify(buildAssistantCapability());
+    for (const flag of ['"-p"', '"exec"', 'codex-run']) expect(cap).not.toContain(flag);
   });
 
   it('compiles every validator in JS too', () => {
@@ -69,22 +58,16 @@ describe('assistant capability file', () => {
 
 describe('command builders', () => {
   it.each([['posix', posix], ['windows', windows]] as const)('builds valid %s argv', (_n, l) => {
-    expect(claudeRunArgs(l, null, 'You are Koinkat.')).toContain(claudeMcpConfigJson(l));
-    const launcher = l.bundlePath.replace('koinkat-mcp.mjs', 'codex-run.mjs');
-    const codexPath = l === posix ? '/home/alex/.local/bin/codex' : '/usr/local/bin/codex';
-    expect(codexRunArgs(l, launcher, codexPath, l.dbPath.replace('koinkat.db', 'workdir'), 'Question: hi')).toHaveLength(ARG_PATTERNS.node['codex-run'].length);
     expect(nodeMcpArgs(l)).toEqual([l.bundlePath, '--database', l.dbPath, '--workspace', l.workspaceId]);
     expect(registerArgs('claude', l).slice(0, 6)).toEqual(['mcp', 'add', '--scope', 'user', 'koinkat', '--']);
     expect(registerArgs('codex', l).slice(-1)[0]).toBe(l.workspaceId);
   });
 
   it('refuses values that could act as flags or escape their slot', () => {
-    expect(() => claudeRunArgs(posix, '--dangerously-skip-permissions', 'You')).toThrow(/not allowed/);
-    expect(() => claudeRunArgs(posix, null, '--append')).toThrow(/not allowed/);
-    expect(() => codexRunArgs(posix, posix.bundlePath.replace('koinkat-mcp', 'codex-run'), '/usr/bin/codex', '/tmp/w', '-c something')).toThrow(/not allowed/);
     expect(() => nodeMcpArgs({ ...posix, dbPath: '/etc/passwd' })).toThrow(/not allowed/);
     expect(() => nodeMcpArgs({ ...posix, workspaceId: 'x; rm -rf /' })).toThrow(/not allowed/);
-    expect(() => claudeRunArgs({ ...posix, nodePath: 'node' }, null, 'You')).toThrow(/not allowed/);
+    expect(() => registerArgs('claude', { ...posix, nodePath: 'node' })).toThrow(/not allowed/);
+    expect(() => registerArgs('codex', { ...posix, nodePath: '/home/alex/Downloads/evil' })).toThrow(/not allowed/);
   });
 });
 
@@ -121,10 +104,6 @@ describe('path rules (compromised-webview hardening)', () => {
     }
   });
 
-  it('accepts Windows paths inside the Claude JSON config and rejects a foreign command', () => {
-    expect(ok(VALIDATORS.claudeMcpConfig, claudeMcpConfigJson(windows))).toBe(true);
-    expect(ok(VALIDATORS.claudeMcpConfig, claudeMcpConfigJson({ ...posix, nodePath: '/home/alex/Downloads/evil' }))).toBe(false);
-  });
 });
 
 

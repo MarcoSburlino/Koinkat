@@ -6,17 +6,23 @@ uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [2.0.0] - 2026-11-12
+
+A new look, an optional AI assistant that runs on your own computer, and
+Koinkat's data server for the AI apps you already use.
+
 ### Added
 - An optional AI assistant, off by default. Turn it on for a workspace in
-  Settings, after a notice that says where your data goes, then ask about
-  your money on the new Assistant page. Answers come from your own Claude
-  Code or Codex subscription, or from a model running on your computer
-  (Ollama, LM Studio, llama.cpp). It can only read: it uses the read-only
-  Koinkat MCP server and starts Claude Code and Codex with their shell,
-  file and browser tools switched off. Chats are saved in the workspace
-  and included in backups. Settings can also connect the MCP server to
-  your own Claude Code or Codex. Needs Node.js 22.13 or newer.
-  The MCP server's source now lives in this repository, in `mcp/`.
+  Settings, then ask about your money on the new Assistant page ("how much
+  did I spend on food in October?"). Answers come from a model running on
+  your own computer (Ollama, LM Studio or llama.cpp), so nothing leaves
+  your device. It can only read and calculate, through Koinkat's read-only
+  MCP server. Chats are saved in the workspace and included in backups.
+  Needs Node.js 22.13 or newer.
+- Use Koinkat from Claude Code, Codex or another AI app: Settings can add
+  Koinkat's read-only MCP server to your own Claude Code or Codex, or copy
+  its setup for any MCP client. Those chats happen in that app, under your
+  own account. The server's source lives in this repository, in `mcp/`.
 - Budgets shows a spending pace chart for the month: what you have spent
   day by day against an on-track line to your limit, with a projection to
   month end for the current month.
@@ -33,12 +39,19 @@ uses [Semantic Versioning](https://semver.org/).
   colour when accounts shared one. The sidebar is grouped into Money,
   Insights and Setup, filters sit in the page header, and delete buttons
   turn red only when you point at them.
+- Settings is reorganised into clear sections (General, Bank connection,
+  AI assistant, Backups & data, About) with a side menu, and each section
+  says whether it applies to this workspace or to all of them.
 - Koinkat Demo now uses the real Enable Banking sandbox flow instead of
   offline bank fixtures. It has yellow branding, a separate executable and
   credential namespace, and its own callback scheme. Production credentials
   are rejected using provider application metadata. Offline fixtures remain
-  available in development. The Fedora RPM and native UI have been checked;
-  installation and live sandbox verification are pending. See `docs/demo.md`.
+  available in development. Demo is built by the maintainer for setup
+  tutorials and is not part of the public installers. See `docs/demo.md`.
+
+### Security
+- Updated the TLS and networking libraries (rustls, rustls-webpki,
+  webpki-roots, quinn-proto) to fix published advisories.
 
 ## [0.1.7] - 2026-09-27
 

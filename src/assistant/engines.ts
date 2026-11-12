@@ -1,29 +1,25 @@
 /**
- * Runs one chat turn on the chosen engine and streams TurnEvents back.
+ * Runs one chat turn and streams TurnEvents back. Koinkat starts the
+ * read-only MCP server over stdio and runs the tool loop against an
+ * OpenAI-compatible endpoint on this computer (Ollama, LM Studio,
+ * llama.cpp). Nothing leaves the device.
  *
- * - Claude Code / Codex: start the user's CLI (scoped, locked-down argv
- *   from commands.ts); it launches the read-only Koinkat MCP server itself.
- * - Local: Koinkat starts the MCP server over stdio and runs the tool loop
- *   against an OpenAI-compatible endpoint on this computer.
- *
- * Every run can be stopped and times out, so a hung CLI never leaves a
- * process behind.
+ * Every run can be stopped and times out, so nothing is left running.
  */
 import { Command, type Child } from '@tauri-apps/plugin-shell';
 import { fetch as tauriFetch } from '@tauri-apps/plugin-http';
 import { scopeName } from './programs';
-import { claudeRunArgs, claudeStdinMessage, codexRunArgs, nodeMcpArgs, type McpLaunch } from './commands';
-import { parseClaudeLine, parseCodexLine, type TurnEvent } from './parsers';
-import { composeChatMessages, composeTurnPrompt, systemPrompt } from './prompt';
+import { nodeMcpArgs, type McpLaunch } from './commands';
+import { type TurnEvent } from './parsers';
+import { composeChatMessages, systemPrompt } from './prompt';
 import { McpClient, type LineTransport } from './mcp-client';
 import type { AssistantEnvironment } from './environment';
-import type { AssistantEngine, AssistantMessage } from '../types/models';
+import type { AssistantMessage } from '../types/models';
 
 const TURN_TIMEOUT_MS = 5 * 60_000;
 const LOCAL_MAX_TOOL_ROUNDS = 8;
 
 export interface TurnRequest {
-  engine: AssistantEngine;
   model: string | null;
   localBaseUrl: string | null;
   localApiKey: string | null;
@@ -56,96 +52,7 @@ function launch(req: TurnRequest): McpLaunch {
 const today = () => new Date().toISOString().slice(0, 10);
 
 export function runTurn(req: TurnRequest): RunningTurn {
-  switch (req.engine) {
-    case 'claude-code':
-      return runCli(req, 'claude');
-    case 'codex':
-      return runCli(req, 'codex');
-    case 'local':
-      return runLocal(req);
-  }
-}
-
-// ── CLI engines ───────────────────────────────────────────────────────
-
-function runCli(req: TurnRequest, kind: 'claude' | 'codex'): RunningTurn {
-  let child: Child | null = null;
-  let ended = false;
-  let resolveFinished: () => void = () => {};
-  const finished = new Promise<void>((r) => (resolveFinished = r));
-  const stderrTail: string[] = [];
-
-  const end = (ev?: TurnEvent) => {
-    if (ended) return;
-    ended = true;
-    clearTimeout(timer);
-    if (ev) req.onEvent(ev);
-    // Claude keeps waiting for more stdin after its result: end it.
-    void child?.kill().catch(() => {});
-    resolveFinished();
-  };
-  const timer = setTimeout(
-    () => end({ type: 'error', message: 'The assistant took longer than 5 minutes and was stopped.' }),
-    TURN_TIMEOUT_MS,
-  );
-
-  (async () => {
-    const program = kind === 'claude' ? req.env.claude : req.env.codex;
-    if (!program) {
-      throw new Error(
-        kind === 'claude'
-          ? 'Claude Code was not found on this computer. Install it and sign in, then check again in Settings.'
-          : 'Codex was not found on this computer. Install it and sign in, then check again in Settings.',
-      );
-    }
-    const l = launch(req);
-    const sys = systemPrompt(today(), req.currency);
-    const prompt = composeTurnPrompt(req.history, req.question);
-    const parse = kind === 'claude' ? parseClaudeLine : parseCodexLine;
-    // Codex goes through the stdin-closing launcher run by Node.
-    const [scope, args] =
-      kind === 'claude'
-        ? [scopeName('claude', program.index, 'run'), claudeRunArgs(l, req.model, sys)]
-        : [
-            scopeName('node', req.env.node!.index, 'codex-run'),
-            codexRunArgs(l, req.env.codexLauncherPath, program.path, req.env.workdir, `${sys}\n\n${prompt}`),
-          ];
-
-    const cmd = Command.create(scope, args, { cwd: req.env.workdir });
-    cmd.stdout.on('data', (line) => {
-      for (const raw of String(line).split('\n')) {
-        for (const ev of parse(raw)) {
-          if (ev.type === 'done' || ev.type === 'error') end(ev);
-          else if (!ended) req.onEvent(ev);
-        }
-      }
-    });
-    cmd.stderr.on('data', (line) => {
-      stderrTail.push(String(line));
-      if (stderrTail.length > 20) stderrTail.shift();
-    });
-    cmd.on('close', (e) => {
-      if (ended) return;
-      const detail = stderrTail.join('\n').trim().split('\n').slice(-3).join(' ');
-      end(
-        e.code === 0
-          ? { type: 'done', text: null }
-          : { type: 'error', message: detail || `${kind === 'claude' ? 'Claude Code' : 'Codex'} stopped unexpectedly (exit ${e.code}).` },
-      );
-    });
-    cmd.on('error', (e) => end({ type: 'error', message: String(e) }));
-    child = await cmd.spawn();
-    if (ended) {
-      void child.kill().catch(() => {});
-      return;
-    }
-    if (kind === 'claude') await child.write(claudeStdinMessage(prompt));
-  })().catch((e: unknown) => end({ type: 'error', message: e instanceof Error ? e.message : String(e) }));
-
-  return {
-    finished,
-    stop: async () => end({ type: 'error', message: 'Stopped.' }),
-  };
+  return runLocal(req);
 }
 
 // ── Local OpenAI-compatible engine ────────────────────────────────────

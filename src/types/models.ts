@@ -845,8 +845,11 @@ export function toTransaction(row: TransactionRow): Transaction {
 
 // ── AI assistant (migration v16) ──────────────────────────────────────
 
-/** Which program answers: the user's Claude Code or Codex CLI, or a local
- *  OpenAI-compatible endpoint (Ollama, LM Studio, llama.cpp server). */
+/** Which program answered. Only 'local' (an OpenAI-compatible endpoint on
+ *  this computer: Ollama, LM Studio, llama.cpp) is used since 2026-11-12;
+ *  'claude-code' and 'codex' remain readable for chats saved before then.
+ *  Anthropic and OpenAI do not allow third-party apps to route requests
+ *  through a user's subscription, so the in-app chat is local-only. */
 export type AssistantEngine = 'claude-code' | 'codex' | 'local';
 export const ASSISTANT_ENGINES: readonly AssistantEngine[] = ['claude-code', 'codex', 'local'];
 
@@ -880,8 +883,10 @@ export interface AssistantSettings {
 export function toAssistantSettings(row: AssistantSettingsRow): AssistantSettings {
   return {
     enabled: row.enabled === 1,
-    engine: parseEnum(row.engine, ASSISTANT_ENGINES, 'AssistantEngine'),
-    model: row.model,
+    // Older rows may say 'claude-code' / 'codex' (the column default too):
+    // the only engine now is the local one.
+    engine: 'local',
+    model: row.engine === 'local' ? row.model : null,
     localBaseUrl: row.local_base_url,
     consentedAt: row.consented_at,
   };

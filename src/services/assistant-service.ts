@@ -16,7 +16,6 @@ import {
   toAssistantSettings,
   toAssistantConversation,
   toAssistantMessage,
-  ASSISTANT_ENGINES,
   type AssistantSettings,
   type AssistantSettingsRow,
   type AssistantConversation,
@@ -30,7 +29,7 @@ import {
 
 export const DEFAULT_ASSISTANT_SETTINGS: AssistantSettings = {
   enabled: false,
-  engine: 'claude-code',
+  engine: 'local',
   model: null,
   localBaseUrl: null,
   consentedAt: null,
@@ -63,8 +62,9 @@ export async function saveAssistantSettings(
   const current = await getAssistantSettings();
   const next: AssistantSettings = { ...current, ...changes };
 
-  if (!ASSISTANT_ENGINES.includes(next.engine)) {
-    throw new Error(`Unknown assistant engine: ${String(next.engine)}`);
+  if (next.engine !== 'local') {
+    // Only a model on this computer may answer (see AssistantEngine).
+    throw new Error(`Unsupported assistant engine: ${String(next.engine)}`);
   }
   if (next.enabled && !next.consentedAt) {
     throw new Error('Confirm the data notice before turning the assistant on.');

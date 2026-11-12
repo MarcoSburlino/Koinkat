@@ -1,6 +1,6 @@
 # Koinkat privacy policy
 
-Effective date: 2026-11-12 (adds the optional AI assistant; previous version 2026-08-22)
+Effective date: 2026-11-12 (adds the optional local AI assistant; previous version 2026-08-22)
 
 This policy covers the Koinkat desktop application (Windows, macOS,
 Linux) published from this repository by Marco Sburlino.
@@ -83,27 +83,22 @@ below, are reached through your own browser rather than by the app:
    stores nothing.
 
 4. **AI assistant (optional, off by default).** When you turn it on for
-   a workspace you choose who answers:
-   - **Claude Code** or **Codex**: Koinkat starts the command-line
-     program you installed and signed in to yourself. Your question,
-     the conversation so far, and the data the model reads to answer it
-     (balances, transactions including notes and merchant names,
-     categories, budgets of that workspace) are sent by that program to
-     Anthropic or OpenAI under your own account and their terms. Koinkat
-     does not contact those companies itself and the developer receives
-     nothing. Koinkat starts them with every tool except its own
-     read-only data tools switched off, and with no session files.
-   - **A local model** (Ollama, LM Studio, a llama.cpp server):
-     Koinkat talks only to an address on this computer
-     (`127.0.0.1` / `localhost`), so nothing leaves your device.
+   a workspace, your questions are answered by a model server you run on
+   your own computer (Ollama, LM Studio, a llama.cpp server). Koinkat
+   talks only to an address on this computer (`127.0.0.1` /
+   `localhost`), so nothing leaves your device. The assistant can only
+   read and calculate. It reads your data through the read-only Koinkat
+   MCP server (its source is in the `mcp/` folder of this repository),
+   which never sees bank credentials, keys or API configuration.
 
-   In every case the assistant can only read and calculate. It reads
-   your data through the read-only Koinkat MCP server
-   (its source is in the `mcp/` folder of this repository), which never sees
-   bank credentials, keys or API configuration. Settings also offers to
-   register that server in your own Claude Code or Codex; from then on
-   those programs can read the workspace in any session, under your
-   control, until you remove it.
+   Settings also offers to add that server to your own Claude Code or
+   Codex, or to copy its setup for another AI app. That is your own use
+   of that app: when you ask it about your money, it sends your question
+   and the data it reads (balances, transactions including notes and
+   merchant names, categories, budgets of that workspace) to its
+   provider under your account and their terms. Koinkat does not contact
+   those companies and the developer receives nothing. The connection
+   stays until you remove it.
 
 The app makes no other outbound connections of its own. It can also ask
 your browser to open your bank's site, Enable Banking's control panel, or
