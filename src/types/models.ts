@@ -842,3 +842,120 @@ export function toTransaction(row: TransactionRow): Transaction {
     counterpartyIban: row.counterparty_iban ?? null,
   };
 }
+
+// ── AI assistant (migration v16) ──────────────────────────────────────
+
+/** Which program answers: the user's Claude Code or Codex CLI, or a local
+ *  OpenAI-compatible endpoint (Ollama, LM Studio, llama.cpp server). */
+export type AssistantEngine = 'claude-code' | 'codex' | 'local';
+export const ASSISTANT_ENGINES: readonly AssistantEngine[] = ['claude-code', 'codex', 'local'];
+
+export type AssistantMessageRole = 'user' | 'assistant';
+const ASSISTANT_ROLES: readonly AssistantMessageRole[] = ['user', 'assistant'];
+
+export type AssistantMessageStatus = 'complete' | 'error' | 'stopped';
+const ASSISTANT_STATUSES: readonly AssistantMessageStatus[] = ['complete', 'error', 'stopped'];
+
+export interface AssistantSettingsRow {
+  koinkat_account_id: string;
+  enabled: number;
+  engine: string;
+  model: string | null;
+  local_base_url: string | null;
+  consented_at: string | null;
+  updated_at: string;
+}
+
+export interface AssistantSettings {
+  enabled: boolean;
+  engine: AssistantEngine;
+  /** Model name passed to the engine; null = the engine's default. */
+  model: string | null;
+  /** Base URL of the local OpenAI-compatible API, e.g. http://127.0.0.1:11434/v1 */
+  localBaseUrl: string | null;
+  /** When the user confirmed the data notice. Null = never confirmed. */
+  consentedAt: string | null;
+}
+
+export function toAssistantSettings(row: AssistantSettingsRow): AssistantSettings {
+  return {
+    enabled: row.enabled === 1,
+    engine: parseEnum(row.engine, ASSISTANT_ENGINES, 'AssistantEngine'),
+    model: row.model,
+    localBaseUrl: row.local_base_url,
+    consentedAt: row.consented_at,
+  };
+}
+
+export interface AssistantConversationRow {
+  id: string;
+  koinkat_account_id: string;
+  title: string;
+  engine: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AssistantConversation {
+  id: string;
+  title: string;
+  engine: AssistantEngine;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export function toAssistantConversation(row: AssistantConversationRow): AssistantConversation {
+  return {
+    id: row.id,
+    title: row.title,
+    engine: parseEnum(row.engine, ASSISTANT_ENGINES, 'AssistantEngine'),
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+export interface AssistantMessageRow {
+  id: string;
+  conversation_id: string;
+  koinkat_account_id: string;
+  role: string;
+  content: string;
+  tool_calls: string | null;
+  engine: string | null;
+  status: string;
+  created_at: string;
+}
+
+export interface AssistantMessage {
+  id: string;
+  conversationId: string;
+  role: AssistantMessageRole;
+  content: string;
+  /** Names of the Koinkat tools the answer used, in order (display only). */
+  toolCalls: string[];
+  engine: AssistantEngine | null;
+  status: AssistantMessageStatus;
+  createdAt: string;
+}
+
+export function toAssistantMessage(row: AssistantMessageRow): AssistantMessage {
+  let toolCalls: string[] = [];
+  if (row.tool_calls) {
+    try {
+      const parsed: unknown = JSON.parse(row.tool_calls);
+      if (Array.isArray(parsed)) toolCalls = parsed.filter((t): t is string => typeof t === 'string');
+    } catch {
+      toolCalls = [];
+    }
+  }
+  return {
+    id: row.id,
+    conversationId: row.conversation_id,
+    role: parseEnum(row.role, ASSISTANT_ROLES, 'AssistantMessageRole'),
+    content: row.content,
+    toolCalls,
+    engine: parseEnumNullable(row.engine, ASSISTANT_ENGINES, 'AssistantEngine'),
+    status: parseEnum(row.status, ASSISTANT_STATUSES, 'AssistantMessageStatus'),
+    createdAt: row.created_at,
+  };
+}

@@ -43,8 +43,12 @@ src/
 ├── vite-env.d.ts          # Compile-time flag declarations
 ├── assets/                # Static images
 ├── components/
-│   ├── layout/            # Shell, Sidebar, Header, PageHeader
-│   ├── ui/                # Button, Card, Input, Modal, Select, etc.
+│   ├── charts/            # Shared chart kit: ChartCard, ChartTooltip, ChartLegend,
+│   │                      #   MonthPaceChart, AnnualBudgetChart, CashflowChart,
+│   │                      #   TrendChart, SegmentedBar (chrome in lib/chart-style.ts)
+│   ├── dashboard/         # NetWorthCard, BalanceTrendCard
+│   ├── layout/            # Shell, Sidebar (grouped: Money/Insights/Setup), Header, PageHeader
+│   ├── ui/                # Button, Card, Input, Modal, Select, StatTile, Meter, etc.
 │   └── BankSetupGuide.tsx # First-run linked-mode walkthrough
 ├── data/
 │   └── mcc-mappings.ts    # Static MCC → category seed table
@@ -52,7 +56,7 @@ src/
 │   ├── database.ts        # `getDb()` + `withTransaction()` + snapshot export
 │   ├── schema.sql         # Legacy v1 schema (reference only)
 │   ├── schema-v2.sql      # Current schema
-│   ├── migration-v2…v15.sql # Incremental migrations
+│   ├── migration-v2…v16.sql # Incremental migrations
 │   └── seed.ts            # Default categories + MCC rule seeding
 ├── domain/                # Pure helpers (no React, no DB)
 │   ├── money.ts           # big.js wrappers + tryConvert
@@ -231,8 +235,12 @@ directly for one-off reads/writes.
 | `categorization-service` | Three-stage rule engine (user → learned → MCC). Populates `categorization_source`, `merchant_normalized`, `needs_review`. |
 | `rule-service` | CRUD over `categorization_rules` (Rules debug page + automatic learning from user confirmations). |
 | `budget-service` | Budget events, recurring budgets, budget periods. |
+| `recurring-service` | Recurring expense series: manual flag / dismiss, the import-time matcher (built on `domain/recurring-match.ts`), cadence self-correction, missed-charge detection, groupings for Analysis and Budgets. |
 | `reporting-service` | Aggregations powering Analysis, Summary, Dashboard charts. |
 | `settings-service` | Per-workspace settings persistence. |
+| `app-state-service` | Device-local key/value state (`app_state`, v12): the active user and workspace. Deliberately NOT workspace-scoped, because it decides the active workspace. |
+| `backup-service` | Automatic whole-database backups and restore (see "Automatic backups" above). Device-level, not workspace-level. |
+| `export-service` | Workspace JSON export for Settings (credentials excluded). |
 | `api-config-service` | Per-workspace Enable Banking credentials (`app_id`, `private_key_pem`, `environment`, `redirect_url`, `is_demo_mode`). |
 | `enable-banking-service` | **Dispatcher.** Single public entry point; routes to mock or real client based on compile-time flags. |
 | `enable-banking-service-real` | Real PSD2 client (RS256-signed JWTs via `jose`, HTTP via Tauri plugin). |
@@ -324,10 +332,15 @@ sidebar shell. Shell renders it directly when `view === 'accountHub'`.
   webview's own load.
 - `tauri.conf.demo.json` - a thin override merged on top via `-c`.
   Sets `productName: "Koinkat Demo"`, `identifier: "com.koinkat.app.demo"`,
-  `beforeBuildCommand: "npm run build:demo"`. Side-by-side install with
-  production.
+  binary `koinkat-demo`, separate icons, `koinkat-demo://`, the Demo frontend
+  commands and `dist-demo/`. Enables the GTK app ID for separate GNOME grouping.
+  The Fedora RPM paths have been checked against the personal app with no
+  collisions. Native onboarding and persistence passed with temporary data.
+  Marco confirmed the installed app opens; RPM verification, callback handler
+  path and second-launch single-instance checks passed.
 - `secrets.rs` - OS credential store (`secret_set/get/delete`) for the
-  Enable Banking private key.
+  Enable Banking private key. Trusted native app identity selects service
+  `koinkat-demo` for Demo; the personal app retains service `koinkat`.
 - `db_tx.rs` - connection-owning SQLite transactions
   (`tx_begin/execute/select/commit/rollback`). See below.
 - `Cargo.toml` - Rust deps are Tauri plugin crates (`sql`, `http`, `fs`,
@@ -398,8 +411,9 @@ against real files on every test run.
 
 ```
 vite.config.ts (define):
-    __KOINKAT_ALLOW_MOCKS__       : true (dev,demo)  | false (prod)
-    __KOINKAT_EB_MOCK_DEFAULT__   : true (dev,demo)  | false (prod)
+    __KOINKAT_ALLOW_MOCKS__       : true (dev)       | false (demo,prod)
+    __KOINKAT_EB_MOCK_DEFAULT__   : true (dev default) | false (demo,prod)
+    __KOINKAT_DEMO_APP__          : true (demo)      | false (dev,prod)
     __KOINKAT_ALLOW_DEBUG_ROUTES__: true (dev only)  | false (demo,prod)
     __KOINKAT_ALLOW_SANDBOX_UI__  : true (dev,demo)  | false (prod)
 
@@ -420,3 +434,13 @@ Defense layers in production:
   3. `forbidMocksInProductionBundle` plugin scans every emitted chunk's
      `moduleIds` and aborts the build if any `/src/mocks/` slips through.
 ```
+
+Demo runs the same mock-leak scanner. `src/lib/build-profile.ts` exposes its
+compile-time identity for branding, workspace/credential restrictions and
+callback selection. `enable-banking-service-real.ts` verifies the signed
+application's metadata reports `SANDBOX`, its matching ID and active status
+before any bank endpoint. Verification is cached for at most five minutes
+per workspace/key/credential revision. `credential-revision.ts` invalidates
+in-flight operations and cache reuse on saves and clears; workspace changes
+cancel before bank access. Production requests retain their existing behavior.
+See [demo.md](demo.md) for the provider pilot and remaining runtime checks.

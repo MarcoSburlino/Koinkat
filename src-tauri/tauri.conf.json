@@ -36,7 +36,9 @@
     "targets": "all",
     "resources": {
       "../THIRD-PARTY-LICENSES.md": "THIRD-PARTY-LICENSES.md",
-      "../LICENSE": "LICENSE"
+      "../LICENSE": "LICENSE",
+      "resources/assistant/koinkat-mcp.mjs": "assistant/koinkat-mcp.mjs",
+      "resources/assistant/codex-run.mjs": "assistant/codex-run.mjs"
     },
     "icon": [
       "icons/32x32.png",

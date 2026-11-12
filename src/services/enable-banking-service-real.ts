@@ -2,6 +2,9 @@ import { SignJWT, importPKCS8 } from 'jose';
 import { fetch } from '@tauri-apps/plugin-http';
 import { loadApiConfig } from './api-config-service';
 import { CONSENT_VALID_DAYS } from '../lib/constants';
+import { IS_DEMO_APP } from '../lib/build-profile';
+import { captureWorkspace } from '../lib/active-koinkat-account';
+import { getCredentialRevision } from '../lib/credential-revision';
 
 const BASE_URL = 'https://api.enablebanking.com';
 
@@ -58,11 +61,13 @@ export class EBApiError extends Error {
 
 // ── Credential loading ──────────────────────────────────────────────────
 
-async function loadCredentials(): Promise<{
+interface Credentials {
   appId: string;
   privateKeyPem: string;
   environment: string;
-} | null> {
+}
+
+async function loadCredentials(): Promise<Credentials | null> {
   const config = await loadApiConfig();
   if (!config.appId || !config.privateKeyPem) return null;
   return {
@@ -74,10 +79,7 @@ async function loadCredentials(): Promise<{
 
 // ── JWT generation ──────────────────────────────────────────────────────
 
-async function generateJwt(): Promise<string> {
-  const creds = await loadCredentials();
-  if (!creds) throw new Error('Enable Banking credentials not configured');
-
+async function generateJwt(creds: Credentials): Promise<string> {
   const privateKey = await importPKCS8(creds.privateKeyPem, 'RS256');
   const now = Math.floor(Date.now() / 1000);
 
@@ -90,6 +92,76 @@ async function generateJwt(): Promise<string> {
     .sign(privateKey);
 
   return jwt;
+}
+
+interface SandboxVerification {
+  workspaceId: string;
+  appId: string;
+  revision: number;
+  checkedAt: number;
+  pending: Promise<void>;
+}
+
+let sandboxVerification: SandboxVerification | null = null;
+
+/** Pin one request to one credential snapshot; never retarget after an await. */
+async function prepareRequest(): Promise<{ jwt: string; assertCurrent: () => void }> {
+  const ctx = IS_DEMO_APP ? captureWorkspace() : null;
+  const revision = getCredentialRevision();
+  const assertCurrent = () => {
+    if (!ctx) return;
+    ctx.assertUnchanged();
+    if (getCredentialRevision() !== revision) {
+      throw new Error('Bank credentials changed. Please try again.');
+    }
+  };
+  const creds = await loadCredentials();
+  assertCurrent();
+  if (!creds) throw new Error('Enable Banking credentials not configured');
+  if (IS_DEMO_APP && creds.environment !== 'sandbox') {
+    throw new Error('Koinkat Demo accepts only Enable Banking sandbox credentials.');
+  }
+  const jwt = await generateJwt(creds);
+  assertCurrent();
+
+  if (ctx) {
+    const cached = sandboxVerification;
+    // A short session cache avoids a metadata request per transaction page.
+    // The credential revision also invalidates saves of the same ID/key.
+    if (!cached || cached.workspaceId !== ctx.id || cached.appId !== creds.appId ||
+        cached.revision !== revision ||
+        Date.now() - cached.checkedAt > 5 * 60 * 1000) {
+      const pending = (async () => {
+        const response = await fetch(`${BASE_URL}/application`, {
+          method: 'GET',
+          headers: { Authorization: `Bearer ${jwt}`, 'Content-Type': 'application/json' },
+        });
+        await ensureEBOk(response);
+        const application: unknown = await response.json();
+        assertCurrent();
+        if (!application || typeof application !== 'object' ||
+            !('environment' in application) || application.environment !== 'SANDBOX' ||
+            !('kid' in application) || application.kid !== creds.appId ||
+            !('active' in application) || application.active !== true) {
+          throw new Error('Koinkat Demo requires an active Enable Banking Sandbox application. Production credentials cannot be used here.');
+        }
+      })();
+      sandboxVerification = {
+        workspaceId: ctx.id, appId: creds.appId,
+        revision, checkedAt: Date.now(), pending,
+      };
+    }
+    const verification = sandboxVerification;
+    if (!verification) throw new Error('Sandbox verification was interrupted. Please try again.');
+    try {
+      await verification.pending;
+    } catch (error) {
+      if (sandboxVerification === verification) sandboxVerification = null;
+      throw error;
+    }
+    assertCurrent();
+  }
+  return { jwt, assertCurrent };
 }
 
 // ── HTTP helpers ────────────────────────────────────────────────────────
@@ -113,7 +185,8 @@ async function ensureEBOk(res: Response, acceptNotFound = false): Promise<void> 
 }
 
 async function apiGet<T>(path: string): Promise<T> {
-  const jwt = await generateJwt();
+  const { jwt, assertCurrent } = await prepareRequest();
+  assertCurrent();
   const res = await fetch(`${BASE_URL}${path}`, {
     method: 'GET',
     headers: {
@@ -122,11 +195,14 @@ async function apiGet<T>(path: string): Promise<T> {
     },
   });
   await ensureEBOk(res);
-  return res.json() as Promise<T>;
+  const data = await res.json() as T;
+  assertCurrent();
+  return data;
 }
 
 async function apiPost<T>(path: string, body: unknown): Promise<T> {
-  const jwt = await generateJwt();
+  const { jwt, assertCurrent } = await prepareRequest();
+  assertCurrent();
   const res = await fetch(`${BASE_URL}${path}`, {
     method: 'POST',
     headers: {
@@ -136,11 +212,14 @@ async function apiPost<T>(path: string, body: unknown): Promise<T> {
     body: JSON.stringify(body),
   });
   await ensureEBOk(res);
-  return res.json() as Promise<T>;
+  const data = await res.json() as T;
+  assertCurrent();
+  return data;
 }
 
 async function apiDelete(path: string): Promise<void> {
-  const jwt = await generateJwt();
+  const { jwt, assertCurrent } = await prepareRequest();
+  assertCurrent();
   const res = await fetch(`${BASE_URL}${path}`, {
     method: 'DELETE',
     headers: {
@@ -148,6 +227,7 @@ async function apiDelete(path: string): Promise<void> {
     },
   });
   await ensureEBOk(res, true);
+  assertCurrent();
 }
 
 // ── Public API ──────────────────────────────────────────────────────────
@@ -197,7 +277,8 @@ function humanizeCredentialError(raw: string): string {
  */
 export async function verifyCredentials(): Promise<string | null> {
   try {
-    await apiGet('/application');
+    if (IS_DEMO_APP) await prepareRequest();
+    else await apiGet('/application');
     return null;
   } catch (err) {
     const raw = err instanceof Error ? err.message : String(err);

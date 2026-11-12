@@ -1,0 +1,15 @@
+.env
+.env.*
+node_modules/
+dist/
+coverage/
+target/
+*.db
+*.db-*
+*.sqlite
+*.sqlite3
+*.pem
+*.key
+*.p8
+.DS_Store
+.local/

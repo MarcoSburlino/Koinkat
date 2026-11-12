@@ -1,0 +1,1132 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "assistant",
+  "description": "Opt-in AI assistant: run the user's Claude Code / Codex CLI or Node (for the read-only Koinkat MCP server) with fixed, locked-down arguments, and reach a LOCAL model endpoint. GENERATED from src/assistant/programs.ts - edit that file and run UPDATE_ASSISTANT_CAPABILITY=1 npx vitest run src/assistant/capability.test.ts",
+  "windows": [
+    "main"
+  ],
+  "permissions": [
+    {
+      "identifier": "shell:allow-spawn",
+      "allow": [
+        {
+          "name": "kk-assistant-claude-0-version",
+          "cmd": "$HOME/.local/bin/claude",
+          "args": [
+            "--version"
+          ]
+        },
+        {
+          "name": "kk-assistant-claude-0-run",
+          "cmd": "$HOME/.local/bin/claude",
+          "args": [
+            "-p",
+            "--restricted",
+            "--tools",
+            "",
+            "--strict-mcp-config",
+            "--mcp-config",
+            {
+              "validator": "\\{\"mcpServers\":\\{\"koinkat\":\\{\"command\":\"(?:/usr/bin/node|/usr/bin/node-22|/usr/local/bin/node|/opt/homebrew/bin/node|(?:/home/[^/\\\\\"'\\x00\\n]+|/Users/[^/\\\\\"'\\x00\\n]+|/root|[A-Za-z]:\\\\\\\\Users\\\\\\\\[^/\\\\\"'\\x00\\n]+)(?:/|\\\\\\\\)\\.local(?:/|\\\\\\\\)bin(?:/|\\\\\\\\)node|C:\\\\\\\\Program Files\\\\\\\\nodejs\\\\\\\\node\\.exe)\",\"args\":\\[\"(?:/usr/lib/[^/\\\\\"'\\x00\\n]+/assistant/|/usr/lib64/[^/\\\\\"'\\x00\\n]+/assistant/|/opt/[^/\\\\\"'\\x00\\n]+/assistant/|/tmp/\\.mount_[^/\\\\\"'\\x00\\n]+/usr/lib/[^/\\\\\"'\\x00\\n]+/assistant/|/Applications/[^/\\\\\"'\\x00\\n]+\\.app/Contents/Resources/assistant/|/Users/[^/\\\\\"'\\x00\\n]+/Applications/[^/\\\\\"'\\x00\\n]+\\.app/Contents/Resources/assistant/|[A-Za-z]:\\\\\\\\Program Files\\\\\\\\[^/\\\\\"'\\x00\\n]+\\\\\\\\assistant\\\\\\\\|[A-Za-z]:\\\\\\\\Users\\\\\\\\[^/\\\\\"'\\x00\\n]+\\\\\\\\AppData\\\\\\\\Local\\\\\\\\(?:Programs\\\\\\\\)?[^/\\\\\"'\\x00\\n]+\\\\\\\\assistant\\\\\\\\|(?:/|[A-Za-z]:\\\\\\\\)(?:[^/\\\\\"'\\x00\\n]+(?:/|\\\\\\\\))*[Kk]oinkat(?:/|\\\\\\\\)src-tauri(?:/|\\\\\\\\)target(?:/|\\\\\\\\)(?:debug|release)(?:/|\\\\\\\\)assistant(?:/|\\\\\\\\))koinkat-mcp\\.mjs\",\"--database\",\"(?:/|[A-Za-z]:\\\\\\\\)[^\\x00\"'\\n]*koinkat\\.db\",\"--workspace\",\"[0-9a-fA-F-]{36}\"\\]\\}\\}\\}"
+            },
+            "--allowedTools",
+            "mcp__koinkat",
+            "--model",
+            {
+              "validator": "[A-Za-z0-9][A-Za-z0-9._:/\\-\\[\\]]{0,63}"
+            },
+            "--input-format",
+            "stream-json",
+            "--output-format",
+            "stream-json",
+            "--verbose",
+            "--include-partial-messages",
+            "--no-session-persistence",
+            "--system-prompt",
+            {
+              "validator": "(?s)[A-Za-z][^\\x00]*"
+            }
+          ]
+        },
+        {
+          "name": "kk-assistant-claude-0-mcp-add",
+          "cmd": "$HOME/.local/bin/claude",
+          "args": [
+            "mcp",
+            "add",
+            "--scope",
+            "user",
+            "koinkat",
+            "--",
+            {
+              "validator": "(?:/usr/bin/node|/usr/bin/node-22|/usr/local/bin/node|/opt/homebrew/bin/node|(?:/home/[^/\\\\\"'\\x00\\n]+|/Users/[^/\\\\\"'\\x00\\n]+|/root|[A-Za-z]:\\\\Users\\\\[^/\\\\\"'\\x00\\n]+)[/\\\\]\\.local[/\\\\]bin[/\\\\]node|C:\\\\Program Files\\\\nodejs\\\\node\\.exe)"
+            },
+            {
+              "validator": "(?:/usr/lib/[^/\\\\\"'\\x00\\n]+/assistant/|/usr/lib64/[^/\\\\\"'\\x00\\n]+/assistant/|/opt/[^/\\\\\"'\\x00\\n]+/assistant/|/tmp/\\.mount_[^/\\\\\"'\\x00\\n]+/usr/lib/[^/\\\\\"'\\x00\\n]+/assistant/|/Applications/[^/\\\\\"'\\x00\\n]+\\.app/Contents/Resources/assistant/|/Users/[^/\\\\\"'\\x00\\n]+/Applications/[^/\\\\\"'\\x00\\n]+\\.app/Contents/Resources/assistant/|[A-Za-z]:\\\\Program Files\\\\[^/\\\\\"'\\x00\\n]+\\\\assistant\\\\|[A-Za-z]:\\\\Users\\\\[^/\\\\\"'\\x00\\n]+\\\\AppData\\\\Local\\\\(?:Programs\\\\)?[^/\\\\\"'\\x00\\n]+\\\\assistant\\\\|(?:/|[A-Za-z]:\\\\)(?:[^/\\\\\"'\\x00\\n]+[/\\\\])*[Kk]oinkat[/\\\\]src-tauri[/\\\\]target[/\\\\](?:debug|release)[/\\\\]assistant[/\\\\])koinkat-mcp\\.mjs"
+            },
+            "--database",
+            {
+              "validator": "(?:/|[A-Za-z]:\\\\)[^\\x00\"'\\n]*koinkat\\.db"
+            },
+            "--workspace",
+            {
+              "validator": "[0-9a-fA-F-]{36}"
+            }
+          ]
+        },
+        {
+          "name": "kk-assistant-claude-0-mcp-remove",
+          "cmd": "$HOME/.local/bin/claude",
+          "args": [
+            "mcp",
+            "remove",
+            "koinkat",
+            "--scope",
+            "user"
+          ]
+        },
+        {
+          "name": "kk-assistant-claude-1-version",
+          "cmd": "$HOME/.claude/local/claude",
+          "args": [
+            "--version"
+          ]
+        },
+        {
+          "name": "kk-assistant-claude-1-run",
+          "cmd": "$HOME/.claude/local/claude",
+          "args": [
+            "-p",
+            "--restricted",
+            "--tools",
+            "",
+            "--strict-mcp-config",
+            "--mcp-config",
+            {
+              "validator": "\\{\"mcpServers\":\\{\"koinkat\":\\{\"command\":\"(?:/usr/bin/node|/usr/bin/node-22|/usr/local/bin/node|/opt/homebrew/bin/node|(?:/home/[^/\\\\\"'\\x00\\n]+|/Users/[^/\\\\\"'\\x00\\n]+|/root|[A-Za-z]:\\\\\\\\Users\\\\\\\\[^/\\\\\"'\\x00\\n]+)(?:/|\\\\\\\\)\\.local(?:/|\\\\\\\\)bin(?:/|\\\\\\\\)node|C:\\\\\\\\Program Files\\\\\\\\nodejs\\\\\\\\node\\.exe)\",\"args\":\\[\"(?:/usr/lib/[^/\\\\\"'\\x00\\n]+/assistant/|/usr/lib64/[^/\\\\\"'\\x00\\n]+/assistant/|/opt/[^/\\\\\"'\\x00\\n]+/assistant/|/tmp/\\.mount_[^/\\\\\"'\\x00\\n]+/usr/lib/[^/\\\\\"'\\x00\\n]+/assistant/|/Applications/[^/\\\\\"'\\x00\\n]+\\.app/Contents/Resources/assistant/|/Users/[^/\\\\\"'\\x00\\n]+/Applications/[^/\\\\\"'\\x00\\n]+\\.app/Contents/Resources/assistant/|[A-Za-z]:\\\\\\\\Program Files\\\\\\\\[^/\\\\\"'\\x00\\n]+\\\\\\\\assistant\\\\\\\\|[A-Za-z]:\\\\\\\\Users\\\\\\\\[^/\\\\\"'\\x00\\n]+\\\\\\\\AppData\\\\\\\\Local\\\\\\\\(?:Programs\\\\\\\\)?[^/\\\\\"'\\x00\\n]+\\\\\\\\assistant\\\\\\\\|(?:/|[A-Za-z]:\\\\\\\\)(?:[^/\\\\\"'\\x00\\n]+(?:/|\\\\\\\\))*[Kk]oinkat(?:/|\\\\\\\\)src-tauri(?:/|\\\\\\\\)target(?:/|\\\\\\\\)(?:debug|release)(?:/|\\\\\\\\)assistant(?:/|\\\\\\\\))koinkat-mcp\\.mjs\",\"--database\",\"(?:/|[A-Za-z]:\\\\\\\\)[^\\x00\"'\\n]*koinkat\\.db\",\"--workspace\",\"[0-9a-fA-F-]{36}\"\\]\\}\\}\\}"
+            },
+            "--allowedTools",
+            "mcp__koinkat",
+            "--model",
+            {
+              "validator": "[A-Za-z0-9][A-Za-z0-9._:/\\-\\[\\]]{0,63}"
+            },
+            "--input-format",
+            "stream-json",
+            "--output-format",
+            "stream-json",
+            "--verbose",
+            "--include-partial-messages",
+            "--no-session-persistence",
+            "--system-prompt",
+            {
+              "validator": "(?s)[A-Za-z][^\\x00]*"
+            }
+          ]
+        },
+        {
+          "name": "kk-assistant-claude-1-mcp-add",
+          "cmd": "$HOME/.claude/local/claude",
+          "args": [
+            "mcp",
+            "add",
+            "--scope",
+            "user",
+            "koinkat",
+            "--",
+            {
+              "validator": "(?:/usr/bin/node|/usr/bin/node-22|/usr/local/bin/node|/opt/homebrew/bin/node|(?:/home/[^/\\\\\"'\\x00\\n]+|/Users/[^/\\\\\"'\\x00\\n]+|/root|[A-Za-z]:\\\\Users\\\\[^/\\\\\"'\\x00\\n]+)[/\\\\]\\.local[/\\\\]bin[/\\\\]node|C:\\\\Program Files\\\\nodejs\\\\node\\.exe)"
+            },
+            {
+              "validator": "(?:/usr/lib/[^/\\\\\"'\\x00\\n]+/assistant/|/usr/lib64/[^/\\\\\"'\\x00\\n]+/assistant/|/opt/[^/\\\\\"'\\x00\\n]+/assistant/|/tmp/\\.mount_[^/\\\\\"'\\x00\\n]+/usr/lib/[^/\\\\\"'\\x00\\n]+/assistant/|/Applications/[^/\\\\\"'\\x00\\n]+\\.app/Contents/Resources/assistant/|/Users/[^/\\\\\"'\\x00\\n]+/Applications/[^/\\\\\"'\\x00\\n]+\\.app/Contents/Resources/assistant/|[A-Za-z]:\\\\Program Files\\\\[^/\\\\\"'\\x00\\n]+\\\\assistant\\\\|[A-Za-z]:\\\\Users\\\\[^/\\\\\"'\\x00\\n]+\\\\AppData\\\\Local\\\\(?:Programs\\\\)?[^/\\\\\"'\\x00\\n]+\\\\assistant\\\\|(?:/|[A-Za-z]:\\\\)(?:[^/\\\\\"'\\x00\\n]+[/\\\\])*[Kk]oinkat[/\\\\]src-tauri[/\\\\]target[/\\\\](?:debug|release)[/\\\\]assistant[/\\\\])koinkat-mcp\\.mjs"
+            },
+            "--database",
+            {
+              "validator": "(?:/|[A-Za-z]:\\\\)[^\\x00\"'\\n]*koinkat\\.db"
+            },
+            "--workspace",
+            {
+              "validator": "[0-9a-fA-F-]{36}"
+            }
+          ]
+        },
+        {
+          "name": "kk-assistant-claude-1-mcp-remove",
+          "cmd": "$HOME/.claude/local/claude",
+          "args": [
+            "mcp",
+            "remove",
+            "koinkat",
+            "--scope",
+            "user"
+          ]
+        },
+        {
+          "name": "kk-assistant-claude-2-version",
+          "cmd": "/usr/local/bin/claude",
+          "args": [
+            "--version"
+          ]
+        },
+        {
+          "name": "kk-assistant-claude-2-run",
+          "cmd": "/usr/local/bin/claude",
+          "args": [
+            "-p",
+            "--restricted",
+            "--tools",
+            "",
+            "--strict-mcp-config",
+            "--mcp-config",
+            {
+              "validator": "\\{\"mcpServers\":\\{\"koinkat\":\\{\"command\":\"(?:/usr/bin/node|/usr/bin/node-22|/usr/local/bin/node|/opt/homebrew/bin/node|(?:/home/[^/\\\\\"'\\x00\\n]+|/Users/[^/\\\\\"'\\x00\\n]+|/root|[A-Za-z]:\\\\\\\\Users\\\\\\\\[^/\\\\\"'\\x00\\n]+)(?:/|\\\\\\\\)\\.local(?:/|\\\\\\\\)bin(?:/|\\\\\\\\)node|C:\\\\\\\\Program Files\\\\\\\\nodejs\\\\\\\\node\\.exe)\",\"args\":\\[\"(?:/usr/lib/[^/\\\\\"'\\x00\\n]+/assistant/|/usr/lib64/[^/\\\\\"'\\x00\\n]+/assistant/|/opt/[^/\\\\\"'\\x00\\n]+/assistant/|/tmp/\\.mount_[^/\\\\\"'\\x00\\n]+/usr/lib/[^/\\\\\"'\\x00\\n]+/assistant/|/Applications/[^/\\\\\"'\\x00\\n]+\\.app/Contents/Resources/assistant/|/Users/[^/\\\\\"'\\x00\\n]+/Applications/[^/\\\\\"'\\x00\\n]+\\.app/Contents/Resources/assistant/|[A-Za-z]:\\\\\\\\Program Files\\\\\\\\[^/\\\\\"'\\x00\\n]+\\\\\\\\assistant\\\\\\\\|[A-Za-z]:\\\\\\\\Users\\\\\\\\[^/\\\\\"'\\x00\\n]+\\\\\\\\AppData\\\\\\\\Local\\\\\\\\(?:Programs\\\\\\\\)?[^/\\\\\"'\\x00\\n]+\\\\\\\\assistant\\\\\\\\|(?:/|[A-Za-z]:\\\\\\\\)(?:[^/\\\\\"'\\x00\\n]+(?:/|\\\\\\\\))*[Kk]oinkat(?:/|\\\\\\\\)src-tauri(?:/|\\\\\\\\)target(?:/|\\\\\\\\)(?:debug|release)(?:/|\\\\\\\\)assistant(?:/|\\\\\\\\))koinkat-mcp\\.mjs\",\"--database\",\"(?:/|[A-Za-z]:\\\\\\\\)[^\\x00\"'\\n]*koinkat\\.db\",\"--workspace\",\"[0-9a-fA-F-]{36}\"\\]\\}\\}\\}"
+            },
+            "--allowedTools",
+            "mcp__koinkat",
+            "--model",
+            {
+              "validator": "[A-Za-z0-9][A-Za-z0-9._:/\\-\\[\\]]{0,63}"
+            },
+            "--input-format",
+            "stream-json",
+            "--output-format",
+            "stream-json",
+            "--verbose",
+            "--include-partial-messages",
+            "--no-session-persistence",
+            "--system-prompt",
+            {
+              "validator": "(?s)[A-Za-z][^\\x00]*"
+            }
+          ]
+        },
+        {
+          "name": "kk-assistant-claude-2-mcp-add",
+          "cmd": "/usr/local/bin/claude",
+          "args": [
+            "mcp",
+            "add",
+            "--scope",
+            "user",
+            "koinkat",
+            "--",
+            {
+              "validator": "(?:/usr/bin/node|/usr/bin/node-22|/usr/local/bin/node|/opt/homebrew/bin/node|(?:/home/[^/\\\\\"'\\x00\\n]+|/Users/[^/\\\\\"'\\x00\\n]+|/root|[A-Za-z]:\\\\Users\\\\[^/\\\\\"'\\x00\\n]+)[/\\\\]\\.local[/\\\\]bin[/\\\\]node|C:\\\\Program Files\\\\nodejs\\\\node\\.exe)"
+            },
+            {
+              "validator": "(?:/usr/lib/[^/\\\\\"'\\x00\\n]+/assistant/|/usr/lib64/[^/\\\\\"'\\x00\\n]+/assistant/|/opt/[^/\\\\\"'\\x00\\n]+/assistant/|/tmp/\\.mount_[^/\\\\\"'\\x00\\n]+/usr/lib/[^/\\\\\"'\\x00\\n]+/assistant/|/Applications/[^/\\\\\"'\\x00\\n]+\\.app/Contents/Resources/assistant/|/Users/[^/\\\\\"'\\x00\\n]+/Applications/[^/\\\\\"'\\x00\\n]+\\.app/Contents/Resources/assistant/|[A-Za-z]:\\\\Program Files\\\\[^/\\\\\"'\\x00\\n]+\\\\assistant\\\\|[A-Za-z]:\\\\Users\\\\[^/\\\\\"'\\x00\\n]+\\\\AppData\\\\Local\\\\(?:Programs\\\\)?[^/\\\\\"'\\x00\\n]+\\\\assistant\\\\|(?:/|[A-Za-z]:\\\\)(?:[^/\\\\\"'\\x00\\n]+[/\\\\])*[Kk]oinkat[/\\\\]src-tauri[/\\\\]target[/\\\\](?:debug|release)[/\\\\]assistant[/\\\\])koinkat-mcp\\.mjs"
+            },
+            "--database",
+            {
+              "validator": "(?:/|[A-Za-z]:\\\\)[^\\x00\"'\\n]*koinkat\\.db"
+            },
+            "--workspace",
+            {
+              "validator": "[0-9a-fA-F-]{36}"
+            }
+          ]
+        },
+        {
+          "name": "kk-assistant-claude-2-mcp-remove",
+          "cmd": "/usr/local/bin/claude",
+          "args": [
+            "mcp",
+            "remove",
+            "koinkat",
+            "--scope",
+            "user"
+          ]
+        },
+        {
+          "name": "kk-assistant-claude-3-version",
+          "cmd": "/opt/homebrew/bin/claude",
+          "args": [
+            "--version"
+          ]
+        },
+        {
+          "name": "kk-assistant-claude-3-run",
+          "cmd": "/opt/homebrew/bin/claude",
+          "args": [
+            "-p",
+            "--restricted",
+            "--tools",
+            "",
+            "--strict-mcp-config",
+            "--mcp-config",
+            {
+              "validator": "\\{\"mcpServers\":\\{\"koinkat\":\\{\"command\":\"(?:/usr/bin/node|/usr/bin/node-22|/usr/local/bin/node|/opt/homebrew/bin/node|(?:/home/[^/\\\\\"'\\x00\\n]+|/Users/[^/\\\\\"'\\x00\\n]+|/root|[A-Za-z]:\\\\\\\\Users\\\\\\\\[^/\\\\\"'\\x00\\n]+)(?:/|\\\\\\\\)\\.local(?:/|\\\\\\\\)bin(?:/|\\\\\\\\)node|C:\\\\\\\\Program Files\\\\\\\\nodejs\\\\\\\\node\\.exe)\",\"args\":\\[\"(?:/usr/lib/[^/\\\\\"'\\x00\\n]+/assistant/|/usr/lib64/[^/\\\\\"'\\x00\\n]+/assistant/|/opt/[^/\\\\\"'\\x00\\n]+/assistant/|/tmp/\\.mount_[^/\\\\\"'\\x00\\n]+/usr/lib/[^/\\\\\"'\\x00\\n]+/assistant/|/Applications/[^/\\\\\"'\\x00\\n]+\\.app/Contents/Resources/assistant/|/Users/[^/\\\\\"'\\x00\\n]+/Applications/[^/\\\\\"'\\x00\\n]+\\.app/Contents/Resources/assistant/|[A-Za-z]:\\\\\\\\Program Files\\\\\\\\[^/\\\\\"'\\x00\\n]+\\\\\\\\assistant\\\\\\\\|[A-Za-z]:\\\\\\\\Users\\\\\\\\[^/\\\\\"'\\x00\\n]+\\\\\\\\AppData\\\\\\\\Local\\\\\\\\(?:Programs\\\\\\\\)?[^/\\\\\"'\\x00\\n]+\\\\\\\\assistant\\\\\\\\|(?:/|[A-Za-z]:\\\\\\\\)(?:[^/\\\\\"'\\x00\\n]+(?:/|\\\\\\\\))*[Kk]oinkat(?:/|\\\\\\\\)src-tauri(?:/|\\\\\\\\)target(?:/|\\\\\\\\)(?:debug|release)(?:/|\\\\\\\\)assistant(?:/|\\\\\\\\))koinkat-mcp\\.mjs\",\"--database\",\"(?:/|[A-Za-z]:\\\\\\\\)[^\\x00\"'\\n]*koinkat\\.db\",\"--workspace\",\"[0-9a-fA-F-]{36}\"\\]\\}\\}\\}"
+            },
+            "--allowedTools",
+            "mcp__koinkat",
+            "--model",
+            {
+              "validator": "[A-Za-z0-9][A-Za-z0-9._:/\\-\\[\\]]{0,63}"
+            },
+            "--input-format",
+            "stream-json",
+            "--output-format",
+            "stream-json",
+            "--verbose",
+            "--include-partial-messages",
+            "--no-session-persistence",
+            "--system-prompt",
+            {
+              "validator": "(?s)[A-Za-z][^\\x00]*"
+            }
+          ]
+        },
+        {
+          "name": "kk-assistant-claude-3-mcp-add",
+          "cmd": "/opt/homebrew/bin/claude",
+          "args": [
+            "mcp",
+            "add",
+            "--scope",
+            "user",
+            "koinkat",
+            "--",
+            {
+              "validator": "(?:/usr/bin/node|/usr/bin/node-22|/usr/local/bin/node|/opt/homebrew/bin/node|(?:/home/[^/\\\\\"'\\x00\\n]+|/Users/[^/\\\\\"'\\x00\\n]+|/root|[A-Za-z]:\\\\Users\\\\[^/\\\\\"'\\x00\\n]+)[/\\\\]\\.local[/\\\\]bin[/\\\\]node|C:\\\\Program Files\\\\nodejs\\\\node\\.exe)"
+            },
+            {
+              "validator": "(?:/usr/lib/[^/\\\\\"'\\x00\\n]+/assistant/|/usr/lib64/[^/\\\\\"'\\x00\\n]+/assistant/|/opt/[^/\\\\\"'\\x00\\n]+/assistant/|/tmp/\\.mount_[^/\\\\\"'\\x00\\n]+/usr/lib/[^/\\\\\"'\\x00\\n]+/assistant/|/Applications/[^/\\\\\"'\\x00\\n]+\\.app/Contents/Resources/assistant/|/Users/[^/\\\\\"'\\x00\\n]+/Applications/[^/\\\\\"'\\x00\\n]+\\.app/Contents/Resources/assistant/|[A-Za-z]:\\\\Program Files\\\\[^/\\\\\"'\\x00\\n]+\\\\assistant\\\\|[A-Za-z]:\\\\Users\\\\[^/\\\\\"'\\x00\\n]+\\\\AppData\\\\Local\\\\(?:Programs\\\\)?[^/\\\\\"'\\x00\\n]+\\\\assistant\\\\|(?:/|[A-Za-z]:\\\\)(?:[^/\\\\\"'\\x00\\n]+[/\\\\])*[Kk]oinkat[/\\\\]src-tauri[/\\\\]target[/\\\\](?:debug|release)[/\\\\]assistant[/\\\\])koinkat-mcp\\.mjs"
+            },
+            "--database",
+            {
+              "validator": "(?:/|[A-Za-z]:\\\\)[^\\x00\"'\\n]*koinkat\\.db"
+            },
+            "--workspace",
+            {
+              "validator": "[0-9a-fA-F-]{36}"
+            }
+          ]
+        },
+        {
+          "name": "kk-assistant-claude-3-mcp-remove",
+          "cmd": "/opt/homebrew/bin/claude",
+          "args": [
+            "mcp",
+            "remove",
+            "koinkat",
+            "--scope",
+            "user"
+          ]
+        },
+        {
+          "name": "kk-assistant-claude-4-version",
+          "cmd": "/usr/bin/claude",
+          "args": [
+            "--version"
+          ]
+        },
+        {
+          "name": "kk-assistant-claude-4-run",
+          "cmd": "/usr/bin/claude",
+          "args": [
+            "-p",
+            "--restricted",
+            "--tools",
+            "",
+            "--strict-mcp-config",
+            "--mcp-config",
+            {
+              "validator": "\\{\"mcpServers\":\\{\"koinkat\":\\{\"command\":\"(?:/usr/bin/node|/usr/bin/node-22|/usr/local/bin/node|/opt/homebrew/bin/node|(?:/home/[^/\\\\\"'\\x00\\n]+|/Users/[^/\\\\\"'\\x00\\n]+|/root|[A-Za-z]:\\\\\\\\Users\\\\\\\\[^/\\\\\"'\\x00\\n]+)(?:/|\\\\\\\\)\\.local(?:/|\\\\\\\\)bin(?:/|\\\\\\\\)node|C:\\\\\\\\Program Files\\\\\\\\nodejs\\\\\\\\node\\.exe)\",\"args\":\\[\"(?:/usr/lib/[^/\\\\\"'\\x00\\n]+/assistant/|/usr/lib64/[^/\\\\\"'\\x00\\n]+/assistant/|/opt/[^/\\\\\"'\\x00\\n]+/assistant/|/tmp/\\.mount_[^/\\\\\"'\\x00\\n]+/usr/lib/[^/\\\\\"'\\x00\\n]+/assistant/|/Applications/[^/\\\\\"'\\x00\\n]+\\.app/Contents/Resources/assistant/|/Users/[^/\\\\\"'\\x00\\n]+/Applications/[^/\\\\\"'\\x00\\n]+\\.app/Contents/Resources/assistant/|[A-Za-z]:\\\\\\\\Program Files\\\\\\\\[^/\\\\\"'\\x00\\n]+\\\\\\\\assistant\\\\\\\\|[A-Za-z]:\\\\\\\\Users\\\\\\\\[^/\\\\\"'\\x00\\n]+\\\\\\\\AppData\\\\\\\\Local\\\\\\\\(?:Programs\\\\\\\\)?[^/\\\\\"'\\x00\\n]+\\\\\\\\assistant\\\\\\\\|(?:/|[A-Za-z]:\\\\\\\\)(?:[^/\\\\\"'\\x00\\n]+(?:/|\\\\\\\\))*[Kk]oinkat(?:/|\\\\\\\\)src-tauri(?:/|\\\\\\\\)target(?:/|\\\\\\\\)(?:debug|release)(?:/|\\\\\\\\)assistant(?:/|\\\\\\\\))koinkat-mcp\\.mjs\",\"--database\",\"(?:/|[A-Za-z]:\\\\\\\\)[^\\x00\"'\\n]*koinkat\\.db\",\"--workspace\",\"[0-9a-fA-F-]{36}\"\\]\\}\\}\\}"
+            },
+            "--allowedTools",
+            "mcp__koinkat",
+            "--model",
+            {
+              "validator": "[A-Za-z0-9][A-Za-z0-9._:/\\-\\[\\]]{0,63}"
+            },
+            "--input-format",
+            "stream-json",
+            "--output-format",
+            "stream-json",
+            "--verbose",
+            "--include-partial-messages",
+            "--no-session-persistence",
+            "--system-prompt",
+            {
+              "validator": "(?s)[A-Za-z][^\\x00]*"
+            }
+          ]
+        },
+        {
+          "name": "kk-assistant-claude-4-mcp-add",
+          "cmd": "/usr/bin/claude",
+          "args": [
+            "mcp",
+            "add",
+            "--scope",
+            "user",
+            "koinkat",
+            "--",
+            {
+              "validator": "(?:/usr/bin/node|/usr/bin/node-22|/usr/local/bin/node|/opt/homebrew/bin/node|(?:/home/[^/\\\\\"'\\x00\\n]+|/Users/[^/\\\\\"'\\x00\\n]+|/root|[A-Za-z]:\\\\Users\\\\[^/\\\\\"'\\x00\\n]+)[/\\\\]\\.local[/\\\\]bin[/\\\\]node|C:\\\\Program Files\\\\nodejs\\\\node\\.exe)"
+            },
+            {
+              "validator": "(?:/usr/lib/[^/\\\\\"'\\x00\\n]+/assistant/|/usr/lib64/[^/\\\\\"'\\x00\\n]+/assistant/|/opt/[^/\\\\\"'\\x00\\n]+/assistant/|/tmp/\\.mount_[^/\\\\\"'\\x00\\n]+/usr/lib/[^/\\\\\"'\\x00\\n]+/assistant/|/Applications/[^/\\\\\"'\\x00\\n]+\\.app/Contents/Resources/assistant/|/Users/[^/\\\\\"'\\x00\\n]+/Applications/[^/\\\\\"'\\x00\\n]+\\.app/Contents/Resources/assistant/|[A-Za-z]:\\\\Program Files\\\\[^/\\\\\"'\\x00\\n]+\\\\assistant\\\\|[A-Za-z]:\\\\Users\\\\[^/\\\\\"'\\x00\\n]+\\\\AppData\\\\Local\\\\(?:Programs\\\\)?[^/\\\\\"'\\x00\\n]+\\\\assistant\\\\|(?:/|[A-Za-z]:\\\\)(?:[^/\\\\\"'\\x00\\n]+[/\\\\])*[Kk]oinkat[/\\\\]src-tauri[/\\\\]target[/\\\\](?:debug|release)[/\\\\]assistant[/\\\\])koinkat-mcp\\.mjs"
+            },
+            "--database",
+            {
+              "validator": "(?:/|[A-Za-z]:\\\\)[^\\x00\"'\\n]*koinkat\\.db"
+            },
+            "--workspace",
+            {
+              "validator": "[0-9a-fA-F-]{36}"
+            }
+          ]
+        },
+        {
+          "name": "kk-assistant-claude-4-mcp-remove",
+          "cmd": "/usr/bin/claude",
+          "args": [
+            "mcp",
+            "remove",
+            "koinkat",
+            "--scope",
+            "user"
+          ]
+        },
+        {
+          "name": "kk-assistant-claude-5-version",
+          "cmd": "$HOME/.local/bin/claude.exe",
+          "args": [
+            "--version"
+          ]
+        },
+        {
+          "name": "kk-assistant-claude-5-run",
+          "cmd": "$HOME/.local/bin/claude.exe",
+          "args": [
+            "-p",
+            "--restricted",
+            "--tools",
+            "",
+            "--strict-mcp-config",
+            "--mcp-config",
+            {
+              "validator": "\\{\"mcpServers\":\\{\"koinkat\":\\{\"command\":\"(?:/usr/bin/node|/usr/bin/node-22|/usr/local/bin/node|/opt/homebrew/bin/node|(?:/home/[^/\\\\\"'\\x00\\n]+|/Users/[^/\\\\\"'\\x00\\n]+|/root|[A-Za-z]:\\\\\\\\Users\\\\\\\\[^/\\\\\"'\\x00\\n]+)(?:/|\\\\\\\\)\\.local(?:/|\\\\\\\\)bin(?:/|\\\\\\\\)node|C:\\\\\\\\Program Files\\\\\\\\nodejs\\\\\\\\node\\.exe)\",\"args\":\\[\"(?:/usr/lib/[^/\\\\\"'\\x00\\n]+/assistant/|/usr/lib64/[^/\\\\\"'\\x00\\n]+/assistant/|/opt/[^/\\\\\"'\\x00\\n]+/assistant/|/tmp/\\.mount_[^/\\\\\"'\\x00\\n]+/usr/lib/[^/\\\\\"'\\x00\\n]+/assistant/|/Applications/[^/\\\\\"'\\x00\\n]+\\.app/Contents/Resources/assistant/|/Users/[^/\\\\\"'\\x00\\n]+/Applications/[^/\\\\\"'\\x00\\n]+\\.app/Contents/Resources/assistant/|[A-Za-z]:\\\\\\\\Program Files\\\\\\\\[^/\\\\\"'\\x00\\n]+\\\\\\\\assistant\\\\\\\\|[A-Za-z]:\\\\\\\\Users\\\\\\\\[^/\\\\\"'\\x00\\n]+\\\\\\\\AppData\\\\\\\\Local\\\\\\\\(?:Programs\\\\\\\\)?[^/\\\\\"'\\x00\\n]+\\\\\\\\assistant\\\\\\\\|(?:/|[A-Za-z]:\\\\\\\\)(?:[^/\\\\\"'\\x00\\n]+(?:/|\\\\\\\\))*[Kk]oinkat(?:/|\\\\\\\\)src-tauri(?:/|\\\\\\\\)target(?:/|\\\\\\\\)(?:debug|release)(?:/|\\\\\\\\)assistant(?:/|\\\\\\\\))koinkat-mcp\\.mjs\",\"--database\",\"(?:/|[A-Za-z]:\\\\\\\\)[^\\x00\"'\\n]*koinkat\\.db\",\"--workspace\",\"[0-9a-fA-F-]{36}\"\\]\\}\\}\\}"
+            },
+            "--allowedTools",
+            "mcp__koinkat",
+            "--model",
+            {
+              "validator": "[A-Za-z0-9][A-Za-z0-9._:/\\-\\[\\]]{0,63}"
+            },
+            "--input-format",
+            "stream-json",
+            "--output-format",
+            "stream-json",
+            "--verbose",
+            "--include-partial-messages",
+            "--no-session-persistence",
+            "--system-prompt",
+            {
+              "validator": "(?s)[A-Za-z][^\\x00]*"
+            }
+          ]
+        },
+        {
+          "name": "kk-assistant-claude-5-mcp-add",
+          "cmd": "$HOME/.local/bin/claude.exe",
+          "args": [
+            "mcp",
+            "add",
+            "--scope",
+            "user",
+            "koinkat",
+            "--",
+            {
+              "validator": "(?:/usr/bin/node|/usr/bin/node-22|/usr/local/bin/node|/opt/homebrew/bin/node|(?:/home/[^/\\\\\"'\\x00\\n]+|/Users/[^/\\\\\"'\\x00\\n]+|/root|[A-Za-z]:\\\\Users\\\\[^/\\\\\"'\\x00\\n]+)[/\\\\]\\.local[/\\\\]bin[/\\\\]node|C:\\\\Program Files\\\\nodejs\\\\node\\.exe)"
+            },
+            {
+              "validator": "(?:/usr/lib/[^/\\\\\"'\\x00\\n]+/assistant/|/usr/lib64/[^/\\\\\"'\\x00\\n]+/assistant/|/opt/[^/\\\\\"'\\x00\\n]+/assistant/|/tmp/\\.mount_[^/\\\\\"'\\x00\\n]+/usr/lib/[^/\\\\\"'\\x00\\n]+/assistant/|/Applications/[^/\\\\\"'\\x00\\n]+\\.app/Contents/Resources/assistant/|/Users/[^/\\\\\"'\\x00\\n]+/Applications/[^/\\\\\"'\\x00\\n]+\\.app/Contents/Resources/assistant/|[A-Za-z]:\\\\Program Files\\\\[^/\\\\\"'\\x00\\n]+\\\\assistant\\\\|[A-Za-z]:\\\\Users\\\\[^/\\\\\"'\\x00\\n]+\\\\AppData\\\\Local\\\\(?:Programs\\\\)?[^/\\\\\"'\\x00\\n]+\\\\assistant\\\\|(?:/|[A-Za-z]:\\\\)(?:[^/\\\\\"'\\x00\\n]+[/\\\\])*[Kk]oinkat[/\\\\]src-tauri[/\\\\]target[/\\\\](?:debug|release)[/\\\\]assistant[/\\\\])koinkat-mcp\\.mjs"
+            },
+            "--database",
+            {
+              "validator": "(?:/|[A-Za-z]:\\\\)[^\\x00\"'\\n]*koinkat\\.db"
+            },
+            "--workspace",
+            {
+              "validator": "[0-9a-fA-F-]{36}"
+            }
+          ]
+        },
+        {
+          "name": "kk-assistant-claude-5-mcp-remove",
+          "cmd": "$HOME/.local/bin/claude.exe",
+          "args": [
+            "mcp",
+            "remove",
+            "koinkat",
+            "--scope",
+            "user"
+          ]
+        },
+        {
+          "name": "kk-assistant-codex-0-version",
+          "cmd": "$HOME/.local/bin/codex",
+          "args": [
+            "--version"
+          ]
+        },
+        {
+          "name": "kk-assistant-codex-0-mcp-add",
+          "cmd": "$HOME/.local/bin/codex",
+          "args": [
+            "mcp",
+            "add",
+            "koinkat",
+            "--",
+            {
+              "validator": "(?:/usr/bin/node|/usr/bin/node-22|/usr/local/bin/node|/opt/homebrew/bin/node|(?:/home/[^/\\\\\"'\\x00\\n]+|/Users/[^/\\\\\"'\\x00\\n]+|/root|[A-Za-z]:\\\\Users\\\\[^/\\\\\"'\\x00\\n]+)[/\\\\]\\.local[/\\\\]bin[/\\\\]node|C:\\\\Program Files\\\\nodejs\\\\node\\.exe)"
+            },
+            {
+              "validator": "(?:/usr/lib/[^/\\\\\"'\\x00\\n]+/assistant/|/usr/lib64/[^/\\\\\"'\\x00\\n]+/assistant/|/opt/[^/\\\\\"'\\x00\\n]+/assistant/|/tmp/\\.mount_[^/\\\\\"'\\x00\\n]+/usr/lib/[^/\\\\\"'\\x00\\n]+/assistant/|/Applications/[^/\\\\\"'\\x00\\n]+\\.app/Contents/Resources/assistant/|/Users/[^/\\\\\"'\\x00\\n]+/Applications/[^/\\\\\"'\\x00\\n]+\\.app/Contents/Resources/assistant/|[A-Za-z]:\\\\Program Files\\\\[^/\\\\\"'\\x00\\n]+\\\\assistant\\\\|[A-Za-z]:\\\\Users\\\\[^/\\\\\"'\\x00\\n]+\\\\AppData\\\\Local\\\\(?:Programs\\\\)?[^/\\\\\"'\\x00\\n]+\\\\assistant\\\\|(?:/|[A-Za-z]:\\\\)(?:[^/\\\\\"'\\x00\\n]+[/\\\\])*[Kk]oinkat[/\\\\]src-tauri[/\\\\]target[/\\\\](?:debug|release)[/\\\\]assistant[/\\\\])koinkat-mcp\\.mjs"
+            },
+            "--database",
+            {
+              "validator": "(?:/|[A-Za-z]:\\\\)[^\\x00\"'\\n]*koinkat\\.db"
+            },
+            "--workspace",
+            {
+              "validator": "[0-9a-fA-F-]{36}"
+            }
+          ]
+        },
+        {
+          "name": "kk-assistant-codex-0-mcp-remove",
+          "cmd": "$HOME/.local/bin/codex",
+          "args": [
+            "mcp",
+            "remove",
+            "koinkat"
+          ]
+        },
+        {
+          "name": "kk-assistant-codex-1-version",
+          "cmd": "/usr/local/bin/codex",
+          "args": [
+            "--version"
+          ]
+        },
+        {
+          "name": "kk-assistant-codex-1-mcp-add",
+          "cmd": "/usr/local/bin/codex",
+          "args": [
+            "mcp",
+            "add",
+            "koinkat",
+            "--",
+            {
+              "validator": "(?:/usr/bin/node|/usr/bin/node-22|/usr/local/bin/node|/opt/homebrew/bin/node|(?:/home/[^/\\\\\"'\\x00\\n]+|/Users/[^/\\\\\"'\\x00\\n]+|/root|[A-Za-z]:\\\\Users\\\\[^/\\\\\"'\\x00\\n]+)[/\\\\]\\.local[/\\\\]bin[/\\\\]node|C:\\\\Program Files\\\\nodejs\\\\node\\.exe)"
+            },
+            {
+              "validator": "(?:/usr/lib/[^/\\\\\"'\\x00\\n]+/assistant/|/usr/lib64/[^/\\\\\"'\\x00\\n]+/assistant/|/opt/[^/\\\\\"'\\x00\\n]+/assistant/|/tmp/\\.mount_[^/\\\\\"'\\x00\\n]+/usr/lib/[^/\\\\\"'\\x00\\n]+/assistant/|/Applications/[^/\\\\\"'\\x00\\n]+\\.app/Contents/Resources/assistant/|/Users/[^/\\\\\"'\\x00\\n]+/Applications/[^/\\\\\"'\\x00\\n]+\\.app/Contents/Resources/assistant/|[A-Za-z]:\\\\Program Files\\\\[^/\\\\\"'\\x00\\n]+\\\\assistant\\\\|[A-Za-z]:\\\\Users\\\\[^/\\\\\"'\\x00\\n]+\\\\AppData\\\\Local\\\\(?:Programs\\\\)?[^/\\\\\"'\\x00\\n]+\\\\assistant\\\\|(?:/|[A-Za-z]:\\\\)(?:[^/\\\\\"'\\x00\\n]+[/\\\\])*[Kk]oinkat[/\\\\]src-tauri[/\\\\]target[/\\\\](?:debug|release)[/\\\\]assistant[/\\\\])koinkat-mcp\\.mjs"
+            },
+            "--database",
+            {
+              "validator": "(?:/|[A-Za-z]:\\\\)[^\\x00\"'\\n]*koinkat\\.db"
+            },
+            "--workspace",
+            {
+              "validator": "[0-9a-fA-F-]{36}"
+            }
+          ]
+        },
+        {
+          "name": "kk-assistant-codex-1-mcp-remove",
+          "cmd": "/usr/local/bin/codex",
+          "args": [
+            "mcp",
+            "remove",
+            "koinkat"
+          ]
+        },
+        {
+          "name": "kk-assistant-codex-2-version",
+          "cmd": "/opt/homebrew/bin/codex",
+          "args": [
+            "--version"
+          ]
+        },
+        {
+          "name": "kk-assistant-codex-2-mcp-add",
+          "cmd": "/opt/homebrew/bin/codex",
+          "args": [
+            "mcp",
+            "add",
+            "koinkat",
+            "--",
+            {
+              "validator": "(?:/usr/bin/node|/usr/bin/node-22|/usr/local/bin/node|/opt/homebrew/bin/node|(?:/home/[^/\\\\\"'\\x00\\n]+|/Users/[^/\\\\\"'\\x00\\n]+|/root|[A-Za-z]:\\\\Users\\\\[^/\\\\\"'\\x00\\n]+)[/\\\\]\\.local[/\\\\]bin[/\\\\]node|C:\\\\Program Files\\\\nodejs\\\\node\\.exe)"
+            },
+            {
+              "validator": "(?:/usr/lib/[^/\\\\\"'\\x00\\n]+/assistant/|/usr/lib64/[^/\\\\\"'\\x00\\n]+/assistant/|/opt/[^/\\\\\"'\\x00\\n]+/assistant/|/tmp/\\.mount_[^/\\\\\"'\\x00\\n]+/usr/lib/[^/\\\\\"'\\x00\\n]+/assistant/|/Applications/[^/\\\\\"'\\x00\\n]+\\.app/Contents/Resources/assistant/|/Users/[^/\\\\\"'\\x00\\n]+/Applications/[^/\\\\\"'\\x00\\n]+\\.app/Contents/Resources/assistant/|[A-Za-z]:\\\\Program Files\\\\[^/\\\\\"'\\x00\\n]+\\\\assistant\\\\|[A-Za-z]:\\\\Users\\\\[^/\\\\\"'\\x00\\n]+\\\\AppData\\\\Local\\\\(?:Programs\\\\)?[^/\\\\\"'\\x00\\n]+\\\\assistant\\\\|(?:/|[A-Za-z]:\\\\)(?:[^/\\\\\"'\\x00\\n]+[/\\\\])*[Kk]oinkat[/\\\\]src-tauri[/\\\\]target[/\\\\](?:debug|release)[/\\\\]assistant[/\\\\])koinkat-mcp\\.mjs"
+            },
+            "--database",
+            {
+              "validator": "(?:/|[A-Za-z]:\\\\)[^\\x00\"'\\n]*koinkat\\.db"
+            },
+            "--workspace",
+            {
+              "validator": "[0-9a-fA-F-]{36}"
+            }
+          ]
+        },
+        {
+          "name": "kk-assistant-codex-2-mcp-remove",
+          "cmd": "/opt/homebrew/bin/codex",
+          "args": [
+            "mcp",
+            "remove",
+            "koinkat"
+          ]
+        },
+        {
+          "name": "kk-assistant-codex-3-version",
+          "cmd": "/usr/bin/codex",
+          "args": [
+            "--version"
+          ]
+        },
+        {
+          "name": "kk-assistant-codex-3-mcp-add",
+          "cmd": "/usr/bin/codex",
+          "args": [
+            "mcp",
+            "add",
+            "koinkat",
+            "--",
+            {
+              "validator": "(?:/usr/bin/node|/usr/bin/node-22|/usr/local/bin/node|/opt/homebrew/bin/node|(?:/home/[^/\\\\\"'\\x00\\n]+|/Users/[^/\\\\\"'\\x00\\n]+|/root|[A-Za-z]:\\\\Users\\\\[^/\\\\\"'\\x00\\n]+)[/\\\\]\\.local[/\\\\]bin[/\\\\]node|C:\\\\Program Files\\\\nodejs\\\\node\\.exe)"
+            },
+            {
+              "validator": "(?:/usr/lib/[^/\\\\\"'\\x00\\n]+/assistant/|/usr/lib64/[^/\\\\\"'\\x00\\n]+/assistant/|/opt/[^/\\\\\"'\\x00\\n]+/assistant/|/tmp/\\.mount_[^/\\\\\"'\\x00\\n]+/usr/lib/[^/\\\\\"'\\x00\\n]+/assistant/|/Applications/[^/\\\\\"'\\x00\\n]+\\.app/Contents/Resources/assistant/|/Users/[^/\\\\\"'\\x00\\n]+/Applications/[^/\\\\\"'\\x00\\n]+\\.app/Contents/Resources/assistant/|[A-Za-z]:\\\\Program Files\\\\[^/\\\\\"'\\x00\\n]+\\\\assistant\\\\|[A-Za-z]:\\\\Users\\\\[^/\\\\\"'\\x00\\n]+\\\\AppData\\\\Local\\\\(?:Programs\\\\)?[^/\\\\\"'\\x00\\n]+\\\\assistant\\\\|(?:/|[A-Za-z]:\\\\)(?:[^/\\\\\"'\\x00\\n]+[/\\\\])*[Kk]oinkat[/\\\\]src-tauri[/\\\\]target[/\\\\](?:debug|release)[/\\\\]assistant[/\\\\])koinkat-mcp\\.mjs"
+            },
+            "--database",
+            {
+              "validator": "(?:/|[A-Za-z]:\\\\)[^\\x00\"'\\n]*koinkat\\.db"
+            },
+            "--workspace",
+            {
+              "validator": "[0-9a-fA-F-]{36}"
+            }
+          ]
+        },
+        {
+          "name": "kk-assistant-codex-3-mcp-remove",
+          "cmd": "/usr/bin/codex",
+          "args": [
+            "mcp",
+            "remove",
+            "koinkat"
+          ]
+        },
+        {
+          "name": "kk-assistant-codex-4-version",
+          "cmd": "$HOME/.cargo/bin/codex",
+          "args": [
+            "--version"
+          ]
+        },
+        {
+          "name": "kk-assistant-codex-4-mcp-add",
+          "cmd": "$HOME/.cargo/bin/codex",
+          "args": [
+            "mcp",
+            "add",
+            "koinkat",
+            "--",
+            {
+              "validator": "(?:/usr/bin/node|/usr/bin/node-22|/usr/local/bin/node|/opt/homebrew/bin/node|(?:/home/[^/\\\\\"'\\x00\\n]+|/Users/[^/\\\\\"'\\x00\\n]+|/root|[A-Za-z]:\\\\Users\\\\[^/\\\\\"'\\x00\\n]+)[/\\\\]\\.local[/\\\\]bin[/\\\\]node|C:\\\\Program Files\\\\nodejs\\\\node\\.exe)"
+            },
+            {
+              "validator": "(?:/usr/lib/[^/\\\\\"'\\x00\\n]+/assistant/|/usr/lib64/[^/\\\\\"'\\x00\\n]+/assistant/|/opt/[^/\\\\\"'\\x00\\n]+/assistant/|/tmp/\\.mount_[^/\\\\\"'\\x00\\n]+/usr/lib/[^/\\\\\"'\\x00\\n]+/assistant/|/Applications/[^/\\\\\"'\\x00\\n]+\\.app/Contents/Resources/assistant/|/Users/[^/\\\\\"'\\x00\\n]+/Applications/[^/\\\\\"'\\x00\\n]+\\.app/Contents/Resources/assistant/|[A-Za-z]:\\\\Program Files\\\\[^/\\\\\"'\\x00\\n]+\\\\assistant\\\\|[A-Za-z]:\\\\Users\\\\[^/\\\\\"'\\x00\\n]+\\\\AppData\\\\Local\\\\(?:Programs\\\\)?[^/\\\\\"'\\x00\\n]+\\\\assistant\\\\|(?:/|[A-Za-z]:\\\\)(?:[^/\\\\\"'\\x00\\n]+[/\\\\])*[Kk]oinkat[/\\\\]src-tauri[/\\\\]target[/\\\\](?:debug|release)[/\\\\]assistant[/\\\\])koinkat-mcp\\.mjs"
+            },
+            "--database",
+            {
+              "validator": "(?:/|[A-Za-z]:\\\\)[^\\x00\"'\\n]*koinkat\\.db"
+            },
+            "--workspace",
+            {
+              "validator": "[0-9a-fA-F-]{36}"
+            }
+          ]
+        },
+        {
+          "name": "kk-assistant-codex-4-mcp-remove",
+          "cmd": "$HOME/.cargo/bin/codex",
+          "args": [
+            "mcp",
+            "remove",
+            "koinkat"
+          ]
+        },
+        {
+          "name": "kk-assistant-node-0-version",
+          "cmd": "/usr/bin/node",
+          "args": [
+            "--version"
+          ]
+        },
+        {
+          "name": "kk-assistant-node-0-mcp",
+          "cmd": "/usr/bin/node",
+          "args": [
+            {
+              "validator": "(?:/usr/lib/[^/\\\\\"'\\x00\\n]+/assistant/|/usr/lib64/[^/\\\\\"'\\x00\\n]+/assistant/|/opt/[^/\\\\\"'\\x00\\n]+/assistant/|/tmp/\\.mount_[^/\\\\\"'\\x00\\n]+/usr/lib/[^/\\\\\"'\\x00\\n]+/assistant/|/Applications/[^/\\\\\"'\\x00\\n]+\\.app/Contents/Resources/assistant/|/Users/[^/\\\\\"'\\x00\\n]+/Applications/[^/\\\\\"'\\x00\\n]+\\.app/Contents/Resources/assistant/|[A-Za-z]:\\\\Program Files\\\\[^/\\\\\"'\\x00\\n]+\\\\assistant\\\\|[A-Za-z]:\\\\Users\\\\[^/\\\\\"'\\x00\\n]+\\\\AppData\\\\Local\\\\(?:Programs\\\\)?[^/\\\\\"'\\x00\\n]+\\\\assistant\\\\|(?:/|[A-Za-z]:\\\\)(?:[^/\\\\\"'\\x00\\n]+[/\\\\])*[Kk]oinkat[/\\\\]src-tauri[/\\\\]target[/\\\\](?:debug|release)[/\\\\]assistant[/\\\\])koinkat-mcp\\.mjs"
+            },
+            "--database",
+            {
+              "validator": "(?:/|[A-Za-z]:\\\\)[^\\x00\"'\\n]*koinkat\\.db"
+            },
+            "--workspace",
+            {
+              "validator": "[0-9a-fA-F-]{36}"
+            }
+          ]
+        },
+        {
+          "name": "kk-assistant-node-0-codex-run",
+          "cmd": "/usr/bin/node",
+          "args": [
+            {
+              "validator": "(?:/usr/lib/[^/\\\\\"'\\x00\\n]+/assistant/|/usr/lib64/[^/\\\\\"'\\x00\\n]+/assistant/|/opt/[^/\\\\\"'\\x00\\n]+/assistant/|/tmp/\\.mount_[^/\\\\\"'\\x00\\n]+/usr/lib/[^/\\\\\"'\\x00\\n]+/assistant/|/Applications/[^/\\\\\"'\\x00\\n]+\\.app/Contents/Resources/assistant/|/Users/[^/\\\\\"'\\x00\\n]+/Applications/[^/\\\\\"'\\x00\\n]+\\.app/Contents/Resources/assistant/|[A-Za-z]:\\\\Program Files\\\\[^/\\\\\"'\\x00\\n]+\\\\assistant\\\\|[A-Za-z]:\\\\Users\\\\[^/\\\\\"'\\x00\\n]+\\\\AppData\\\\Local\\\\(?:Programs\\\\)?[^/\\\\\"'\\x00\\n]+\\\\assistant\\\\|(?:/|[A-Za-z]:\\\\)(?:[^/\\\\\"'\\x00\\n]+[/\\\\])*[Kk]oinkat[/\\\\]src-tauri[/\\\\]target[/\\\\](?:debug|release)[/\\\\]assistant[/\\\\])codex-run\\.mjs"
+            },
+            {
+              "validator": "(?:(?:/home/[^/\\\\\"'\\x00\\n]+|/Users/[^/\\\\\"'\\x00\\n]+|/root|[A-Za-z]:\\\\Users\\\\[^/\\\\\"'\\x00\\n]+)[/\\\\]\\.local[/\\\\]bin[/\\\\]codex|/usr/local/bin/codex|/opt/homebrew/bin/codex|/usr/bin/codex|(?:/home/[^/\\\\\"'\\x00\\n]+|/Users/[^/\\\\\"'\\x00\\n]+|/root|[A-Za-z]:\\\\Users\\\\[^/\\\\\"'\\x00\\n]+)[/\\\\]\\.cargo[/\\\\]bin[/\\\\]codex)"
+            },
+            "--",
+            "exec",
+            "--json",
+            "--ephemeral",
+            "--skip-git-repo-check",
+            "--ignore-user-config",
+            "--ignore-rules",
+            "-s",
+            "read-only",
+            "-C",
+            {
+              "validator": "(?:/|[A-Za-z]:\\\\)[^\\x00\"'\\n]*"
+            },
+            "--disable",
+            "shell_tool",
+            "--disable",
+            "browser_use",
+            "--disable",
+            "computer_use",
+            "--disable",
+            "in_app_browser",
+            "--disable",
+            "apps",
+            "-c",
+            "approval_policy=\"never\"",
+            "-c",
+            {
+              "validator": "mcp_servers\\.koinkat\\.command='(?:/usr/bin/node|/usr/bin/node-22|/usr/local/bin/node|/opt/homebrew/bin/node|(?:/home/[^/\\\\\"'\\x00\\n]+|/Users/[^/\\\\\"'\\x00\\n]+|/root|[A-Za-z]:\\\\Users\\\\[^/\\\\\"'\\x00\\n]+)[/\\\\]\\.local[/\\\\]bin[/\\\\]node|C:\\\\Program Files\\\\nodejs\\\\node\\.exe)'"
+            },
+            "-c",
+            {
+              "validator": "mcp_servers\\.koinkat\\.args=\\['(?:/usr/lib/[^/\\\\\"'\\x00\\n]+/assistant/|/usr/lib64/[^/\\\\\"'\\x00\\n]+/assistant/|/opt/[^/\\\\\"'\\x00\\n]+/assistant/|/tmp/\\.mount_[^/\\\\\"'\\x00\\n]+/usr/lib/[^/\\\\\"'\\x00\\n]+/assistant/|/Applications/[^/\\\\\"'\\x00\\n]+\\.app/Contents/Resources/assistant/|/Users/[^/\\\\\"'\\x00\\n]+/Applications/[^/\\\\\"'\\x00\\n]+\\.app/Contents/Resources/assistant/|[A-Za-z]:\\\\Program Files\\\\[^/\\\\\"'\\x00\\n]+\\\\assistant\\\\|[A-Za-z]:\\\\Users\\\\[^/\\\\\"'\\x00\\n]+\\\\AppData\\\\Local\\\\(?:Programs\\\\)?[^/\\\\\"'\\x00\\n]+\\\\assistant\\\\|(?:/|[A-Za-z]:\\\\)(?:[^/\\\\\"'\\x00\\n]+[/\\\\])*[Kk]oinkat[/\\\\]src-tauri[/\\\\]target[/\\\\](?:debug|release)[/\\\\]assistant[/\\\\])koinkat-mcp\\.mjs', '--database', '(?:/|[A-Za-z]:\\\\)[^\\x00\"'\\n]*koinkat\\.db', '--workspace', '[0-9a-fA-F-]{36}'\\]"
+            },
+            {
+              "validator": "(?s)[A-Za-z][^\\x00]*"
+            }
+          ]
+        },
+        {
+          "name": "kk-assistant-node-1-version",
+          "cmd": "/usr/bin/node-22",
+          "args": [
+            "--version"
+          ]
+        },
+        {
+          "name": "kk-assistant-node-1-mcp",
+          "cmd": "/usr/bin/node-22",
+          "args": [
+            {
+              "validator": "(?:/usr/lib/[^/\\\\\"'\\x00\\n]+/assistant/|/usr/lib64/[^/\\\\\"'\\x00\\n]+/assistant/|/opt/[^/\\\\\"'\\x00\\n]+/assistant/|/tmp/\\.mount_[^/\\\\\"'\\x00\\n]+/usr/lib/[^/\\\\\"'\\x00\\n]+/assistant/|/Applications/[^/\\\\\"'\\x00\\n]+\\.app/Contents/Resources/assistant/|/Users/[^/\\\\\"'\\x00\\n]+/Applications/[^/\\\\\"'\\x00\\n]+\\.app/Contents/Resources/assistant/|[A-Za-z]:\\\\Program Files\\\\[^/\\\\\"'\\x00\\n]+\\\\assistant\\\\|[A-Za-z]:\\\\Users\\\\[^/\\\\\"'\\x00\\n]+\\\\AppData\\\\Local\\\\(?:Programs\\\\)?[^/\\\\\"'\\x00\\n]+\\\\assistant\\\\|(?:/|[A-Za-z]:\\\\)(?:[^/\\\\\"'\\x00\\n]+[/\\\\])*[Kk]oinkat[/\\\\]src-tauri[/\\\\]target[/\\\\](?:debug|release)[/\\\\]assistant[/\\\\])koinkat-mcp\\.mjs"
+            },
+            "--database",
+            {
+              "validator": "(?:/|[A-Za-z]:\\\\)[^\\x00\"'\\n]*koinkat\\.db"
+            },
+            "--workspace",
+            {
+              "validator": "[0-9a-fA-F-]{36}"
+            }
+          ]
+        },
+        {
+          "name": "kk-assistant-node-1-codex-run",
+          "cmd": "/usr/bin/node-22",
+          "args": [
+            {
+              "validator": "(?:/usr/lib/[^/\\\\\"'\\x00\\n]+/assistant/|/usr/lib64/[^/\\\\\"'\\x00\\n]+/assistant/|/opt/[^/\\\\\"'\\x00\\n]+/assistant/|/tmp/\\.mount_[^/\\\\\"'\\x00\\n]+/usr/lib/[^/\\\\\"'\\x00\\n]+/assistant/|/Applications/[^/\\\\\"'\\x00\\n]+\\.app/Contents/Resources/assistant/|/Users/[^/\\\\\"'\\x00\\n]+/Applications/[^/\\\\\"'\\x00\\n]+\\.app/Contents/Resources/assistant/|[A-Za-z]:\\\\Program Files\\\\[^/\\\\\"'\\x00\\n]+\\\\assistant\\\\|[A-Za-z]:\\\\Users\\\\[^/\\\\\"'\\x00\\n]+\\\\AppData\\\\Local\\\\(?:Programs\\\\)?[^/\\\\\"'\\x00\\n]+\\\\assistant\\\\|(?:/|[A-Za-z]:\\\\)(?:[^/\\\\\"'\\x00\\n]+[/\\\\])*[Kk]oinkat[/\\\\]src-tauri[/\\\\]target[/\\\\](?:debug|release)[/\\\\]assistant[/\\\\])codex-run\\.mjs"
+            },
+            {
+              "validator": "(?:(?:/home/[^/\\\\\"'\\x00\\n]+|/Users/[^/\\\\\"'\\x00\\n]+|/root|[A-Za-z]:\\\\Users\\\\[^/\\\\\"'\\x00\\n]+)[/\\\\]\\.local[/\\\\]bin[/\\\\]codex|/usr/local/bin/codex|/opt/homebrew/bin/codex|/usr/bin/codex|(?:/home/[^/\\\\\"'\\x00\\n]+|/Users/[^/\\\\\"'\\x00\\n]+|/root|[A-Za-z]:\\\\Users\\\\[^/\\\\\"'\\x00\\n]+)[/\\\\]\\.cargo[/\\\\]bin[/\\\\]codex)"
+            },
+            "--",
+            "exec",
+            "--json",
+            "--ephemeral",
+            "--skip-git-repo-check",
+            "--ignore-user-config",
+            "--ignore-rules",
+            "-s",
+            "read-only",
+            "-C",
+            {
+              "validator": "(?:/|[A-Za-z]:\\\\)[^\\x00\"'\\n]*"
+            },
+            "--disable",
+            "shell_tool",
+            "--disable",
+            "browser_use",
+            "--disable",
+            "computer_use",
+            "--disable",
+            "in_app_browser",
+            "--disable",
+            "apps",
+            "-c",
+            "approval_policy=\"never\"",
+            "-c",
+            {
+              "validator": "mcp_servers\\.koinkat\\.command='(?:/usr/bin/node|/usr/bin/node-22|/usr/local/bin/node|/opt/homebrew/bin/node|(?:/home/[^/\\\\\"'\\x00\\n]+|/Users/[^/\\\\\"'\\x00\\n]+|/root|[A-Za-z]:\\\\Users\\\\[^/\\\\\"'\\x00\\n]+)[/\\\\]\\.local[/\\\\]bin[/\\\\]node|C:\\\\Program Files\\\\nodejs\\\\node\\.exe)'"
+            },
+            "-c",
+            {
+              "validator": "mcp_servers\\.koinkat\\.args=\\['(?:/usr/lib/[^/\\\\\"'\\x00\\n]+/assistant/|/usr/lib64/[^/\\\\\"'\\x00\\n]+/assistant/|/opt/[^/\\\\\"'\\x00\\n]+/assistant/|/tmp/\\.mount_[^/\\\\\"'\\x00\\n]+/usr/lib/[^/\\\\\"'\\x00\\n]+/assistant/|/Applications/[^/\\\\\"'\\x00\\n]+\\.app/Contents/Resources/assistant/|/Users/[^/\\\\\"'\\x00\\n]+/Applications/[^/\\\\\"'\\x00\\n]+\\.app/Contents/Resources/assistant/|[A-Za-z]:\\\\Program Files\\\\[^/\\\\\"'\\x00\\n]+\\\\assistant\\\\|[A-Za-z]:\\\\Users\\\\[^/\\\\\"'\\x00\\n]+\\\\AppData\\\\Local\\\\(?:Programs\\\\)?[^/\\\\\"'\\x00\\n]+\\\\assistant\\\\|(?:/|[A-Za-z]:\\\\)(?:[^/\\\\\"'\\x00\\n]+[/\\\\])*[Kk]oinkat[/\\\\]src-tauri[/\\\\]target[/\\\\](?:debug|release)[/\\\\]assistant[/\\\\])koinkat-mcp\\.mjs', '--database', '(?:/|[A-Za-z]:\\\\)[^\\x00\"'\\n]*koinkat\\.db', '--workspace', '[0-9a-fA-F-]{36}'\\]"
+            },
+            {
+              "validator": "(?s)[A-Za-z][^\\x00]*"
+            }
+          ]
+        },
+        {
+          "name": "kk-assistant-node-2-version",
+          "cmd": "/usr/local/bin/node",
+          "args": [
+            "--version"
+          ]
+        },
+        {
+          "name": "kk-assistant-node-2-mcp",
+          "cmd": "/usr/local/bin/node",
+          "args": [
+            {
+              "validator": "(?:/usr/lib/[^/\\\\\"'\\x00\\n]+/assistant/|/usr/lib64/[^/\\\\\"'\\x00\\n]+/assistant/|/opt/[^/\\\\\"'\\x00\\n]+/assistant/|/tmp/\\.mount_[^/\\\\\"'\\x00\\n]+/usr/lib/[^/\\\\\"'\\x00\\n]+/assistant/|/Applications/[^/\\\\\"'\\x00\\n]+\\.app/Contents/Resources/assistant/|/Users/[^/\\\\\"'\\x00\\n]+/Applications/[^/\\\\\"'\\x00\\n]+\\.app/Contents/Resources/assistant/|[A-Za-z]:\\\\Program Files\\\\[^/\\\\\"'\\x00\\n]+\\\\assistant\\\\|[A-Za-z]:\\\\Users\\\\[^/\\\\\"'\\x00\\n]+\\\\AppData\\\\Local\\\\(?:Programs\\\\)?[^/\\\\\"'\\x00\\n]+\\\\assistant\\\\|(?:/|[A-Za-z]:\\\\)(?:[^/\\\\\"'\\x00\\n]+[/\\\\])*[Kk]oinkat[/\\\\]src-tauri[/\\\\]target[/\\\\](?:debug|release)[/\\\\]assistant[/\\\\])koinkat-mcp\\.mjs"
+            },
+            "--database",
+            {
+              "validator": "(?:/|[A-Za-z]:\\\\)[^\\x00\"'\\n]*koinkat\\.db"
+            },
+            "--workspace",
+            {
+              "validator": "[0-9a-fA-F-]{36}"
+            }
+          ]
+        },
+        {
+          "name": "kk-assistant-node-2-codex-run",
+          "cmd": "/usr/local/bin/node",
+          "args": [
+            {
+              "validator": "(?:/usr/lib/[^/\\\\\"'\\x00\\n]+/assistant/|/usr/lib64/[^/\\\\\"'\\x00\\n]+/assistant/|/opt/[^/\\\\\"'\\x00\\n]+/assistant/|/tmp/\\.mount_[^/\\\\\"'\\x00\\n]+/usr/lib/[^/\\\\\"'\\x00\\n]+/assistant/|/Applications/[^/\\\\\"'\\x00\\n]+\\.app/Contents/Resources/assistant/|/Users/[^/\\\\\"'\\x00\\n]+/Applications/[^/\\\\\"'\\x00\\n]+\\.app/Contents/Resources/assistant/|[A-Za-z]:\\\\Program Files\\\\[^/\\\\\"'\\x00\\n]+\\\\assistant\\\\|[A-Za-z]:\\\\Users\\\\[^/\\\\\"'\\x00\\n]+\\\\AppData\\\\Local\\\\(?:Programs\\\\)?[^/\\\\\"'\\x00\\n]+\\\\assistant\\\\|(?:/|[A-Za-z]:\\\\)(?:[^/\\\\\"'\\x00\\n]+[/\\\\])*[Kk]oinkat[/\\\\]src-tauri[/\\\\]target[/\\\\](?:debug|release)[/\\\\]assistant[/\\\\])codex-run\\.mjs"
+            },
+            {
+              "validator": "(?:(?:/home/[^/\\\\\"'\\x00\\n]+|/Users/[^/\\\\\"'\\x00\\n]+|/root|[A-Za-z]:\\\\Users\\\\[^/\\\\\"'\\x00\\n]+)[/\\\\]\\.local[/\\\\]bin[/\\\\]codex|/usr/local/bin/codex|/opt/homebrew/bin/codex|/usr/bin/codex|(?:/home/[^/\\\\\"'\\x00\\n]+|/Users/[^/\\\\\"'\\x00\\n]+|/root|[A-Za-z]:\\\\Users\\\\[^/\\\\\"'\\x00\\n]+)[/\\\\]\\.cargo[/\\\\]bin[/\\\\]codex)"
+            },
+            "--",
+            "exec",
+            "--json",
+            "--ephemeral",
+            "--skip-git-repo-check",
+            "--ignore-user-config",
+            "--ignore-rules",
+            "-s",
+            "read-only",
+            "-C",
+            {
+              "validator": "(?:/|[A-Za-z]:\\\\)[^\\x00\"'\\n]*"
+            },
+            "--disable",
+            "shell_tool",
+            "--disable",
+            "browser_use",
+            "--disable",
+            "computer_use",
+            "--disable",
+            "in_app_browser",
+            "--disable",
+            "apps",
+            "-c",
+            "approval_policy=\"never\"",
+            "-c",
+            {
+              "validator": "mcp_servers\\.koinkat\\.command='(?:/usr/bin/node|/usr/bin/node-22|/usr/local/bin/node|/opt/homebrew/bin/node|(?:/home/[^/\\\\\"'\\x00\\n]+|/Users/[^/\\\\\"'\\x00\\n]+|/root|[A-Za-z]:\\\\Users\\\\[^/\\\\\"'\\x00\\n]+)[/\\\\]\\.local[/\\\\]bin[/\\\\]node|C:\\\\Program Files\\\\nodejs\\\\node\\.exe)'"
+            },
+            "-c",
+            {
+              "validator": "mcp_servers\\.koinkat\\.args=\\['(?:/usr/lib/[^/\\\\\"'\\x00\\n]+/assistant/|/usr/lib64/[^/\\\\\"'\\x00\\n]+/assistant/|/opt/[^/\\\\\"'\\x00\\n]+/assistant/|/tmp/\\.mount_[^/\\\\\"'\\x00\\n]+/usr/lib/[^/\\\\\"'\\x00\\n]+/assistant/|/Applications/[^/\\\\\"'\\x00\\n]+\\.app/Contents/Resources/assistant/|/Users/[^/\\\\\"'\\x00\\n]+/Applications/[^/\\\\\"'\\x00\\n]+\\.app/Contents/Resources/assistant/|[A-Za-z]:\\\\Program Files\\\\[^/\\\\\"'\\x00\\n]+\\\\assistant\\\\|[A-Za-z]:\\\\Users\\\\[^/\\\\\"'\\x00\\n]+\\\\AppData\\\\Local\\\\(?:Programs\\\\)?[^/\\\\\"'\\x00\\n]+\\\\assistant\\\\|(?:/|[A-Za-z]:\\\\)(?:[^/\\\\\"'\\x00\\n]+[/\\\\])*[Kk]oinkat[/\\\\]src-tauri[/\\\\]target[/\\\\](?:debug|release)[/\\\\]assistant[/\\\\])koinkat-mcp\\.mjs', '--database', '(?:/|[A-Za-z]:\\\\)[^\\x00\"'\\n]*koinkat\\.db', '--workspace', '[0-9a-fA-F-]{36}'\\]"
+            },
+            {
+              "validator": "(?s)[A-Za-z][^\\x00]*"
+            }
+          ]
+        },
+        {
+          "name": "kk-assistant-node-3-version",
+          "cmd": "/opt/homebrew/bin/node",
+          "args": [
+            "--version"
+          ]
+        },
+        {
+          "name": "kk-assistant-node-3-mcp",
+          "cmd": "/opt/homebrew/bin/node",
+          "args": [
+            {
+              "validator": "(?:/usr/lib/[^/\\\\\"'\\x00\\n]+/assistant/|/usr/lib64/[^/\\\\\"'\\x00\\n]+/assistant/|/opt/[^/\\\\\"'\\x00\\n]+/assistant/|/tmp/\\.mount_[^/\\\\\"'\\x00\\n]+/usr/lib/[^/\\\\\"'\\x00\\n]+/assistant/|/Applications/[^/\\\\\"'\\x00\\n]+\\.app/Contents/Resources/assistant/|/Users/[^/\\\\\"'\\x00\\n]+/Applications/[^/\\\\\"'\\x00\\n]+\\.app/Contents/Resources/assistant/|[A-Za-z]:\\\\Program Files\\\\[^/\\\\\"'\\x00\\n]+\\\\assistant\\\\|[A-Za-z]:\\\\Users\\\\[^/\\\\\"'\\x00\\n]+\\\\AppData\\\\Local\\\\(?:Programs\\\\)?[^/\\\\\"'\\x00\\n]+\\\\assistant\\\\|(?:/|[A-Za-z]:\\\\)(?:[^/\\\\\"'\\x00\\n]+[/\\\\])*[Kk]oinkat[/\\\\]src-tauri[/\\\\]target[/\\\\](?:debug|release)[/\\\\]assistant[/\\\\])koinkat-mcp\\.mjs"
+            },
+            "--database",
+            {
+              "validator": "(?:/|[A-Za-z]:\\\\)[^\\x00\"'\\n]*koinkat\\.db"
+            },
+            "--workspace",
+            {
+              "validator": "[0-9a-fA-F-]{36}"
+            }
+          ]
+        },
+        {
+          "name": "kk-assistant-node-3-codex-run",
+          "cmd": "/opt/homebrew/bin/node",
+          "args": [
+            {
+              "validator": "(?:/usr/lib/[^/\\\\\"'\\x00\\n]+/assistant/|/usr/lib64/[^/\\\\\"'\\x00\\n]+/assistant/|/opt/[^/\\\\\"'\\x00\\n]+/assistant/|/tmp/\\.mount_[^/\\\\\"'\\x00\\n]+/usr/lib/[^/\\\\\"'\\x00\\n]+/assistant/|/Applications/[^/\\\\\"'\\x00\\n]+\\.app/Contents/Resources/assistant/|/Users/[^/\\\\\"'\\x00\\n]+/Applications/[^/\\\\\"'\\x00\\n]+\\.app/Contents/Resources/assistant/|[A-Za-z]:\\\\Program Files\\\\[^/\\\\\"'\\x00\\n]+\\\\assistant\\\\|[A-Za-z]:\\\\Users\\\\[^/\\\\\"'\\x00\\n]+\\\\AppData\\\\Local\\\\(?:Programs\\\\)?[^/\\\\\"'\\x00\\n]+\\\\assistant\\\\|(?:/|[A-Za-z]:\\\\)(?:[^/\\\\\"'\\x00\\n]+[/\\\\])*[Kk]oinkat[/\\\\]src-tauri[/\\\\]target[/\\\\](?:debug|release)[/\\\\]assistant[/\\\\])codex-run\\.mjs"
+            },
+            {
+              "validator": "(?:(?:/home/[^/\\\\\"'\\x00\\n]+|/Users/[^/\\\\\"'\\x00\\n]+|/root|[A-Za-z]:\\\\Users\\\\[^/\\\\\"'\\x00\\n]+)[/\\\\]\\.local[/\\\\]bin[/\\\\]codex|/usr/local/bin/codex|/opt/homebrew/bin/codex|/usr/bin/codex|(?:/home/[^/\\\\\"'\\x00\\n]+|/Users/[^/\\\\\"'\\x00\\n]+|/root|[A-Za-z]:\\\\Users\\\\[^/\\\\\"'\\x00\\n]+)[/\\\\]\\.cargo[/\\\\]bin[/\\\\]codex)"
+            },
+            "--",
+            "exec",
+            "--json",
+            "--ephemeral",
+            "--skip-git-repo-check",
+            "--ignore-user-config",
+            "--ignore-rules",
+            "-s",
+            "read-only",
+            "-C",
+            {
+              "validator": "(?:/|[A-Za-z]:\\\\)[^\\x00\"'\\n]*"
+            },
+            "--disable",
+            "shell_tool",
+            "--disable",
+            "browser_use",
+            "--disable",
+            "computer_use",
+            "--disable",
+            "in_app_browser",
+            "--disable",
+            "apps",
+            "-c",
+            "approval_policy=\"never\"",
+            "-c",
+            {
+              "validator": "mcp_servers\\.koinkat\\.command='(?:/usr/bin/node|/usr/bin/node-22|/usr/local/bin/node|/opt/homebrew/bin/node|(?:/home/[^/\\\\\"'\\x00\\n]+|/Users/[^/\\\\\"'\\x00\\n]+|/root|[A-Za-z]:\\\\Users\\\\[^/\\\\\"'\\x00\\n]+)[/\\\\]\\.local[/\\\\]bin[/\\\\]node|C:\\\\Program Files\\\\nodejs\\\\node\\.exe)'"
+            },
+            "-c",
+            {
+              "validator": "mcp_servers\\.koinkat\\.args=\\['(?:/usr/lib/[^/\\\\\"'\\x00\\n]+/assistant/|/usr/lib64/[^/\\\\\"'\\x00\\n]+/assistant/|/opt/[^/\\\\\"'\\x00\\n]+/assistant/|/tmp/\\.mount_[^/\\\\\"'\\x00\\n]+/usr/lib/[^/\\\\\"'\\x00\\n]+/assistant/|/Applications/[^/\\\\\"'\\x00\\n]+\\.app/Contents/Resources/assistant/|/Users/[^/\\\\\"'\\x00\\n]+/Applications/[^/\\\\\"'\\x00\\n]+\\.app/Contents/Resources/assistant/|[A-Za-z]:\\\\Program Files\\\\[^/\\\\\"'\\x00\\n]+\\\\assistant\\\\|[A-Za-z]:\\\\Users\\\\[^/\\\\\"'\\x00\\n]+\\\\AppData\\\\Local\\\\(?:Programs\\\\)?[^/\\\\\"'\\x00\\n]+\\\\assistant\\\\|(?:/|[A-Za-z]:\\\\)(?:[^/\\\\\"'\\x00\\n]+[/\\\\])*[Kk]oinkat[/\\\\]src-tauri[/\\\\]target[/\\\\](?:debug|release)[/\\\\]assistant[/\\\\])koinkat-mcp\\.mjs', '--database', '(?:/|[A-Za-z]:\\\\)[^\\x00\"'\\n]*koinkat\\.db', '--workspace', '[0-9a-fA-F-]{36}'\\]"
+            },
+            {
+              "validator": "(?s)[A-Za-z][^\\x00]*"
+            }
+          ]
+        },
+        {
+          "name": "kk-assistant-node-4-version",
+          "cmd": "$HOME/.local/bin/node",
+          "args": [
+            "--version"
+          ]
+        },
+        {
+          "name": "kk-assistant-node-4-mcp",
+          "cmd": "$HOME/.local/bin/node",
+          "args": [
+            {
+              "validator": "(?:/usr/lib/[^/\\\\\"'\\x00\\n]+/assistant/|/usr/lib64/[^/\\\\\"'\\x00\\n]+/assistant/|/opt/[^/\\\\\"'\\x00\\n]+/assistant/|/tmp/\\.mount_[^/\\\\\"'\\x00\\n]+/usr/lib/[^/\\\\\"'\\x00\\n]+/assistant/|/Applications/[^/\\\\\"'\\x00\\n]+\\.app/Contents/Resources/assistant/|/Users/[^/\\\\\"'\\x00\\n]+/Applications/[^/\\\\\"'\\x00\\n]+\\.app/Contents/Resources/assistant/|[A-Za-z]:\\\\Program Files\\\\[^/\\\\\"'\\x00\\n]+\\\\assistant\\\\|[A-Za-z]:\\\\Users\\\\[^/\\\\\"'\\x00\\n]+\\\\AppData\\\\Local\\\\(?:Programs\\\\)?[^/\\\\\"'\\x00\\n]+\\\\assistant\\\\|(?:/|[A-Za-z]:\\\\)(?:[^/\\\\\"'\\x00\\n]+[/\\\\])*[Kk]oinkat[/\\\\]src-tauri[/\\\\]target[/\\\\](?:debug|release)[/\\\\]assistant[/\\\\])koinkat-mcp\\.mjs"
+            },
+            "--database",
+            {
+              "validator": "(?:/|[A-Za-z]:\\\\)[^\\x00\"'\\n]*koinkat\\.db"
+            },
+            "--workspace",
+            {
+              "validator": "[0-9a-fA-F-]{36}"
+            }
+          ]
+        },
+        {
+          "name": "kk-assistant-node-4-codex-run",
+          "cmd": "$HOME/.local/bin/node",
+          "args": [
+            {
+              "validator": "(?:/usr/lib/[^/\\\\\"'\\x00\\n]+/assistant/|/usr/lib64/[^/\\\\\"'\\x00\\n]+/assistant/|/opt/[^/\\\\\"'\\x00\\n]+/assistant/|/tmp/\\.mount_[^/\\\\\"'\\x00\\n]+/usr/lib/[^/\\\\\"'\\x00\\n]+/assistant/|/Applications/[^/\\\\\"'\\x00\\n]+\\.app/Contents/Resources/assistant/|/Users/[^/\\\\\"'\\x00\\n]+/Applications/[^/\\\\\"'\\x00\\n]+\\.app/Contents/Resources/assistant/|[A-Za-z]:\\\\Program Files\\\\[^/\\\\\"'\\x00\\n]+\\\\assistant\\\\|[A-Za-z]:\\\\Users\\\\[^/\\\\\"'\\x00\\n]+\\\\AppData\\\\Local\\\\(?:Programs\\\\)?[^/\\\\\"'\\x00\\n]+\\\\assistant\\\\|(?:/|[A-Za-z]:\\\\)(?:[^/\\\\\"'\\x00\\n]+[/\\\\])*[Kk]oinkat[/\\\\]src-tauri[/\\\\]target[/\\\\](?:debug|release)[/\\\\]assistant[/\\\\])codex-run\\.mjs"
+            },
+            {
+              "validator": "(?:(?:/home/[^/\\\\\"'\\x00\\n]+|/Users/[^/\\\\\"'\\x00\\n]+|/root|[A-Za-z]:\\\\Users\\\\[^/\\\\\"'\\x00\\n]+)[/\\\\]\\.local[/\\\\]bin[/\\\\]codex|/usr/local/bin/codex|/opt/homebrew/bin/codex|/usr/bin/codex|(?:/home/[^/\\\\\"'\\x00\\n]+|/Users/[^/\\\\\"'\\x00\\n]+|/root|[A-Za-z]:\\\\Users\\\\[^/\\\\\"'\\x00\\n]+)[/\\\\]\\.cargo[/\\\\]bin[/\\\\]codex)"
+            },
+            "--",
+            "exec",
+            "--json",
+            "--ephemeral",
+            "--skip-git-repo-check",
+            "--ignore-user-config",
+            "--ignore-rules",
+            "-s",
+            "read-only",
+            "-C",
+            {
+              "validator": "(?:/|[A-Za-z]:\\\\)[^\\x00\"'\\n]*"
+            },
+            "--disable",
+            "shell_tool",
+            "--disable",
+            "browser_use",
+            "--disable",
+            "computer_use",
+            "--disable",
+            "in_app_browser",
+            "--disable",
+            "apps",
+            "-c",
+            "approval_policy=\"never\"",
+            "-c",
+            {
+              "validator": "mcp_servers\\.koinkat\\.command='(?:/usr/bin/node|/usr/bin/node-22|/usr/local/bin/node|/opt/homebrew/bin/node|(?:/home/[^/\\\\\"'\\x00\\n]+|/Users/[^/\\\\\"'\\x00\\n]+|/root|[A-Za-z]:\\\\Users\\\\[^/\\\\\"'\\x00\\n]+)[/\\\\]\\.local[/\\\\]bin[/\\\\]node|C:\\\\Program Files\\\\nodejs\\\\node\\.exe)'"
+            },
+            "-c",
+            {
+              "validator": "mcp_servers\\.koinkat\\.args=\\['(?:/usr/lib/[^/\\\\\"'\\x00\\n]+/assistant/|/usr/lib64/[^/\\\\\"'\\x00\\n]+/assistant/|/opt/[^/\\\\\"'\\x00\\n]+/assistant/|/tmp/\\.mount_[^/\\\\\"'\\x00\\n]+/usr/lib/[^/\\\\\"'\\x00\\n]+/assistant/|/Applications/[^/\\\\\"'\\x00\\n]+\\.app/Contents/Resources/assistant/|/Users/[^/\\\\\"'\\x00\\n]+/Applications/[^/\\\\\"'\\x00\\n]+\\.app/Contents/Resources/assistant/|[A-Za-z]:\\\\Program Files\\\\[^/\\\\\"'\\x00\\n]+\\\\assistant\\\\|[A-Za-z]:\\\\Users\\\\[^/\\\\\"'\\x00\\n]+\\\\AppData\\\\Local\\\\(?:Programs\\\\)?[^/\\\\\"'\\x00\\n]+\\\\assistant\\\\|(?:/|[A-Za-z]:\\\\)(?:[^/\\\\\"'\\x00\\n]+[/\\\\])*[Kk]oinkat[/\\\\]src-tauri[/\\\\]target[/\\\\](?:debug|release)[/\\\\]assistant[/\\\\])koinkat-mcp\\.mjs', '--database', '(?:/|[A-Za-z]:\\\\)[^\\x00\"'\\n]*koinkat\\.db', '--workspace', '[0-9a-fA-F-]{36}'\\]"
+            },
+            {
+              "validator": "(?s)[A-Za-z][^\\x00]*"
+            }
+          ]
+        },
+        {
+          "name": "kk-assistant-node-5-version",
+          "cmd": "C:\\Program Files\\nodejs\\node.exe",
+          "args": [
+            "--version"
+          ]
+        },
+        {
+          "name": "kk-assistant-node-5-mcp",
+          "cmd": "C:\\Program Files\\nodejs\\node.exe",
+          "args": [
+            {
+              "validator": "(?:/usr/lib/[^/\\\\\"'\\x00\\n]+/assistant/|/usr/lib64/[^/\\\\\"'\\x00\\n]+/assistant/|/opt/[^/\\\\\"'\\x00\\n]+/assistant/|/tmp/\\.mount_[^/\\\\\"'\\x00\\n]+/usr/lib/[^/\\\\\"'\\x00\\n]+/assistant/|/Applications/[^/\\\\\"'\\x00\\n]+\\.app/Contents/Resources/assistant/|/Users/[^/\\\\\"'\\x00\\n]+/Applications/[^/\\\\\"'\\x00\\n]+\\.app/Contents/Resources/assistant/|[A-Za-z]:\\\\Program Files\\\\[^/\\\\\"'\\x00\\n]+\\\\assistant\\\\|[A-Za-z]:\\\\Users\\\\[^/\\\\\"'\\x00\\n]+\\\\AppData\\\\Local\\\\(?:Programs\\\\)?[^/\\\\\"'\\x00\\n]+\\\\assistant\\\\|(?:/|[A-Za-z]:\\\\)(?:[^/\\\\\"'\\x00\\n]+[/\\\\])*[Kk]oinkat[/\\\\]src-tauri[/\\\\]target[/\\\\](?:debug|release)[/\\\\]assistant[/\\\\])koinkat-mcp\\.mjs"
+            },
+            "--database",
+            {
+              "validator": "(?:/|[A-Za-z]:\\\\)[^\\x00\"'\\n]*koinkat\\.db"
+            },
+            "--workspace",
+            {
+              "validator": "[0-9a-fA-F-]{36}"
+            }
+          ]
+        },
+        {
+          "name": "kk-assistant-node-5-codex-run",
+          "cmd": "C:\\Program Files\\nodejs\\node.exe",
+          "args": [
+            {
+              "validator": "(?:/usr/lib/[^/\\\\\"'\\x00\\n]+/assistant/|/usr/lib64/[^/\\\\\"'\\x00\\n]+/assistant/|/opt/[^/\\\\\"'\\x00\\n]+/assistant/|/tmp/\\.mount_[^/\\\\\"'\\x00\\n]+/usr/lib/[^/\\\\\"'\\x00\\n]+/assistant/|/Applications/[^/\\\\\"'\\x00\\n]+\\.app/Contents/Resources/assistant/|/Users/[^/\\\\\"'\\x00\\n]+/Applications/[^/\\\\\"'\\x00\\n]+\\.app/Contents/Resources/assistant/|[A-Za-z]:\\\\Program Files\\\\[^/\\\\\"'\\x00\\n]+\\\\assistant\\\\|[A-Za-z]:\\\\Users\\\\[^/\\\\\"'\\x00\\n]+\\\\AppData\\\\Local\\\\(?:Programs\\\\)?[^/\\\\\"'\\x00\\n]+\\\\assistant\\\\|(?:/|[A-Za-z]:\\\\)(?:[^/\\\\\"'\\x00\\n]+[/\\\\])*[Kk]oinkat[/\\\\]src-tauri[/\\\\]target[/\\\\](?:debug|release)[/\\\\]assistant[/\\\\])codex-run\\.mjs"
+            },
+            {
+              "validator": "(?:(?:/home/[^/\\\\\"'\\x00\\n]+|/Users/[^/\\\\\"'\\x00\\n]+|/root|[A-Za-z]:\\\\Users\\\\[^/\\\\\"'\\x00\\n]+)[/\\\\]\\.local[/\\\\]bin[/\\\\]codex|/usr/local/bin/codex|/opt/homebrew/bin/codex|/usr/bin/codex|(?:/home/[^/\\\\\"'\\x00\\n]+|/Users/[^/\\\\\"'\\x00\\n]+|/root|[A-Za-z]:\\\\Users\\\\[^/\\\\\"'\\x00\\n]+)[/\\\\]\\.cargo[/\\\\]bin[/\\\\]codex)"
+            },
+            "--",
+            "exec",
+            "--json",
+            "--ephemeral",
+            "--skip-git-repo-check",
+            "--ignore-user-config",
+            "--ignore-rules",
+            "-s",
+            "read-only",
+            "-C",
+            {
+              "validator": "(?:/|[A-Za-z]:\\\\)[^\\x00\"'\\n]*"
+            },
+            "--disable",
+            "shell_tool",
+            "--disable",
+            "browser_use",
+            "--disable",
+            "computer_use",
+            "--disable",
+            "in_app_browser",
+            "--disable",
+            "apps",
+            "-c",
+            "approval_policy=\"never\"",
+            "-c",
+            {
+              "validator": "mcp_servers\\.koinkat\\.command='(?:/usr/bin/node|/usr/bin/node-22|/usr/local/bin/node|/opt/homebrew/bin/node|(?:/home/[^/\\\\\"'\\x00\\n]+|/Users/[^/\\\\\"'\\x00\\n]+|/root|[A-Za-z]:\\\\Users\\\\[^/\\\\\"'\\x00\\n]+)[/\\\\]\\.local[/\\\\]bin[/\\\\]node|C:\\\\Program Files\\\\nodejs\\\\node\\.exe)'"
+            },
+            "-c",
+            {
+              "validator": "mcp_servers\\.koinkat\\.args=\\['(?:/usr/lib/[^/\\\\\"'\\x00\\n]+/assistant/|/usr/lib64/[^/\\\\\"'\\x00\\n]+/assistant/|/opt/[^/\\\\\"'\\x00\\n]+/assistant/|/tmp/\\.mount_[^/\\\\\"'\\x00\\n]+/usr/lib/[^/\\\\\"'\\x00\\n]+/assistant/|/Applications/[^/\\\\\"'\\x00\\n]+\\.app/Contents/Resources/assistant/|/Users/[^/\\\\\"'\\x00\\n]+/Applications/[^/\\\\\"'\\x00\\n]+\\.app/Contents/Resources/assistant/|[A-Za-z]:\\\\Program Files\\\\[^/\\\\\"'\\x00\\n]+\\\\assistant\\\\|[A-Za-z]:\\\\Users\\\\[^/\\\\\"'\\x00\\n]+\\\\AppData\\\\Local\\\\(?:Programs\\\\)?[^/\\\\\"'\\x00\\n]+\\\\assistant\\\\|(?:/|[A-Za-z]:\\\\)(?:[^/\\\\\"'\\x00\\n]+[/\\\\])*[Kk]oinkat[/\\\\]src-tauri[/\\\\]target[/\\\\](?:debug|release)[/\\\\]assistant[/\\\\])koinkat-mcp\\.mjs', '--database', '(?:/|[A-Za-z]:\\\\)[^\\x00\"'\\n]*koinkat\\.db', '--workspace', '[0-9a-fA-F-]{36}'\\]"
+            },
+            {
+              "validator": "(?s)[A-Za-z][^\\x00]*"
+            }
+          ]
+        }
+      ]
+    },
+    "shell:allow-stdin-write",
+    "shell:allow-kill",
+    {
+      "identifier": "http:allow-fetch",
+      "allow": [
+        {
+          "url": "http://127.0.0.1:*/**"
+        },
+        {
+          "url": "http://localhost:*/**"
+        }
+      ]
+    },
+    {
+      "identifier": "fs:allow-mkdir",
+      "allow": [
+        {
+          "path": "$APPLOCALDATA/assistant-workdir"
+        }
+      ]
+    },
+    {
+      "identifier": "fs:allow-exists",
+      "allow": [
+        {
+          "path": "$APPLOCALDATA/assistant-workdir"
+        }
+      ]
+    }
+  ]
+}

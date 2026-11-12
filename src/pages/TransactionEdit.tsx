@@ -449,7 +449,7 @@ export function TransactionEdit() {
             <>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                 <Select
-                  label="Source Account"
+                  label="Source account"
                   options={accountOptions}
                   value={sourceAccountId}
                   onChange={(e) => setSourceAccountId(e.target.value)}
@@ -457,7 +457,7 @@ export function TransactionEdit() {
                 />
 
                 <Select
-                  label="Destination Account"
+                  label="Destination account"
                   options={accountOptions}
                   value={destAccountId}
                   onChange={(e) => setDestAccountId(e.target.value)}

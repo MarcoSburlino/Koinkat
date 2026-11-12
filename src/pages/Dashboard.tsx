@@ -19,8 +19,10 @@ import {
   TrendingUp,
   TrendingDown,
 } from 'lucide-react';
-import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
-import { chartTooltipStyle } from '../lib/chart-style';
+import { categoricalColor } from '../lib/chart-style';
+import { NetWorthCard } from '../components/dashboard/NetWorthCard';
+import { BalanceTrendCard } from '../components/dashboard/BalanceTrendCard';
+import { Meter } from '../components/ui/Meter';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Modal } from '../components/ui/Modal';
@@ -32,7 +34,7 @@ import { useBankStore, FX_UNAVAILABLE_MSG, SYNC_INCOMPLETE_MSG } from '../stores
 import { ensureTodayRates } from '../services/exchange-rate-service';
 import { useKoinkatAccountStore } from '../stores/koinkat-account-store';
 import { getActiveKoinkatAccountId } from '../lib/active-koinkat-account';
-import { formatAmount, formatMoney } from '../lib/format';
+import { formatAmount } from '../lib/format';
 import { MONTH_NAMES, previousMonth } from '../lib/date-constants';
 import { dec } from '../domain/money';
 import { getPercentageColor } from '../lib/budget-colors';
@@ -270,7 +272,7 @@ export function Dashboard() {
           Sync controls live in the right-side slot. */}
       <PageHeader
         serif
-        label="Overview"
+        label="Money"
         title="Financial overview"
         subtitle="Your balances and this month at a glance."
         right={
@@ -586,7 +588,7 @@ export function Dashboard() {
               Balances in{' '}
               {overview.unconvertibleCurrencies
                 .map((c) => c.toUpperCase())
-                .join(', ')}{' '}
+                .join(', ')}
               can’t be converted to {overview.currency} right now, so they’re
               excluded from your net worth. Check your connection and refresh.
             </span>
@@ -601,251 +603,28 @@ export function Dashboard() {
         </InfoBanner>
       )}
 
-      {/* Hero row: Net Worth (left) + Distribution (right).
-          Both cards get `h-full` so they share the grid row's height,
-          and the Distribution card's inner content becomes a flex column
-          so the pie chart fills the vertical space instead of leaving
-          dead air at the bottom. */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-8 lg:items-stretch">
-        {/* Net Worth Card */}
-        <Card highlight className="h-full">
-          <p
-            className="uppercase mb-3"
-            style={UPPERCASE_LABEL}
-          >
-            Net worth
-          </p>
-          {!overview || accounts.length === 0 ? (
-            <div className="flex flex-col items-start gap-3">
-              <span
-                className="amount amount-lg"
-                style={{ color: 'var(--text-muted)' }}
-              >
-                --
-              </span>
-              <p
-                style={{
-                  color: 'var(--text-muted)',
-                  fontSize: 'var(--fs-body-sm)',
-                }}
-              >
-                No accounts yet. Add one below to see your balance.
-              </p>
-            </div>
-          ) : (
-            <>
-              <div data-privacy-field className="flex items-baseline">
-                <span
-                  className="amount amount-lg"
-                  style={{ color: 'var(--text)' }}
-                >
-                  {formatAmount(overview.totalBalance, settings.decimalSeparator)}
-                </span>
-                <span className="currency-code">{overview.currency}</span>
-              </div>
-              <p
-                className="mt-1"
-                style={{
-                  color: 'var(--text-secondary)',
-                  fontSize: 'var(--fs-body-sm)',
-                }}
-              >
-                Across {accounts.length} account{accounts.length !== 1 ? 's' : ''}
-                {overview.unconvertibleCurrencies.length > 0 &&
-                  (() => {
-                    const excluded = overview.entries.filter(
-                      (e) => e.conversionFailed,
-                    ).length;
-                    return ` (${excluded} excluded - rates unavailable)`;
-                  })()}
-                {pendingCount > 0 &&
-                  ` · includes ${pendingCount} pending`}
-              </p>
-
-              {/* Per-account breakdown */}
-              <ul
-                className="mt-5 flex flex-col gap-3 pt-5"
-                style={{ borderTop: '1px solid var(--border)' }}
-                data-privacy-field
-              >
-                {overview.entries.map((entry) => (
-                  <li
-                    key={entry.accountId}
-                    className="flex items-center gap-3 min-w-0"
-                  >
-                    <span
-                      className="w-2.5 h-2.5 rounded-full shrink-0"
-                      style={{ backgroundColor: entry.color }}
-                    />
-                    <span
-                      className="truncate min-w-0 flex-1"
-                      style={{
-                        color: 'var(--text)',
-                        fontSize: 'var(--fs-body)',
-                      }}
-                    >
-                      {entry.name}
-                    </span>
-                    <span
-                      className="amount amount-md shrink-0 flex items-baseline"
-                      style={{ color: 'var(--text)' }}
-                    >
-                      <span>
-                        {formatAmount(entry.nativeAmount, settings.decimalSeparator)}
-                      </span>
-                      <span className="currency-code">{entry.nativeCurrency}</span>
-                    </span>
-                    {entry.isCrossCurrency &&
-                      (entry.conversionFailed ? (
-                        <span
-                          className="shrink-0 italic"
-                          style={{
-                            color: 'var(--text-muted)',
-                            fontSize: 'var(--fs-body-sm)',
-                          }}
-                          title={`No ${entry.convertedCurrency} exchange rate available`}
-                        >
-                          rate unavailable
-                        </span>
-                      ) : (
-                        <>
-                          <ArrowRight
-                            size={12}
-                            className="shrink-0"
-                            style={{ color: 'var(--text-muted)' }}
-                          />
-                          <span
-                            className="amount amount-sm shrink-0 flex items-baseline"
-                            style={{ color: 'var(--text-muted)' }}
-                          >
-                            <span>
-                              {formatAmount(
-                                entry.convertedAmount,
-                                settings.decimalSeparator,
-                              )}
-                            </span>
-                            <span className="currency-code">
-                              {entry.convertedCurrency}
-                            </span>
-                          </span>
-                        </>
-                      ))}
-                  </li>
-                ))}
-              </ul>
-            </>
-          )}
-        </Card>
-
-        {/* Distribution Pie Chart - h-full + flex column so the chart
-            area fills the remaining vertical space of the grid row. */}
-        <Card className="h-full flex flex-col">
-          <p
-            className="uppercase mb-3"
-            style={UPPERCASE_LABEL}
-          >
-            Account distribution
-          </p>
-          {!overview || overview.distribution.length === 0 ? (
-            <p
-              className="text-center flex-1 flex items-center justify-center"
-              style={{
-                color: 'var(--text-muted)',
-                fontSize: 'var(--fs-body-sm)',
-              }}
-            >
-              No positive balances to chart yet.
+      {/* Hero row: net worth with its account split (left) and how the
+          balance moved this year (right). Each account is listed once. */}
+      <div className="grid grid-cols-1 lg:grid-cols-[5fr_7fr] gap-4 mb-4 lg:items-stretch">
+        <NetWorthCard
+          overview={overview}
+          accountCount={accounts.length}
+          pendingCount={pendingCount}
+          decimalSeparator={settings.decimalSeparator}
+        />
+        {accounts.length > 0 ? (
+          <BalanceTrendCard
+            accounts={accounts}
+            preferredCurrency={settings.preferredCurrency}
+            decimalSeparator={settings.decimalSeparator}
+          />
+        ) : (
+          <Card className="h-full flex items-center justify-center">
+            <p style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-body-sm)' }}>
+              Your balance history appears here once you have an account.
             </p>
-          ) : (
-            /* flex-1 so this row takes all remaining card height,
-               min-h-0 so the child can shrink properly in the flex context. */
-            <div className="flex items-center gap-5 flex-1 min-h-0">
-              {/* Donut - aspect-square so width tracks height. Clamped to
-                  [160, 260] so the pie is always legible but never dominates.
-                  data-privacy-field: the tooltip exposes per-account amounts,
-                  so privacy mode must blur the whole chart. */}
-              <div
-                className="relative shrink-0 aspect-square"
-                data-privacy-field
-                style={{
-                  height: '100%',
-                  minHeight: '160px',
-                  maxHeight: '260px',
-                  minWidth: '160px',
-                  maxWidth: '260px',
-                }}
-              >
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={overview.distribution.map((d) => ({
-                        ...d,
-                        // display-boundary: geometry only - terminal coercion
-                        // for Recharts, no arithmetic on the float.
-                        value: parseFloat(d.amount),
-                      }))}
-                      dataKey="value"
-                      nameKey="label"
-                      cx="50%"
-                      cy="50%"
-                      /* Percentage radii so the donut scales with the
-                         container. 50% inner / 90% outer preserves the
-                         spec's ~55% inner-to-outer ratio. */
-                      innerRadius="50%"
-                      outerRadius="90%"
-                      paddingAngle={2}
-                      strokeWidth={0}
-                    >
-                      {overview.distribution.map((entry, i) => (
-                        <Cell key={i} fill={entry.color} />
-                      ))}
-                    </Pie>
-                    <Tooltip
-                      formatter={(value: number) =>
-                        formatMoney(
-                          String(value),
-                          overview.currency,
-                          settings.decimalSeparator,
-                        )
-                      }
-                      {...chartTooltipStyle}
-                    />
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
-              {/* Legend - vertically centered inside its own column so it
-                  sits opposite the donut regardless of row height. */}
-              <div className="flex-1 flex flex-col justify-center gap-2.5 min-w-0">
-                {overview.distribution.map((entry, i) => (
-                  <div key={i} className="flex items-center gap-2 min-w-0">
-                    <div
-                      className="w-2.5 h-2.5 rounded-full shrink-0"
-                      style={{ backgroundColor: entry.dotColor }}
-                    />
-                    <span
-                      className="truncate"
-                      style={{
-                        color: 'var(--text)',
-                        fontSize: 'var(--fs-body-sm)',
-                      }}
-                    >
-                      {entry.label}
-                    </span>
-                    <span
-                      className="ml-auto shrink-0 amount"
-                      style={{
-                        color: 'var(--text-muted)',
-                        fontSize: 'var(--fs-rate)',
-                      }}
-                    >
-                      {entry.percentage.toFixed(1)}%
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </Card>
+          </Card>
+        )}
       </div>
 
       {/* "This month" pulse - answers the question the user actually opens
@@ -1016,7 +795,7 @@ export function Dashboard() {
                   >
                     <span
                       className="amount amount-md"
-                      style={{ color: 'var(--text)' }}
+                      style={{ color: dec(account.currentBalance).lt(0) ? 'var(--expense)' : 'var(--text)' }}
                     >
                       {formatAmount(
                         account.currentBalance,
@@ -1026,42 +805,25 @@ export function Dashboard() {
                     <span className="currency-code">{account.currency}</span>
                   </div>
 
-                  {/* Actions - ghost buttons, destructive pushed right. */}
+                  {/* Actions - quiet at rest; delete turns red only on hover. */}
                   <div
-                    className="flex items-center gap-1 pt-3"
+                    className="flex items-center gap-1 pt-3 -mx-1.5"
                     style={{ borderTop: '1px solid var(--border)' }}
                   >
-                    <Link to={`/transactions?account=${account.id}`}>
-                      <button
-                        className="flex items-center gap-1.5 px-2 py-1.5 rounded transition-colors cursor-pointer hover:opacity-80"
-                        style={{
-                          color: 'var(--text-secondary)',
-                          fontSize: 'var(--fs-body-sm)',
-                        }}
-                      >
-                        <List size={14} /> Transactions
-                      </button>
+                    <Link to={`/transactions?account=${account.id}`} className="kk-text-action">
+                      <List size={14} /> Transactions
                     </Link>
-                    <Link to={`/accounts/${account.id}/edit`}>
-                      <button
-                        className="flex items-center gap-1.5 px-2 py-1.5 rounded transition-colors cursor-pointer hover:opacity-80"
-                        style={{
-                          color: 'var(--text-secondary)',
-                          fontSize: 'var(--fs-body-sm)',
-                        }}
-                      >
-                        <Pencil size={14} /> Edit
-                      </button>
+                    <Link to={`/accounts/${account.id}/edit`} className="kk-text-action">
+                      <Pencil size={14} /> Edit
                     </Link>
                     <button
                       onClick={() => setDeleteTarget(account)}
-                      className="flex items-center gap-1.5 px-2 py-1.5 rounded transition-colors cursor-pointer hover:opacity-80 ml-auto"
-                      style={{
-                        color: 'var(--danger)',
-                        fontSize: 'var(--fs-body-sm)',
-                      }}
+                      className="kk-icon-btn ml-auto"
+                      data-tone="danger"
+                      aria-label={`Delete ${account.name}`}
+                      title="Delete account"
                     >
-                      <Trash2 size={14} /> Delete
+                      <Trash2 size={14} />
                     </button>
                   </div>
                 </div>
@@ -1223,9 +985,6 @@ function MonthPulseCard({
   // Budget pace (only when a budget covers the current month). Shared
   // helper keeps this math identical to the Budgets focused-month card.
   const pace = monthPace(budgetMonth?.summary.remaining ?? '0', now);
-  const clampedBudgetPct = budgetMonth
-    ? Math.min(Math.max(0, budgetMonth.summary.percentUsed), 100)
-    : 0;
 
   return (
     <Card className="mb-8">
@@ -1274,11 +1033,10 @@ function MonthPulseCard({
               {overLastMonth ? (
                 <>
                   <TrendingUp size={14} />
-                  Already above {prevMonthName}'s total (
-                  <span data-privacy-field>
+                  Already above all of {prevMonthName}:{' '}
+                  <span data-privacy-field className="amount">
                     {formatAmount(prevTotal, decimalSeparator)} {preferredCurrency}
                   </span>
-                  )
                 </>
               ) : (
                 <>
@@ -1318,27 +1076,13 @@ function MonthPulseCard({
                   {budgetMonth.summary.percentUsed.toFixed(0)}%
                 </span>
               </div>
-              {/* Progress bar with a "today" tick: spent-vs-time in one glance. */}
-              <div
-                className="h-2 rounded-full overflow-hidden relative mb-1.5"
-                style={{ backgroundColor: 'var(--surface-alt)' }}
-              >
-                <div
-                  className="h-full rounded-full"
-                  style={{
-                    width: `${clampedBudgetPct}%`,
-                    backgroundColor: getPercentageColor(budgetMonth.summary.percentUsed),
-                  }}
-                />
-                <div
-                  className="absolute top-0 bottom-0"
-                  title={`Today - ${pace.monthElapsedPct.toFixed(0)}% of the month gone`}
-                  style={{
-                    left: `${pace.monthElapsedPct}%`,
-                    width: 2,
-                    backgroundColor: 'var(--text)',
-                    opacity: 0.5,
-                  }}
+              {/* Meter with a "today" tick: spent-vs-time in one glance. */}
+              <div className="mb-2 mt-1">
+                <Meter
+                  pct={budgetMonth.summary.percentUsed}
+                  marker={pace.monthElapsedPct}
+                  markerLabel={`Today - ${pace.monthElapsedPct.toFixed(0)}% of the month gone`}
+                  label={`Spent ${budgetMonth.summary.percentUsed.toFixed(0)}% of this month's budget`}
                 />
               </div>
               <p style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-body-sm)' }}>
@@ -1384,24 +1128,29 @@ function MonthPulseCard({
           ) : (
             <div className="flex flex-col gap-2">
               {topRows.map((row, i) => (
-                <div key={row.macroId ?? '__uncat__'} className="flex items-center gap-2 min-w-0">
-                  <span
-                    className="w-2 h-2 rounded-full shrink-0"
-                    style={{ backgroundColor: `var(--viz-${(i % 8) + 1})` }}
-                  />
-                  <span
-                    className="truncate flex-1"
-                    style={{ color: 'var(--text)', fontSize: 'var(--fs-body-sm)' }}
-                  >
-                    {row.macroName}
-                  </span>
-                  <span
-                    className="amount amount-sm shrink-0"
-                    data-privacy-field
-                    style={{ color: 'var(--text-muted)' }}
-                  >
-                    {formatAmount(row.amount, decimalSeparator)}
-                  </span>
+                <div key={row.macroId ?? '__uncat__'} className="flex flex-col gap-1 min-w-0">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span
+                      className="w-2 h-2 rounded-full shrink-0"
+                      style={{ backgroundColor: categoricalColor(i) }}
+                    />
+                    <span
+                      className="truncate flex-1"
+                      style={{ color: 'var(--text)', fontSize: 'var(--fs-body-sm)' }}
+                    >
+                      {row.macroName}
+                    </span>
+                    <span
+                      className="amount amount-sm shrink-0"
+                      data-privacy-field
+                      style={{ color: 'var(--text-secondary)' }}
+                    >
+                      {formatAmount(row.amount, decimalSeparator)}
+                    </span>
+                  </div>
+                  {/* Share of this month's spending; clamped in the view
+                      because a bar cannot draw a negative net. */}
+                  <Meter pct={Math.max(0, row.percentage)} color={categoricalColor(i)} size="xs" label={`${row.macroName}: ${row.percentage.toFixed(0)}% of spending`} />
                 </div>
               ))}
             </div>

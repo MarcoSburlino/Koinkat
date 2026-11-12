@@ -494,8 +494,15 @@ async function sumSpendingRows(
   targetCurrency: string,
   logContext: string,
   rateMemo?: Map<string, Record<string, string> | null>,
+  /** When given, each converted row is also added under `dayKey(row.date)`. */
+  perDay?: { dayKey: (date: string) => string; out: Map<string, Big> },
 ): Promise<SpendingResult> {
   let total = new Big('0');
+  const addDay = (date: string, amt: Big) => {
+    if (!perDay) return;
+    const k = perDay.dayKey(date);
+    perDay.out.set(k, (perDay.out.get(k) ?? new Big('0')).plus(amt));
+  };
   const nativeByCcy: Record<string, Big> = {};
   const unconvertibleCurrencies = new Set<string>();
 
@@ -507,6 +514,7 @@ async function sumSpendingRows(
 
     if (ccyKey === targetCurrency.toLowerCase()) {
       total = total.plus(txAmount);
+      addDay(tx.date, txAmount);
       continue;
     }
 
@@ -517,6 +525,7 @@ async function sumSpendingRows(
       continue;
     }
     total = total.plus(converted);
+    addDay(tx.date, converted);
   }
 
   if (unconvertibleCurrencies.size > 0) {
@@ -539,10 +548,16 @@ async function sumSpendingRows(
   };
 }
 
-export async function calculatePeriodSpending(
+/**
+ * The expense rows that count toward one budget period: budgeted,
+ * booked, non-transfer, non-repayment expenses dated inside the period
+ * and NOT linked to an event, plus every row of an event folded into
+ * this month (any date). Shared by the period total and its per-day
+ * breakdown so the two can never disagree.
+ */
+async function loadPeriodSpendingRows(
   periodId: string,
-  rateMemo?: Map<string, Record<string, string> | null>,
-): Promise<SpendingResult> {
+): Promise<{ period: BudgetPeriod; rows: SpendingTxRow[] }> {
   const koinkatAccountId = requireActiveKoinkatAccountId();
   const db = await getDb();
 
@@ -625,14 +640,95 @@ export async function calculatePeriodSpending(
     );
   }
 
-  const txRows: SpendingTxRow[] = [...regularRows, ...eventRows];
+  return { period, rows: [...regularRows, ...eventRows] };
+}
 
+export async function calculatePeriodSpending(
+  periodId: string,
+  rateMemo?: Map<string, Record<string, string> | null>,
+): Promise<SpendingResult> {
+  const { period, rows } = await loadPeriodSpendingRows(periodId);
   return sumSpendingRows(
-    txRows,
+    rows,
     period.currency,
     `calculatePeriodSpending for period ${periodId}`,
     rateMemo,
   );
+}
+
+export interface DailySpendingPoint {
+  /** YYYY-MM-DD, every day of the period in order. */
+  date: string;
+  /** Spent on this day, in the period currency (2 dp string). */
+  spent: string;
+  /** Running total up to and including this day (2 dp string). */
+  cumulative: string;
+}
+
+export interface PeriodDailySpending {
+  periodStart: string;
+  periodEnd: string;
+  currency: string;
+  days: DailySpendingPoint[];
+  /** Equals `calculatePeriodSpending(periodId).total` exactly. */
+  total: string;
+  unconvertibleCurrencies: string[];
+}
+
+/**
+ * Per-day spending for a period, for the Budgets pace chart. Uses the
+ * same rows and per-row conversion as `calculatePeriodSpending`, so the
+ * last `cumulative` equals the period total to the cent.
+ *
+ * Event rows fold into the month regardless of their own date; one dated
+ * before the period counts on its first day, one dated after on its last,
+ * so the running total still ends at the period total.
+ */
+export async function calculatePeriodDailySpending(
+  periodId: string,
+  rateMemo?: Map<string, Record<string, string> | null>,
+): Promise<PeriodDailySpending> {
+  const { period, rows } = await loadPeriodSpendingRows(periodId);
+  const start = period.periodStart.slice(0, 10);
+  const end = period.periodEnd.slice(0, 10);
+  const out = new Map<string, Big>();
+  const dayKey = (date: string) => {
+    const d = date.slice(0, 10);
+    return d < start ? start : d > end ? end : d;
+  };
+  const result = await sumSpendingRows(
+    rows,
+    period.currency,
+    `calculatePeriodDailySpending for period ${periodId}`,
+    rateMemo,
+    { dayKey, out },
+  );
+
+  const days: DailySpendingPoint[] = [];
+  let running = new Big('0');
+  // Walk calendar days in UTC so DST never skips or repeats a date.
+  const cursor = new Date(`${start}T00:00:00Z`);
+  const last = new Date(`${end}T00:00:00Z`);
+  while (cursor <= last) {
+    const key = cursor.toISOString().slice(0, 10);
+    const spent = out.get(key) ?? new Big('0');
+    running = running.plus(spent);
+    days.push({
+      date: key,
+      spent: qCent(spent).toFixed(2),
+      cumulative: qCent(running).toFixed(2),
+    });
+    cursor.setUTCDate(cursor.getUTCDate() + 1);
+  }
+
+  return {
+    periodStart: start,
+    periodEnd: end,
+    currency: period.currency,
+    days,
+    total: result.total,
+    unconvertibleCurrencies: result.unconvertibleCurrencies,
+  };
 }
 
 /**

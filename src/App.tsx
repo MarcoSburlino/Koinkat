@@ -14,6 +14,7 @@ import { Categories } from './pages/Categories';
 import { Analysis } from './pages/Analysis';
 import { Summary } from './pages/Summary';
 import { Budgets } from './pages/Budgets';
+import { Assistant } from './pages/Assistant';
 import { BankLink } from './pages/BankLink';
 import { Review } from './pages/Review';
 import { Rules } from './pages/Rules';
@@ -46,6 +47,7 @@ export function App() {
             <Route path="analysis" element={<Analysis />} />
             <Route path="summary" element={<Summary />} />
             <Route path="budgets" element={<Budgets />} />
+            <Route path="assistant" element={<Assistant />} />
             {/* Budget events merged into /budgets page (2026-04-22). Redirect any stale links. */}
             <Route path="budget-events" element={<Navigate to="/budgets" replace />} />
             <Route path="bank-link" element={<BankLink />} />

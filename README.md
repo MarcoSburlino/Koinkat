@@ -29,6 +29,7 @@ accounts.
 
 - [What it does](#what-it-does)
 - [How Koinkat handles your data](#how-koinkat-handles-your-data)
+- [AI assistant (optional)](#ai-assistant-optional)
 - [Install](#install)
   - [Path A: install the released app](#path-a-install-the-released-app)
   - [Path B: build from source](#path-b-build-from-source)
@@ -77,6 +78,7 @@ the source code:
 |---|---|---|---|
 | `api.enablebanking.com` | Only if you link a bank, during linking and syncs | Requests signed with your own Enable Banking application ID, the bank you picked, and session identifiers; the API returns your balances and transactions | Your online-banking username and password - you enter those on your bank's own website, never in Koinkat |
 | `cdn.jsdelivr.net` (fallback: `*.currency-api.pages.dev`) | On app start and before syncs | A request for the day's public exchange-rate table (`.../currency-api@<date>/v1/currencies/usd.json`) | Anything about you - the URL contains only the date; not even your chosen currency |
+| Only if you turn on the **AI assistant** (off by default, per workspace) | Each question you ask | With Claude Code or Codex: your own installed CLI sends your question and the data it reads to Anthropic or OpenAI under your account. With a local model: only `127.0.0.1` / `localhost` | Bank credentials, keys and API configuration are never readable by the assistant. See [AI assistant](#ai-assistant-optional) |
 | Your bank's authorization page, then `marcosburlino.github.io/koinkat-callback/` | Only during bank linking, in your regular browser (not inside the app) | The bank redirects your browser to the callback page with a one-time authorization code; the page is a single static file that makes zero further network requests and hands the code back to the app locally. GitHub Pages serves that page - see the note below | The code is never sent anywhere by the page, and it is useless without the private key that exists only on your machine |
 
 Like every internet request, these servers see your IP address. Beyond
@@ -86,7 +88,9 @@ disable because none was ever built.
 
 Two independent controls keep the app's own traffic to the hosts above:
 the webview's content-security policy, and the Tauri capability
-allowlist, which scopes the Rust HTTP client to the same three hosts.
+allowlist, which scopes the Rust HTTP client to the same three hosts
+(plus `127.0.0.1` / `localhost`, used only by the optional assistant's
+local-model engine).
 Neither control applies to the Rust dependency tree itself - as in any
 native application, a compromised crate could open a socket directly.
 That is the trust you extend to the dependency set of any desktop app
@@ -124,6 +128,47 @@ The database is not encrypted at rest - anyone with access to your OS
 user account can read it, and the same goes for its automatic backups. Use OS disk encryption (BitLocker, FileVault,
 LUKS) if that matters to you. See [Security model](#security-model) for
 the rest of the picture.
+
+## AI assistant (optional)
+
+Off by default. Turn it on per workspace in **Settings > AI assistant**,
+after a notice that says where your data goes, then ask questions on the
+**Assistant** page: "how much did I spend on food in October?", "am I on
+track this month?". Chats are saved in the workspace and included in
+backups; delete them any time.
+
+Who answers is your choice, and it is your own subscription that pays:
+
+| Engine | Needs | Where your data goes |
+|---|---|---|
+| Claude Code | `claude` installed and signed in | Anthropic, under your account |
+| Codex | `codex` installed and signed in | OpenAI, under your account |
+| Local model | Ollama, LM Studio or llama.cpp with a tool-calling model | Nowhere: `127.0.0.1` only |
+
+All three also need **Node.js 22.13 or newer**, which runs the read-only
+[Koinkat MCP server](mcp/)
+bundled with the app.
+
+How it is kept safe:
+
+- **Read-only.** The assistant reads and calculates through the MCP
+  server. It cannot change, move or delete anything, and it never sees
+  bank credentials, keys or API configuration.
+- **Locked-down CLIs.** Koinkat starts Claude Code with `--restricted
+  --tools ""` and only Koinkat's MCP server, and Codex with its shell,
+  browser, computer-use and apps tools switched off in a read-only
+  sandbox, so a transaction note written by someone else cannot make
+  the model run commands or read files. The exact flags are pinned by
+  the Tauri capability `src-tauri/capabilities/assistant.json`; the app
+  cannot start these programs any other way.
+- **No stray sessions.** Koinkat keeps the conversation and sends it
+  with each question; the CLIs run without saving sessions of their own.
+
+Settings can also **connect** the MCP server to your own Claude Code or
+Codex (`claude mcp add` / `codex mcp add`), so you can ask about this
+workspace from any session there. Those sessions use your normal CLI
+settings and tools; remove the connection with `claude mcp remove
+koinkat --scope user` or `codex mcp remove koinkat`.
 
 ## Install
 
@@ -1082,10 +1127,13 @@ Three modes, each producing a verifiably different bundle:
 | Mode | Command | Mocks | `/rules` route | Sandbox card | Tauri ID |
 |---|---|---|---|---|---|
 | Development | `npm run tauri:dev` | on | visible | visible | `com.koinkat.app` |
-| Demo | `npm run tauri:build:demo` | on | hidden | visible | `com.koinkat.app.demo` |
+| Demo | `npm run tauri:build:demo` | forbidden | hidden | visible | `com.koinkat.app.demo` |
 | Production | `npm run tauri:build` | **build fails if leaked** | removed | hidden | `com.koinkat.app` |
 
-Demo installs side-by-side with production (different identifier). See
+Demo uses real Enable Banking sandbox requests, with yellow branding and
+separate storage, executable, credential namespace and callback scheme.
+Use `npm run tauri:dev:demo` for isolated development. See
+[`docs/demo.md`](docs/demo.md) for setup and recording instructions and
 [`docs/development.md`](docs/development.md) for the full setup and the
 three-layer defense that keeps mocks out of production binaries.
 
@@ -1156,6 +1204,17 @@ Koinkat/
   audit of the pre-publication restructure (2026-04-24) and follow-up.
 - [Code signing policy](docs/code-signing-policy.md) - how release
   artifacts are signed, team roles, and the privacy policy.
+- [`docs/signing.md`](docs/signing.md) - macOS signing setup and Windows
+  antivirus false positives.
+- [Privacy policy](docs/privacy-policy.md) - what Koinkat does with your
+  data.
+- [`docs/legal-review-2026-08-26.md`](docs/legal-review-2026-08-26.md),
+  [`docs/legal-open-questions.md`](docs/legal-open-questions.md) and
+  [`docs/legal-open-questions-answered-2026-08-27.md`](docs/legal-open-questions-answered-2026-08-27.md) -
+  legal review and how each open question was closed.
+- [`docs/callback/README.md`](docs/callback/README.md) - where the bank
+  callback page lives.
+- [`packaging/README.md`](packaging/README.md) - winget manifests.
 
 Don't see what you're looking for? Open an issue.
 

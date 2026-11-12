@@ -3,6 +3,8 @@ import { Copy, Check } from 'lucide-react';
 import { Modal } from './ui/Modal';
 import { Button } from './ui/Button';
 import { useClipboard } from '../hooks/useClipboard';
+import { IS_DEMO_APP } from '../lib/build-profile';
+import { DEFAULT_CALLBACK_URL, OAUTH_CALLBACK_URL } from '../lib/constants';
 
 export interface BankSetupGuideProps {
   open: boolean;
@@ -85,7 +87,7 @@ interface Step {
 const BODY = 'text-sm mb-3';
 const LIST = 'list-decimal list-inside flex flex-col gap-2 text-sm';
 
-const STEPS: Step[] = [
+const PRODUCTION_STEPS: Step[] = [
   // ── Step 1 ────────────────────────────────────────────────────────────
   {
     title: 'Create an Enable Banking account',
@@ -366,6 +368,50 @@ const STEPS: Step[] = [
   },
 ];
 
+const DEMO_STEPS: Step[] = [
+  {
+    title: 'Create a sandbox application',
+    content: <p className={BODY}>Sign into <Mono>enablebanking.com/sign-in/</Mono>.
+      In API applications, register a new application named Koinkat Demo and
+      choose <Label>Sandbox</Label>. Keep browser key generation selected.
+      Sandbox applications activate automatically.</p>,
+  },
+  {
+    title: 'Register the Demo redirect URL',
+    content: <><p className={BODY}>Register this exact URL, including its query.
+      It returns authorization to <Mono>{OAUTH_CALLBACK_URL}</Mono>.</p>
+      <CodeBlock code={DEFAULT_CALLBACK_URL} /></>,
+  },
+  {
+    title: 'Download the key and note the application ID',
+    content: <p className={BODY}>Press <Label>Register</Label>. Keep the downloaded
+      <Mono>.pem</Mono> file privately and note the application ID. Select the file
+      in Koinkat Demo; never show its contents in your recording.</p>,
+  },
+  {
+    title: 'Configure fictional data in Mock ASPSP',
+    content: <p className={BODY}>In the Control Panel, open Mock ASPSPs and add
+      your synthetic account and transaction data. Use the supplied pilot file
+      first. No real bank account or production activation is needed.</p>,
+  },
+  {
+    title: 'Create and verify your Sandbox workspace',
+    content: <p className={BODY}>Choose <Label>Sandbox</Label> in Koinkat Demo.
+      Enter the application ID, select its matching PEM, keep the Demo redirect
+      URL and click <Label>Create &amp; verify</Label>. Demo checks the provider's
+      application environment before allowing bank access.</p>,
+  },
+  {
+    title: 'Connect Mock ASPSP',
+    content: <p className={BODY}>Choose your country, find <Label>Mock ASPSP</Label>
+      and click Connect. Approve simulated access in your browser and allow
+      <Label>Open Koinkat Demo</Label>. If the handoff is blocked, use Copy Code,
+      return here and click Connect &amp; Sync. Review the imported fictional
+      transactions in the Review inbox.</p>,
+  },
+];
+
+const STEPS = IS_DEMO_APP ? DEMO_STEPS : PRODUCTION_STEPS;
 const TOTAL = STEPS.length;
 
 // ── Main component ────────────────────────────────────────────────────────

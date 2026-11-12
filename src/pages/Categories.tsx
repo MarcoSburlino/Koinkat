@@ -1,3 +1,4 @@
+import { UPPERCASE_LABEL } from '../lib/label-styles';
 import { useState, useEffect, useCallback } from 'react';
 import {
   ChevronRight,
@@ -295,9 +296,9 @@ export function Categories() {
               e.stopPropagation();
               startAdd(macro.id);
             }}
-            className="p-1 rounded transition-opacity hover:opacity-70 cursor-pointer shrink-0"
-            style={{ color: 'var(--primary)' }}
+            className="kk-icon-btn shrink-0"
             title="Add subcategory"
+            aria-label={`Add a subcategory to ${macro.name}`}
           >
             <Plus size={14} />
           </button>
@@ -433,8 +434,7 @@ export function Categories() {
         <button
           type="button"
           onClick={() => startEdit(sub)}
-          className="p-1.5 rounded transition-opacity hover:opacity-70 cursor-pointer"
-          style={{ color: 'var(--text-muted)' }}
+          className="kk-icon-btn"
           title="Edit"
         >
           <Pencil size={12} />
@@ -442,8 +442,7 @@ export function Categories() {
         <button
           type="button"
           onClick={() => setDeleteTarget(sub)}
-          className="p-1.5 rounded transition-opacity hover:opacity-70 cursor-pointer"
-          style={{ color: 'var(--danger)' }}
+          className="kk-icon-btn" data-tone="danger"
           title="Delete"
         >
           <Trash2 size={12} />
@@ -461,10 +460,7 @@ export function Categories() {
     return (
       <Card>
         <div className="flex items-center justify-between mb-3">
-          <h2
-            className="text-lg font-semibold"
-            style={{ color: 'var(--text)', fontFamily: 'var(--font-head)' }}
-          >
+          <h2 className="uppercase" style={UPPERCASE_LABEL}>
             {title}
           </h2>
           <button
@@ -545,7 +541,7 @@ export function Categories() {
     <div>
       <PageHeader
         serif
-        label="Overview"
+        label="Setup"
         title="Categories"
         subtitle="Organize your transactions. Add your own top-level categories, or create subcategories under any existing macro."
       />

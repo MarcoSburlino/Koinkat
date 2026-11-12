@@ -11,11 +11,13 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:demo": "vite --mode demo",
     "build": "tsc && vite build --mode production",
     "build:demo": "tsc && vite build --mode demo",
     "preview": "vite preview",
     "tauri": "tauri",
     "tauri:dev": "tauri dev",
+    "tauri:dev:demo": "tauri dev --config src-tauri/tauri.conf.demo.json",
     "tauri:build": "tauri build",
     "tauri:build:demo": "tauri build --config src-tauri/tauri.conf.demo.json",
     "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.test.json",
@@ -23,7 +25,9 @@
     "licenses:check": "node scripts/generate-third-party-licenses.mjs --check",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:ui": "vitest --ui"
+    "test:ui": "vitest --ui",
+    "mcp:bundle": "node scripts/sync-mcp-bundle.mjs",
+    "mcp:check": "node scripts/sync-mcp-bundle.mjs --check"
   },
   "dependencies": {
     "@fontsource/dm-sans": "^5.3.0",
@@ -42,8 +46,10 @@
     "lucide-react": "^1.47",
     "react": "^19",
     "react-dom": "^19",
+    "react-markdown": "10.1.0",
     "react-router-dom": "^7",
     "recharts": "^2",
+    "remark-gfm": "4.0.1",
     "zustand": "^5"
   },
   "devDependencies": {

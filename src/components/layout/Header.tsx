@@ -5,6 +5,7 @@ import { useAppStore } from '../../stores/app-store';
 import { useUiStore } from '../../stores/ui-store';
 import { useUserStore } from '../../stores/user-store';
 import { useKoinkatAccountStore } from '../../stores/koinkat-account-store';
+import { IS_DEMO_APP } from '../../lib/build-profile';
 
 interface HeaderProps {
   /** Show user chip + controls. Hidden on UserRegister/UserLogin. */
@@ -51,11 +52,31 @@ export function Header({
             <Menu size={20} />
           </button>
         )}
-        <img
+        {!IS_DEMO_APP && <img
           src={theme === 'dark' ? wordmarkWhite : wordmarkGreen}
           alt="Koinkat"
           className="h-7 w-auto"
-        />
+        />}
+        {IS_DEMO_APP && (
+          <>
+            <span
+              role="img"
+              aria-label="Koinkat"
+              className="h-7 w-28 inline-block"
+              style={{
+                backgroundColor: 'var(--demo-brand)',
+                maskImage: `url(${wordmarkWhite})`,
+                maskSize: 'contain',
+                maskRepeat: 'no-repeat',
+                maskPosition: 'left center',
+              }}
+            />
+            <span className="text-xs font-semibold px-2 py-0.5 rounded"
+              style={{ color: 'var(--demo-brand)', border: '1px solid currentColor' }}>
+              Demo
+            </span>
+          </>
+        )}
       </div>
 
       <div className="flex items-center gap-1">

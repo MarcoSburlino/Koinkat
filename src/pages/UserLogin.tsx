@@ -100,8 +100,8 @@ export function UserLogin({ onSelect, onCreateNew }: UserLoginProps) {
                     e.stopPropagation();
                     setDeleteTarget(user);
                   }}
-                  className="p-2 rounded transition-colors hover:opacity-80 cursor-pointer"
-                  style={{ color: 'var(--danger)' }}
+                  className="kk-icon-btn"
+                  data-tone="danger"
                   aria-label={`Delete ${user.name}`}
                 >
                   <Trash2 size={16} />

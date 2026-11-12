@@ -1,6 +1,6 @@
 # Koinkat privacy policy
 
-Effective date: 2026-08-22
+Effective date: 2026-11-12 (adds the optional AI assistant; previous version 2026-08-22)
 
 This policy covers the Koinkat desktop application (Windows, macOS,
 Linux) published from this repository by Marco Sburlino.
@@ -11,6 +11,10 @@ Koinkat is a local-first application. All of your data stays on your
 device. The developer operates no server and does not collect, receive,
 store, or process any personal or financial data. There is no telemetry,
 no analytics, no crash reporting, no cloud sync, and no user account.
+
+One optional feature can send data off your device, and only after you
+turn it on and confirm a notice: the **AI assistant** (see below). It is
+off by default, separately for every workspace.
 
 ## Data the app stores, and where
 
@@ -28,6 +32,12 @@ no analytics, no crash reporting, no cloud sync, and no user account.
   `koinkat`. If no credential store is available, Koinkat stores the
   key in the local database and says so in Settings.
 - **Application settings**, stored in the same local folder.
+- **AI assistant chats and settings** (present only if you turn the
+  assistant on): your questions and the answers, in the same local
+  database, inside the workspace they belong to. They are included in
+  the database's automatic backups and deleted with the workspace, or
+  at any time from Settings. If you use a local model that needs an API
+  key, the key is kept in the OS credential store, not in the database.
 
 The database is not encrypted at rest; use OS disk encryption
 (BitLocker, FileVault, LUKS) if you need protection from other users
@@ -71,6 +81,29 @@ below, are reached through your own browser rather than by the app:
    is to hand the authorization code back to the app on your device.
    The page is a single static file; it makes no network requests and
    stores nothing.
+
+4. **AI assistant (optional, off by default).** When you turn it on for
+   a workspace you choose who answers:
+   - **Claude Code** or **Codex**: Koinkat starts the command-line
+     program you installed and signed in to yourself. Your question,
+     the conversation so far, and the data the model reads to answer it
+     (balances, transactions including notes and merchant names,
+     categories, budgets of that workspace) are sent by that program to
+     Anthropic or OpenAI under your own account and their terms. Koinkat
+     does not contact those companies itself and the developer receives
+     nothing. Koinkat starts them with every tool except its own
+     read-only data tools switched off, and with no session files.
+   - **A local model** (Ollama, LM Studio, a llama.cpp server):
+     Koinkat talks only to an address on this computer
+     (`127.0.0.1` / `localhost`), so nothing leaves your device.
+
+   In every case the assistant can only read and calculate. It reads
+   your data through the read-only Koinkat MCP server
+   (its source is in the `mcp/` folder of this repository), which never sees
+   bank credentials, keys or API configuration. Settings also offers to
+   register that server in your own Claude Code or Codex; from then on
+   those programs can read the workspace in any session, under your
+   control, until you remove it.
 
 The app makes no other outbound connections of its own. It can also ask
 your browser to open your bank's site, Enable Banking's control panel, or

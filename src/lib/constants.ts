@@ -2,7 +2,11 @@
 // in BankLink to receive the auth code back from the OS when the static
 // callback page bounces to `koinkat://auth-callback?code=...`. Never sent to
 // Enable Banking - EB only accepts https:// URLs as registered redirect URIs.
-export const OAUTH_CALLBACK_URL = 'koinkat://auth-callback';
+import { IS_DEMO_APP } from './build-profile';
+
+export const OAUTH_CALLBACK_URL = IS_DEMO_APP
+  ? 'koinkat-demo://auth-callback'
+  : 'koinkat://auth-callback';
 
 // Koinkat's shared HTTPS callback page - the pre-filled default for the
 // redirect URL. The page is fully generic and holds no secrets: it reads
@@ -13,7 +17,7 @@ export const OAUTH_CALLBACK_URL = 'koinkat://auth-callback';
 // EB matches exactly) on THEIR OWN Enable Banking application; the field
 // stays editable for users who prefer to host their own page.
 export const DEFAULT_CALLBACK_URL =
-  'https://marcosburlino.github.io/koinkat-callback/';
+  'https://marcosburlino.github.io/koinkat-callback/' + (IS_DEMO_APP ? '?app=demo' : '');
 
 // PSD2 consent window requested from Enable Banking, in days. The regulation
 // caps it at 180; we request 179 so the stored expiry can never claim the
