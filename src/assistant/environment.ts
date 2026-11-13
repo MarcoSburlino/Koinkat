@@ -17,6 +17,7 @@ export interface FoundProgram {
 }
 
 export interface AssistantEnvironment {
+  /** Only for "Connect" (adding the MCP entry); Koinkat never chats through it. */
   claude: FoundProgram | null;
   codex: FoundProgram | null;
   /** Node >= 22.13, needed to run the Koinkat data server. */
@@ -24,8 +25,6 @@ export interface AssistantEnvironment {
   /** A Node was found but is too old (shown in Settings). */
   nodeTooOld: string | null;
   bundlePath: string;
-  /** Starts Codex with stdin closed (resources/assistant/codex-run.mjs). */
-  codexLauncherPath: string;
   dbPath: string;
   workdir: string;
 }
@@ -127,7 +126,6 @@ export function detectEnvironment(refresh = false): Promise<AssistantEnvironment
         node,
         nodeTooOld: node ? null : nodeTooOld,
         bundlePath: await resolveResource('assistant/koinkat-mcp.mjs'),
-        codexLauncherPath: await resolveResource('assistant/codex-run.mjs'),
         dbPath: await join(await appConfigDir(), 'koinkat.db'),
         workdir,
       };

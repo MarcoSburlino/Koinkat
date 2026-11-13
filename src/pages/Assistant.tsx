@@ -14,13 +14,7 @@ import { runTurn, type RunningTurn } from '../assistant/engines';
 import { TurnAccumulator } from '../assistant/parsers';
 import { toolLabel } from '../assistant/prompt';
 import { getLocalApiKey } from '../assistant/secrets';
-import type { AssistantConversation, AssistantEngine, AssistantMessage } from '../types/models';
-
-const ENGINE_NAME: Record<AssistantEngine, string> = {
-  'claude-code': 'Claude Code',
-  codex: 'Codex',
-  local: 'Local model',
-};
+import type { AssistantConversation, AssistantMessage } from '../types/models';
 
 const SUGGESTIONS = [
   'How much have I spent this month, and on what?',
@@ -113,9 +107,8 @@ export function Assistant() {
       setLive({ conversationId: chatId, question: q, text: '', tools: [] });
 
       const acc = new TurnAccumulator();
-      const localApiKey = aSettings.engine === 'local' ? await getLocalApiKey(ctx.id) : null;
+      const localApiKey = await getLocalApiKey(ctx.id);
       const turn = runTurn({
-        engine: aSettings.engine,
         model: aSettings.model,
         localBaseUrl: aSettings.localBaseUrl,
         localApiKey,
@@ -162,8 +155,8 @@ export function Assistant() {
         <Card>
           <p style={{ color: 'var(--text)' }}>The assistant is off for this workspace.</p>
           <p className="mt-1 mb-4" style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-body-sm)' }}>
-            Turn it on in Settings, where you also choose who answers: your Claude Code or Codex
-            subscription, or a model on this computer.
+            Turn it on in Settings. Answers come from a model running on this computer, such as
+            Ollama or LM Studio. To ask from Claude Code or Codex instead, connect them in Settings.
           </p>
           <Link to="/settings">
             <Button variant="primary">Open Settings</Button>
@@ -173,7 +166,7 @@ export function Assistant() {
     );
   }
 
-  const engineName = aSettings ? ENGINE_NAME[aSettings.engine] : '';
+  const engineName = aSettings?.model ? aSettings.model : 'Your local model';
 
   return (
     <div className="flex flex-col" style={{ height: 'calc(100vh - var(--header-h) - 48px)' }}>
@@ -181,7 +174,7 @@ export function Assistant() {
         serif
         label="Insights"
         title="Assistant"
-        subtitle={`Ask about your money. Answers come from ${engineName} using Koinkat's read-only data.`}
+        subtitle="Ask about your money. Answers come from a model on this computer using Koinkat's read-only data."
         className="mb-5"
       />
 
@@ -310,7 +303,7 @@ export function Assistant() {
               )}
             </div>
             <p className="max-w-3xl mx-auto mt-2" style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-rate)' }}>
-              Read-only. {aSettings?.engine === 'local' ? 'Runs on this computer.' : `Your question and the data it needs go to ${aSettings?.engine === 'codex' ? 'OpenAI' : 'Anthropic'}.`} Check important figures in Koinkat.
+              Read-only. Runs on this computer. Check important figures in Koinkat.
             </p>
           </form>
         </section>

@@ -91,23 +91,34 @@ describe('assistant settings', () => {
     await saveAssistantSettings({ model: 'qwen3:8b' });
     expect((await getAssistantSettings()).model).toBe('qwen3:8b');
   });
+
+  it('only a local model answers: older Claude Code / Codex settings read as local', async () => {
+    await db.execute(
+      `INSERT INTO assistant_settings (koinkat_account_id, enabled, engine, model, consented_at, updated_at)
+       VALUES ('ws-1', 1, 'claude-code', 'sonnet', '2026-11-12T10:00:00Z', datetime('now'))`,
+    );
+    // The Claude model name must not leak into the local engine.
+    expect(await getAssistantSettings()).toMatchObject({ enabled: true, engine: 'local', model: null });
+    await expect(saveAssistantSettings({ engine: 'codex' })).rejects.toThrow(/Unsupported/);
+    await expect(saveAssistantSettings({ engine: 'claude-code' })).rejects.toThrow(/Unsupported/);
+  });
 });
 
 describe('assistant chats', () => {
   it('lists only the active workspace chats', async () => {
-    await createConversation('How much on food?', 'claude-code');
+    await createConversation('How much on food?', 'local');
     active = 'ws-2';
-    await createConversation('Other workspace question', 'codex');
+    await createConversation('Other workspace question', 'local');
     expect((await listConversations()).map((c) => c.title)).toEqual(['Other workspace question']);
     active = 'ws-1';
     expect((await listConversations()).map((c) => c.title)).toEqual(['How much on food?']);
   });
 
   it('appends to the captured workspace even after a switch', async () => {
-    const chat = await createConversation('Question', 'claude-code');
+    const chat = await createConversation('Question', 'local');
     await appendMessage('ws-1', chat.id, { role: 'user', content: 'Question' });
     active = 'ws-2'; // user switched while the answer streamed
-    await appendMessage('ws-1', chat.id, { role: 'assistant', content: 'Answer', toolCalls: ['summarize_transactions'], engine: 'claude-code' });
+    await appendMessage('ws-1', chat.id, { role: 'assistant', content: 'Answer', toolCalls: ['summarize_transactions'], engine: 'local' });
     active = 'ws-1';
     const msgs = await listMessages(chat.id);
     expect(msgs.map((m) => [m.role, m.content])).toEqual([['user', 'Question'], ['assistant', 'Answer']]);
@@ -115,7 +126,7 @@ describe('assistant chats', () => {
   });
 
   it('never attaches a message to another workspace chat', async () => {
-    const chat = await createConversation('Mine', 'claude-code');
+    const chat = await createConversation('Mine', 'local');
     await expect(appendMessage('ws-2', chat.id, { role: 'user', content: 'x' })).rejects.toThrow(/no longer exists/);
     expect(await listMessages(chat.id)).toHaveLength(0);
   });
@@ -143,7 +154,7 @@ describe('assistant chats', () => {
 
   it('goes away with its workspace', async () => {
     await saveAssistantSettings({ enabled: true, consentedAt: '2026-11-12T10:00:00Z' });
-    const chat = await createConversation('Q', 'claude-code');
+    const chat = await createConversation('Q', 'local');
     await appendMessage('ws-1', chat.id, { role: 'user', content: 'Q' });
     await deleteKoinkatAccount('ws-1');
     for (const table of ['assistant_settings', 'assistant_conversations', 'assistant_messages']) {

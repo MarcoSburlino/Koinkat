@@ -1,7 +1,7 @@
 /**
  * What the assistant is told, and how a chat's history is carried into
  * each turn. Koinkat owns the history (assistant_messages) and resends it
- * with every question, so no engine keeps its own session files.
+ * with every question, so the model keeps no session of its own.
  */
 import type { AssistantMessage } from '../types/models';
 
@@ -26,35 +26,7 @@ export function systemPrompt(today: string, currency: string): string {
   ].join('\n');
 }
 
-/**
- * One prompt carrying the question plus as much recent history as fits.
- * Used by the CLI engines, which take a single user message per run.
- * Starts with a letter so it can never be read as a command-line flag.
- */
-export function composeTurnPrompt(history: AssistantMessage[], question: string): string {
-  const earlier = history.filter((m) => m.status === 'complete' && m.content.trim() !== '');
-  const lines: string[] = [];
-  let used = 0;
-  for (let i = earlier.length - 1; i >= 0; i--) {
-    const m = earlier[i];
-    const line = `${m.role === 'user' ? 'User' : 'Assistant'}: ${m.content.trim()}`;
-    if (used + line.length > HISTORY_BUDGET) break;
-    lines.unshift(line);
-    used += line.length + 2;
-  }
-  if (lines.length === 0) return `Question: ${question.trim()}`;
-  return [
-    'Conversation so far (for context; figures in it may be out of date, so re-check with the tools):',
-    '',
-    lines.join('\n\n'),
-    '',
-    '---',
-    '',
-    `New question: ${question.trim()}`,
-  ].join('\n');
-}
-
-/** OpenAI-style messages for the local engine, history trimmed the same way. */
+/** OpenAI-style messages: the question plus as much recent history as fits. */
 export function composeChatMessages(
   system: string,
   history: AssistantMessage[],

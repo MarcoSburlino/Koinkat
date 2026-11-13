@@ -8,22 +8,24 @@
  * How the Tauri shell scope works (tauri-plugin-shell 2.3.5, scope.rs):
  * every scope entry pins one program path; each argument position is
  * either a FIXED string (taken from the capability, whatever the webview
- * passes) or a value checked against an anchored regex. So the lockdown
- * flags below (`--restricted`, `--tools ""`, `--disable shell_tool`, ...)
- * cannot be dropped or reordered by the app at runtime.
+ * passes) or a value checked against an anchored regex.
+ *
+ * What runs:
+ * - Node, to start the read-only Koinkat MCP server for the in-app chat,
+ *   which talks only to a model on this computer.
+ * - The user's Claude Code / Codex CLI, ONLY for `--version` and to add
+ *   or remove the `koinkat` MCP entry in their own config ("Connect").
+ *   Koinkat never runs a chat through them: Anthropic and OpenAI do not
+ *   allow third-party apps to route requests through a user's
+ *   subscription (checked 2026-11-12), so the in-app chat is local-only.
  *
  * Threat model: a compromised webview. It may call any scoped command
  * with any values the validators accept, and it can write files into
  * Downloads / Desktop / Documents (the export scope). Therefore:
- * - an executable path in an ARGUMENT (Node inside the Claude/Codex MCP
- *   config, Codex for the launcher) must be one of the known install
- *   paths below, never "any absolute path";
- * - a script Node runs (the MCP bundle, the Codex launcher) must sit in
- *   an app INSTALL folder, which the webview cannot write to.
- *
- * Verified 2026-11-12 with Claude Code 2.1.322 and codex-cli 0.167.2 on a
- * fictional database: the Claude session exposes only the ten Koinkat
- * tools; Codex with `--disable shell_tool` cannot run commands.
+ * - an executable path in an ARGUMENT (Node inside the MCP entry) must be
+ *   one of the known install paths below, never "any absolute path";
+ * - a script Node runs (the MCP bundle) must sit in an app INSTALL
+ *   folder, which the webview cannot write to.
  */
 
 export type ProgramKind = 'claude' | 'codex' | 'node';
@@ -65,8 +67,8 @@ export const PROGRAM_PATHS: Record<ProgramKind, readonly string[]> = {
 const reEscape = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 /**
- * Regex pieces for a path written plainly (argv) or inside a JSON string
- * (the Claude `--mcp-config`), where every backslash is doubled.
+ * Regex pieces for a path written plainly (argv) or inside a JSON string,
+ * where every backslash is doubled.
  */
 function pathTokens(inJson: boolean) {
   return inJson
@@ -130,106 +132,26 @@ function installedScriptRe(file: string, inJson: boolean): string {
 
 /** Any absolute path (POSIX or Windows drive), no quotes, NUL or newlines. */
 const ABS = String.raw`(?:/|[A-Za-z]:\\)[^\x00"'\n]*`;
-const ABS_IN_JSON = String.raw`(?:/|[A-Za-z]:\\\\)[^\x00"'\n]*`;
 const UUID = '[0-9a-fA-F-]{36}';
 const DB = `${ABS}koinkat\\.db`;
-const DB_J = `${ABS_IN_JSON}koinkat\\.db`;
 const NODE = programPathRe('node', false);
-const NODE_J = programPathRe('node', true);
-const CODEX = programPathRe('codex', false);
 const BUNDLE = installedScriptRe('koinkat-mcp.mjs', false);
-const BUNDLE_J = installedScriptRe('koinkat-mcp.mjs', true);
-const LAUNCHER = installedScriptRe('codex-run.mjs', false);
-/** Free text that cannot be read as a flag: must start with a letter. */
-const TEXT = '(?s)[A-Za-z][^\\x00]*';
-const MODEL = String.raw`[A-Za-z0-9][A-Za-z0-9._:/\-\[\]]{0,63}`;
 
 export const VALIDATORS = {
   absPath: ABS,
   node: NODE,
-  codex: CODEX,
   bundle: BUNDLE,
-  launcher: LAUNCHER,
   db: DB,
   uuid: UUID,
-  model: MODEL,
-  systemPrompt: TEXT,
-  codexPrompt: TEXT,
-  claudeMcpConfig:
-    String.raw`\{"mcpServers":\{"koinkat":\{"command":"` + NODE_J +
-    String.raw`","args":\["` + BUNDLE_J + String.raw`","--database","` + DB_J +
-    String.raw`","--workspace","` + UUID + String.raw`"\]\}\}\}`,
-  codexMcpCommand: `mcp_servers\\.koinkat\\.command='${NODE}'`,
-  codexMcpArgs:
-    `mcp_servers\\.koinkat\\.args=\\['${BUNDLE}', '--database', '${DB}', '--workspace', '${UUID}'\\]`,
 } as const;
 
 type Arg = string | { validator: string };
 const v = (validator: string): Arg => ({ validator });
 
-/**
- * Codex's own argv for one chat turn. It is NOT run directly: `codex exec`
- * waits for end-of-input on a piped stdin, and the Tauri shell plugin can
- * never close a child's stdin. So the shipped launcher (`codex-run.mjs`)
- * starts Codex with stdin closed, and the capability pins these flags as
- * the launcher's arguments (see `node.codex-run`).
- */
-export const CODEX_EXEC_ARGS: Arg[] = [
-  'exec',
-  '--json',
-  '--ephemeral',
-  '--skip-git-repo-check',
-  '--ignore-user-config',
-  '--ignore-rules',
-  '-s',
-  'read-only',
-  '-C',
-  v(ABS),
-  '--disable',
-  'shell_tool',
-  '--disable',
-  'browser_use',
-  '--disable',
-  'computer_use',
-  '--disable',
-  'in_app_browser',
-  '--disable',
-  'apps',
-  '-c',
-  'approval_policy="never"',
-  '-c',
-  v(VALIDATORS.codexMcpCommand),
-  '-c',
-  v(VALIDATORS.codexMcpArgs),
-  v(VALIDATORS.codexPrompt),
-];
-
 /** Patterns a program may be run with. Order = argument positions. */
 export const ARG_PATTERNS: Record<ProgramKind, Record<string, Arg[]>> = {
   claude: {
     version: ['--version'],
-    run: [
-      '-p',
-      '--restricted',
-      '--tools',
-      '',
-      '--strict-mcp-config',
-      '--mcp-config',
-      v(VALIDATORS.claudeMcpConfig),
-      '--allowedTools',
-      'mcp__koinkat',
-      '--model',
-      v(VALIDATORS.model),
-      '--input-format',
-      'stream-json',
-      '--output-format',
-      'stream-json',
-      '--verbose',
-      '--include-partial-messages',
-      '--no-session-persistence',
-      '--system-prompt',
-      v(VALIDATORS.systemPrompt),
-    ],
     'mcp-add': [
       'mcp', 'add', '--scope', 'user', 'koinkat', '--',
       v(NODE), v(BUNDLE), '--database', v(DB), '--workspace', v(UUID),
@@ -247,7 +169,6 @@ export const ARG_PATTERNS: Record<ProgramKind, Record<string, Arg[]>> = {
   node: {
     version: ['--version'],
     mcp: [v(BUNDLE), '--database', v(DB), '--workspace', v(UUID)],
-    'codex-run': [v(LAUNCHER), v(CODEX), '--', ...CODEX_EXEC_ARGS],
   },
 };
 
@@ -270,7 +191,7 @@ export function buildAssistantCapability(): unknown {
     $schema: '../gen/schemas/desktop-schema.json',
     identifier: 'assistant',
     description:
-      'Opt-in AI assistant: run the user\'s Claude Code / Codex CLI or Node (for the read-only Koinkat MCP server) with fixed, locked-down arguments, and reach a LOCAL model endpoint. GENERATED from src/assistant/programs.ts - edit that file and run UPDATE_ASSISTANT_CAPABILITY=1 npx vitest run src/assistant/capability.test.ts',
+      'Opt-in AI assistant: run Node for the read-only Koinkat MCP server, reach a LOCAL model endpoint, and let the user add/remove the koinkat MCP entry in their own Claude Code / Codex. GENERATED from src/assistant/programs.ts - edit that file and run UPDATE_ASSISTANT_CAPABILITY=1 npx vitest run src/assistant/capability.test.ts',
     windows: ['main'],
     permissions: [
       { identifier: 'shell:allow-spawn', allow },
@@ -299,8 +220,7 @@ export function buildAssistantCapability(): unknown {
 
 /**
  * Longest single argument. Linux caps one argv string at 128 KiB
- * (MAX_ARG_STRLEN); stay well under it. The chat history sent with a
- * turn is trimmed to fit (see prompt.ts).
+ * (MAX_ARG_STRLEN); stay well under it.
  */
 export const MAX_ARG_CHARS = 100_000;
 
@@ -331,7 +251,7 @@ export function fillArgs(kind: ProgramKind, pattern: string, values: string[]): 
 
 /** Rust regex -> JS RegExp source for the subset used above. */
 export function toJsRegex(rust: string): string {
-  // `(?s)` (dot matches newline) has no inline JS form; the patterns only
-  // use it with `[^\x00]`, which already spans newlines, so drop it.
+  // `(?s)` (dot matches newline) has no inline JS form; drop it if a
+  // pattern ever uses it with a class that already spans newlines.
   return rust.replace(/^\(\?s\)/, '');
 }

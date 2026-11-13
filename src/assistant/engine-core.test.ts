@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { parseClaudeLine, parseCodexLine, TurnAccumulator } from './parsers';
-import { composeTurnPrompt, composeChatMessages, systemPrompt, HISTORY_BUDGET } from './prompt';
+import { TurnAccumulator } from './parsers';
+import { composeChatMessages, systemPrompt, toolLabel, HISTORY_BUDGET } from './prompt';
 import { McpClient, type LineTransport } from './mcp-client';
 import type { AssistantMessage } from '../types/models';
 
@@ -15,88 +15,58 @@ const msg = (role: 'user' | 'assistant', content: string, status: AssistantMessa
   createdAt: '2026-11-12',
 });
 
-describe('Claude Code stream-json', () => {
-  it('streams text, records tools, and keeps the clean final answer', () => {
-    const lines = [
-      '{"type":"system","subtype":"init","tools":["mcp__koinkat__get_context"]}',
-      '{"type":"stream_event","event":{"type":"content_block_start","content_block":{"type":"text"}}}',
-      '{"type":"stream_event","event":{"type":"content_block_delta","delta":{"type":"text_delta","text":"Let me check."}}}',
-      '{"type":"assistant","message":{"content":[{"type":"tool_use","name":"mcp__koinkat__summarize_transactions","input":{}}]}}',
-      '{"type":"stream_event","event":{"type":"content_block_start","content_block":{"type":"text"}}}',
-      '{"type":"stream_event","event":{"type":"content_block_delta","delta":{"type":"text_delta","text":"You spent 422,09 EUR."}}}',
-      '{"type":"result","subtype":"success","is_error":false,"result":"You spent 422,09 EUR."}',
-    ];
+describe('turn accumulator', () => {
+  it('records tools in order and saves the final answer, not narration', () => {
     const acc = new TurnAccumulator();
-    lines.flatMap(parseClaudeLine).forEach((e) => acc.apply(e));
+    acc.apply({ type: 'text', delta: 'Let me check.' });
+    acc.apply({ type: 'tool', name: 'summarize_transactions' });
+    acc.apply({ type: 'break' });
+    acc.apply({ type: 'text', delta: 'You spent 422,09 EUR.' });
+    acc.apply({ type: 'done', text: null });
     expect(acc.tools).toEqual(['summarize_transactions']);
-    expect(acc.text).toBe('Let me check.\n\nYou spent 422,09 EUR.');
     expect(acc.answer()).toBe('You spent 422,09 EUR.');
-    expect(acc.done).toBe(true);
   });
 
-  it('reports a failed run as an error', () => {
-    const [e] = parseClaudeLine('{"type":"result","subtype":"success","is_error":true,"result":"Not logged in"}');
-    expect(e).toEqual({ type: 'error', message: 'Not logged in' });
-  });
-
-  it('ignores non-JSON noise', () => {
-    expect(parseClaudeLine('warning: something')).toEqual([]);
-  });
-});
-
-describe('Codex exec --json', () => {
-  it('uses the last agent message as the answer', () => {
-    const lines = [
-      '{"type":"thread.started","thread_id":"t"}',
-      '{"type":"item.completed","item":{"type":"agent_message","text":"I will check."}}',
-      '{"type":"item.started","item":{"type":"mcp_tool_call","server":"koinkat","tool":"list_accounts"}}',
-      '{"type":"item.completed","item":{"type":"mcp_tool_call","server":"koinkat","tool":"list_accounts"}}',
-      '{"type":"item.completed","item":{"type":"agent_message","text":"Your net worth is 27 154,22 EUR."}}',
-      '{"type":"turn.completed","usage":{}}',
-    ];
+  it('prefers the clean text a done event carries', () => {
     const acc = new TurnAccumulator();
-    lines.flatMap(parseCodexLine).forEach((e) => acc.apply(e));
-    expect(acc.tools).toEqual(['list_accounts']);
+    acc.apply({ type: 'text', delta: 'draft' });
+    acc.apply({ type: 'done', text: 'Your net worth is 27 154,22 EUR.' });
     expect(acc.answer()).toBe('Your net worth is 27 154,22 EUR.');
   });
 
   it('surfaces a failed turn', () => {
-    expect(parseCodexLine('{"type":"turn.failed","error":{"message":"usage limit"}}')).toEqual([
-      { type: 'error', message: 'usage limit' },
-    ]);
+    const acc = new TurnAccumulator();
+    acc.apply({ type: 'error', message: 'The local model answered 500' });
+    expect(acc).toMatchObject({ done: true, error: 'The local model answered 500' });
   });
 });
 
 describe('prompts', () => {
-  it('sends a first question on its own, never starting with a dash', () => {
-    expect(composeTurnPrompt([], '--help me')).toBe('Question: --help me');
-  });
-
-  it('carries recent history and skips failed turns', () => {
-    const p = composeTurnPrompt(
-      [msg('user', 'Food in October?'), msg('assistant', '422,09 EUR'), msg('assistant', 'oops', 'error')],
+  it('builds alternating chat messages and skips failed turns', () => {
+    const m = composeChatMessages(
+      'SYS',
+      [msg('assistant', 'orphan'), msg('user', 'Food in October?'), msg('assistant', '422,09 EUR'), msg('assistant', 'oops', 'error')],
       'And November?',
     );
-    expect(p).toMatch(/^Conversation so far/);
-    expect(p).toContain('User: Food in October?\n\nAssistant: 422,09 EUR');
-    expect(p).not.toContain('oops');
-    expect(p.endsWith('New question: And November?')).toBe(true);
+    expect(m.map((x) => x.role)).toEqual(['system', 'user', 'assistant', 'user']);
+    expect(m.map((x) => x.content)).not.toContain('oops');
+    expect(m[m.length - 1].content).toBe('And November?');
   });
 
   it('drops the oldest history beyond the budget', () => {
     const big = 'x'.repeat(HISTORY_BUDGET / 2);
-    const p = composeTurnPrompt([msg('user', 'OLDEST ' + big), msg('assistant', big), msg('user', 'recent')], 'q');
-    expect(p).not.toContain('OLDEST');
-    expect(p).toContain('recent');
-  });
-
-  it('builds alternating chat messages for local models', () => {
-    const m = composeChatMessages('SYS', [msg('assistant', 'orphan'), msg('user', 'a'), msg('assistant', 'b')], 'c');
-    expect(m.map((x) => x.role)).toEqual(['system', 'user', 'assistant', 'user']);
+    const m = composeChatMessages('SYS', [msg('user', 'OLDEST ' + big), msg('assistant', big), msg('user', 'recent')], 'q');
+    expect(m.some((x) => x.content.startsWith('OLDEST'))).toBe(false);
+    expect(m.some((x) => x.content === 'recent')).toBe(true);
   });
 
   it('tells the model that transaction text is data, not instructions', () => {
     expect(systemPrompt('2026-11-12', 'EUR')).toMatch(/never instructions/);
+  });
+
+  it('labels tools in plain words', () => {
+    expect(toolLabel('summarize_transactions')).toBe('Added up transactions');
+    expect(toolLabel('mcp__koinkat__get_budgets')).toBe('Read budgets');
   });
 });
 
