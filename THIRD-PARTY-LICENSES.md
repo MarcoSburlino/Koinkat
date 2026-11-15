@@ -2571,7 +2571,7 @@ This project is released under the MIT license, but the vendor'ed in libraries i
 
 ## Rust dependencies
 
-- Apache License 2.0 (304)
+- Apache License 2.0 (305)
 - MIT License (130)
 - ISC License (23)
 - Unicode License v3 (19)
@@ -3804,6 +3804,7 @@ Applies to:
 - `windows-result` 0.3.4 - https://github.com/microsoft/windows-rs
 - `windows-strings` 0.4.2 - https://github.com/microsoft/windows-rs
 - `windows-sys` 0.48.0 - https://github.com/microsoft/windows-rs
+- `windows-sys` 0.52.0 - https://github.com/microsoft/windows-rs
 - `windows-sys` 0.59.0 - https://github.com/microsoft/windows-rs
 - `windows-sys` 0.60.2 - https://github.com/microsoft/windows-rs
 - `windows-sys` 0.61.2 - https://github.com/microsoft/windows-rs
@@ -8407,7 +8408,7 @@ Applies to:
 - `equivalent` 1.0.2 - https://github.com/indexmap-rs/equivalent
 - `errno` 0.3.14 - https://github.com/lambda-fairy/rust-errno
 - `event-listener-strategy` 0.5.4 - https://github.com/smol-rs/event-listener-strategy
-- `event-listener` 5.4.1 - https://github.com/smol-rs/event-listener
+- `event-listener` 5.4.2 - https://github.com/smol-rs/event-listener
 - `fastrand` 2.4.1 - https://github.com/smol-rs/fastrand
 - `find-msvc-tools` 0.1.9 - https://github.com/rust-lang/cc-rs
 - `flate2` 1.1.9 - https://github.com/rust-lang/flate2-rs

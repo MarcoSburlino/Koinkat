@@ -6,7 +6,7 @@ uses [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
-## [2.0.0] - 2026-11-12
+## [2.0.0] - 2026-11-15
 
 A new look, an optional AI assistant that runs on your own computer, and
 Koinkat's data server for the AI apps you already use.
@@ -52,6 +52,7 @@ Koinkat's data server for the AI apps you already use.
 ### Security
 - Updated the TLS and networking libraries (rustls, rustls-webpki,
   webpki-roots, quinn-proto) to fix published advisories.
+- Updated event-listener and quinn-udp to fix published advisories.
 
 ## [0.1.7] - 2026-09-27
 
