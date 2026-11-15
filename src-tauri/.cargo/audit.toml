@@ -1,8 +1,13 @@
 # cargo-audit configuration.
 #
-# `ignore` here means "this advisory is real, but the affected code is not in
-# any binary we ship". Every entry must say why, and must be re-checked when
-# dependencies move. It is not a place to park inconvenient findings.
+# `ignore` here means one of two things, and every entry says which:
+#   1. "this advisory is real, but the affected code is not in any binary we
+#      ship", or
+#   2. "the affected code ships, no fixed version can be used yet, and the
+#      vulnerable path cannot be reached by how Koinkat uses it". Entries of
+#      this kind name the upgrade that removes them.
+# Every entry must say why, and must be re-checked when dependencies move. It
+# is not a place to park inconvenient findings.
 #
 # Verify a claim below with, from src-tauri/:
 #   cargo tree -i <crate> --target all --edges normal
@@ -29,4 +34,18 @@ ignore = [
     # hostile XML, and the only XML parsed is our own build input.
     "RUSTSEC-2026-0194",
     "RUSTSEC-2026-0195",
+
+    # Kind 2 (ships, unreachable). libsqlite3-sys 0.30.1 (bundled SQLite
+    # < 3.54.0) <- sqlx-sqlite 0.8 <- tauri-plugin-sql. SQLite can return
+    # uninitialized memory when it opens a database together with a crafted
+    # sibling -wal file. Koinkat only opens its own koinkat.db in the app
+    # config folder; backups are single files written with VACUUM INTO, and a
+    # restore moves any existing -wal/-shm aside and copies in only the .db
+    # (backup-service.ts, replaceDatabaseWith), so no foreign -wal is ever
+    # placed beside it. Planting one needs write access to the app folder,
+    # which already means the database itself can be read. No fix is usable
+    # yet: sqlx 0.8 and 0.9 both cap libsqlite3-sys below 0.39. Remove this
+    # entry when tauri-plugin-sql allows libsqlite3-sys >= 0.39. Added
+    # 2026-11-15.
+    "RUSTSEC-2026-0459",
 ]
